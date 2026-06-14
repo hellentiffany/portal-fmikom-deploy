@@ -1,0 +1,838 @@
+<script setup lang="ts">
+import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
+import PdfViewer from '@/components/PdfViewer.vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import {
+    AlertCircle,
+    AlertTriangle,
+    ArrowLeft,
+    CheckCircle,
+    Clock,
+    Copy,
+    Download,
+    Eye,
+    FileText,
+    Paperclip,
+    QrCode,
+    RefreshCcw,
+    ShieldCheck,
+    X,
+} from 'lucide-vue-next';
+
+type Lampiran = { id: number; name: string; url?: string | null; type: string };
+
+type TimelineItem = {
+    id: number;
+    label: string;
+    note?: string | null;
+    description?: string | null;
+    acted_at?: string | null;
+    created_at?: string | null;
+    status?: string | null;
+    action?: string | null;
+    actor?: string | null;
+    role?: string | null;
+};
+
+type ApprovalNote = {
+    role?: string | null;
+    status?: string | null;
+    label?: string | null;
+    note?: string | null;
+    acted_at?: string | null;
+    actor?: string | null;
+};
+
+type Surat = {
+    id: number;
+    nomor_surat?: string | null;
+    pemohon: { name: string; nim?: string | null };
+    jenis_surat: string;
+    keperluan: string;
+    isi_surat: Record<string, any>;
+    lampiran: Lampiran[];
+    tanggal_pengajuan: string | null;
+    status: string;
+    latest_rejection?: {
+        role?: string | null;
+        label: string;
+        type: 'revision' | 'final_reject';
+        note?: string | null;
+        acted_at?: string | null;
+    } | null;
+    approval_timeline?: TimelineItem[];
+    history_timeline?: TimelineItem[];
+    approval_notes?: ApprovalNote[];
+    can_approve: boolean;
+    can_request_revision: boolean;
+    can_final_reject: boolean;
+    previewTemplateUrl: string | null;
+    generatedDocumentUrl: string | null;
+};
+
+const props = defineProps<
+    { role: { name?: string | null; slug?: string | null }; back_href?: string; back_label?: string } & Surat
+>();
+
+const viewerOpen = ref(false);
+const viewerUrl = ref<string | null>(null);
+const viewerTitle = ref('');
+const viewerType = ref<'html' | 'pdf'>('html');
+const copiedNumber = ref(false);
+
+const revisionModalOpen = ref(false);
+const finalRejectModalOpen = ref(false);
+const revisionForm = useForm({ reason: '' });
+const finalRejectForm = useForm({ reason: '' });
+const expandedTimelineNoteId = ref<number | null>(null);
+
+const normalizedRole = computed(() =>
+    String(props.role.slug ?? props.role.name ?? '')
+        .toLowerCase()
+        .includes('kaprodi')
+        ? 'kaprodi'
+        : 'dekan',
+);
+const basePath = computed(() => `/${normalizedRole.value}`);
+const backHref = computed(() => props.back_href || `${basePath.value}/arsip`);
+const backLabel = computed(() => props.back_label || 'Riwayat Approval');
+const activeMenu = computed(() => {
+    const href = backHref.value;
+    if (href.includes('/antrian')) return 'approval.antrian';
+    if (href.includes('/dashboard')) return 'approval.dashboard';
+    return 'approval.arsip';
+});
+const isFinished = computed(() => props.status === 'finished');
+const isApproved = computed(() =>
+    ['approved_kaprodi', 'approved_dekan', 'finished'].includes(props.status),
+);
+const documentTitle = computed(() =>
+    props.nomor_surat
+        ? `${props.jenis_surat} - ${props.nomor_surat}`
+        : props.jenis_surat,
+);
+
+const completedAt = computed(() => {
+    if (!isApproved.value) return null;
+
+    const historyLatest = props.history_timeline?.[0]?.created_at ?? null;
+    const approvalLatest =
+        props.approval_timeline?.[props.approval_timeline.length - 1]
+            ?.acted_at ?? null;
+
+    return approvalLatest ?? historyLatest ?? props.tanggal_pengajuan;
+});
+
+const hiddenFields = new Set(['created_by', 'jenis_surat_id', 'jenis_surat', 'keperluan']);
+
+const detailRows = computed(() =>
+    Object.entries(props.isi_surat ?? {})
+        .filter(([key]) => !hiddenFields.has(String(key)))
+        .map(([key, value]) => ({
+            key: String(key),
+            label: humanizeKey(String(key)),
+            value: formatDisplayValue(value),
+        }))
+        .filter((row) => row.value !== '-'),
+);
+
+const recipientValue = computed(() => {
+    const payload = props.isi_surat ?? {};
+    return formatDisplayValue(payload.kepada_yth ?? payload.tujuan ?? '-');
+});
+const subjectValue = computed(() => {
+    const payload = props.isi_surat ?? {};
+    return formatDisplayValue(payload.perihal ?? props.keperluan ?? '-');
+});
+
+const processTimeline = computed(() => {
+    const approval = props.approval_timeline ?? [];
+    if (approval.length > 0) {
+        return approval.map((entry) => ({
+            id: entry.id,
+            label: entry.label,
+            note: entry.note ?? null,
+            timestamp: entry.acted_at ?? null,
+        }));
+    }
+
+    return (props.history_timeline ?? []).map((entry) => ({
+        id: entry.id,
+        label: entry.label,
+        note: entry.description ?? null,
+        timestamp: entry.created_at ?? null,
+    }));
+});
+
+const statusLabel: Record<string, string> = {
+    pending: 'Menunggu Validasi',
+    validated_admin: 'Sudah Divalidasi Admin',
+    revision_requested: 'Menunggu Revisi Admin',
+    approved_kaprodi: 'Disetujui Kaprodi',
+    approved_dekan: 'Disetujui Dekan',
+    finished: 'Selesai',
+    rejected_admin: 'Ditolak Admin',
+    rejected_approver: props.latest_rejection?.label ?? 'Ditolak Pimpinan',
+};
+
+const statusColor: Record<string, string> = {
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    validated_admin: 'bg-blue-50 text-blue-700 border-blue-200',
+    revision_requested: 'bg-amber-50 text-amber-700 border-amber-200',
+    approved_kaprodi: 'bg-blue-50 text-blue-700 border-blue-200',
+    approved_dekan: 'bg-blue-50 text-blue-700 border-blue-200',
+    finished: 'bg-blue-100 text-blue-800 border-blue-300',
+    rejected_admin: 'bg-red-50 text-red-700 border-red-200',
+    rejected_approver: 'bg-red-50 text-red-700 border-red-200',
+};
+
+function filled(value: unknown): boolean {
+    return value !== null && value !== undefined && String(value).trim() !== '';
+}
+
+function humanizeKey(key: string): string {
+    return key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatDisplayValue(value: unknown): string {
+    if (value === null || value === undefined || value === '') return '-';
+    if (Array.isArray(value)) {
+        const items = value
+            .map((item) => formatDisplayValue(item))
+            .filter((item) => item !== '-');
+        return items.length > 0 ? items.join(', ') : '-';
+    }
+    if (typeof value === 'object') {
+        const candidate = value as Record<string, unknown>;
+        return (
+            String(candidate.name ?? candidate.label ?? candidate.value ?? '') ||
+            '-'
+        );
+    }
+    return String(value);
+}
+
+function formatDate(iso: string | null): string {
+    if (!iso) return '-';
+
+    return (
+        new Date(iso).toLocaleString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }) + ' WIB'
+    );
+}
+
+function openPreviewDocument() {
+    const sourceUrl = props.generatedDocumentUrl ?? props.previewTemplateUrl;
+    if (!sourceUrl) return;
+
+    const isPdfDocument = sourceUrl.endsWith('/pdf');
+    viewerUrl.value = isPdfDocument ? `${sourceUrl}?refresh=1` : sourceUrl;
+    viewerTitle.value = documentTitle.value;
+    viewerType.value = isPdfDocument ? 'pdf' : 'html';
+    viewerOpen.value = true;
+}
+
+function openDownloadPdf() {
+    viewerUrl.value = `/documents/surat/${props.id}/pdf?refresh=1`;
+    viewerTitle.value = documentTitle.value;
+    viewerType.value = 'pdf';
+    viewerOpen.value = true;
+}
+
+function goBack() {
+    router.visit(backHref.value);
+}
+
+function closeViewer() {
+    viewerOpen.value = false;
+    setTimeout(() => {
+        viewerUrl.value = null;
+    }, 200);
+}
+
+function approveSurat() {
+    router.post(`${basePath.value}/surat/${props.id}/approve`, {}, { onSuccess: () => {} });
+}
+
+function openRevisionModal() {
+    revisionModalOpen.value = true;
+    revisionForm.reset();
+}
+
+function closeRevisionModal() {
+    revisionModalOpen.value = false;
+}
+
+function submitRevision() {
+    revisionForm.post(`${basePath.value}/surat/${props.id}/reject`, {
+        onSuccess: () => closeRevisionModal(),
+    });
+}
+
+function openFinalRejectModal() {
+    finalRejectModalOpen.value = true;
+    finalRejectForm.reset();
+}
+
+function closeFinalRejectModal() {
+    finalRejectModalOpen.value = false;
+}
+
+function submitFinalReject() {
+    finalRejectForm.post(`${basePath.value}/surat/${props.id}/final-reject`, {
+        onSuccess: () => closeFinalRejectModal(),
+    });
+}
+
+function attachmentUrl(id: number) {
+    return `${basePath.value}/lampiran/${id}/preview`;
+}
+
+async function copyNomorSurat() {
+    if (!props.nomor_surat) return;
+
+    try {
+        await navigator.clipboard.writeText(props.nomor_surat);
+        copiedNumber.value = true;
+        window.setTimeout(() => {
+            copiedNumber.value = false;
+        }, 1600);
+    } catch {
+        copiedNumber.value = false;
+    }
+}
+
+function toggleTimelineNote(id: number) {
+    expandedTimelineNoteId.value =
+        expandedTimelineNoteId.value === id ? null : id;
+}
+</script>
+
+<template>
+    <AdminLayout
+        title="Detail Surat"
+        :subtitle="jenis_surat"
+        :active-menu="activeMenu"
+        :breadcrumbs="[
+            { label: backLabel, href: backHref },
+            { label: 'Detail Surat' },
+        ]"
+    >
+        <Head :title="`Detail Surat - ${jenis_surat}`" />
+
+        <div class="mx-auto max-w-6xl space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    @click="goBack"
+                >
+                    <ArrowLeft class="size-4" />
+                    Kembali
+                </button>
+
+            </div>
+
+            <section class="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.95fr)]">
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                    <div class="mb-4 flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                                <FileText class="size-5" />
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-slate-900">
+                                    Data Surat
+                                </h2>
+                                <p class="text-sm text-slate-500">
+                                    Ringkasan metadata surat.
+                                </p>
+                            </div>
+                        </div>
+
+                        <span
+                            class="inline-flex shrink-0 rounded-full border px-3 py-1 text-xs font-semibold"
+                            :class="statusColor[status] || 'border-slate-200 bg-white text-slate-700'"
+                        >
+                            {{ statusLabel[status] || status }}
+                        </span>
+                    </div>
+
+                    <div class="mt-2 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+                        <div class="grid gap-2 px-4 py-3 text-sm md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+                            <p class="text-slate-500">Nama</p>
+                            <p class="min-w-0 break-words font-medium leading-6 text-slate-900">
+                                {{ pemohon?.name || '-' }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-2 px-4 py-3 text-sm md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+                            <p class="text-slate-500">NIM / NIP</p>
+                            <p class="min-w-0 break-words font-mono font-medium leading-6 text-slate-900">
+                                {{ pemohon?.nim || '-' }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-2 px-4 py-3 text-sm md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+                            <p class="text-slate-500">Jenis Surat</p>
+                            <p class="min-w-0 break-words font-medium leading-6 text-slate-900">
+                                {{ jenis_surat || '-' }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-2 px-4 py-3 text-sm md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+                            <p class="text-slate-500">Tanggal Pengajuan</p>
+                            <p class="min-w-0 break-words font-medium leading-6 text-slate-900">
+                                {{ formatDate(tanggal_pengajuan) }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-2 px-4 py-3 text-sm md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+                            <p class="text-slate-500">Nomor Surat</p>
+                            <div class="min-w-0">
+                                <button
+                                    v-if="nomor_surat"
+                                    type="button"
+                                    class="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-left text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                                    @click="copyNomorSurat"
+                                >
+                                    <span class="min-w-0 break-words font-mono">
+                                        {{ nomor_surat }}
+                                    </span>
+                                    <Copy class="size-3.5 shrink-0 text-slate-400" />
+                                </button>
+                                <p v-else class="font-medium leading-6 text-slate-900">
+                                    -
+                                </p>
+                                <p v-if="copiedNumber" class="mt-1 text-xs text-emerald-600">
+                                    Nomor surat disalin.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-2 px-4 py-3 text-sm md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+                            <p class="text-slate-500">Keperluan</p>
+                            <p class="min-w-0 break-words font-medium leading-6 text-slate-900">
+                                {{ keperluan || '-' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                    <div class="mb-4 flex items-center gap-3">
+                        <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                            <Download class="size-5" />
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">
+                                Preview Surat
+                            </h2>
+                            <p class="text-sm text-slate-500">
+                                Field surat tampil di area ini agar ringkasan tetap bersih.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="rounded-2xl border px-4 py-4"
+                        :class="
+                            isApproved
+                                ? 'border-blue-200 bg-blue-50'
+                                : status === 'revision_requested'
+                                    ? 'border-amber-200 bg-amber-50'
+                                    : 'border-slate-200 bg-slate-50'
+                        "
+                    >
+                        <div class="flex items-start gap-3">
+                            <QrCode
+                                class="mt-0.5 size-5 shrink-0"
+                                :class="
+                                    isApproved
+                                        ? 'text-blue-600'
+                                        : status === 'revision_requested'
+                                            ? 'text-amber-600'
+                                            : 'text-slate-500'
+                                "
+                            />
+                            <div class="min-w-0">
+                                <p
+                                    class="text-sm font-semibold"
+                                    :class="
+                                        isApproved
+                                            ? 'text-blue-800'
+                                            : status === 'revision_requested'
+                                                ? 'text-amber-800'
+                                                : 'text-slate-700'
+                                    "
+                                >
+                                    {{
+                                        isApproved
+                                            ? 'Status Disetujui'
+                                            : status === 'revision_requested'
+                                                ? 'Status Revisi'
+                                                : 'Status Surat'
+                                    }}
+                                </p>
+                                <p
+                                    class="mt-1 text-xs leading-5"
+                                    :class="
+                                        isApproved
+                                            ? 'text-blue-700'
+                                            : status === 'revision_requested'
+                                                ? 'text-amber-700'
+                                                : 'text-slate-600'
+                                    "
+                                >
+                                    {{
+                                        isApproved
+                                            ? 'Surat sudah diproses sesuai alur persetujuan.'
+                                            : status === 'revision_requested'
+                                                ? 'Surat dikembalikan untuk diperbaiki sebelum diproses lagi.'
+                                                : 'Surat masih menunggu tindakan dari role terkait.'
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span
+                                class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                :class="statusColor[status] || 'border-slate-200 bg-white text-slate-700'"
+                            >
+                                {{ statusLabel[status] || status }}
+                            </span>
+                            <span
+                                v-if="completedAt"
+                                class="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
+                            >
+                                {{ formatDate(completedAt) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-3">
+                        <button
+                            v-if="previewTemplateUrl || generatedDocumentUrl"
+                            type="button"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                            @click="openPreviewDocument"
+                        >
+                            <Eye class="size-4" />
+                            Preview Dokumen
+                        </button>
+
+                        <button
+                            v-if="isFinished"
+                            type="button"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                            @click="openDownloadPdf"
+                        >
+                            <Download class="size-4" />
+                            Download PDF
+                        </button>
+
+                        <div
+                            v-else
+                            class="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+                        >
+                            <Clock class="size-4 shrink-0" />
+                            PDF belum siap diunduh.
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="lampiran.length > 0"
+                        class="mt-5"
+                    >
+                        <h3 class="mb-3 text-sm font-semibold text-slate-900">
+                            Lampiran
+                        </h3>
+                        <div class="space-y-2">
+                            <a
+                                v-for="file in lampiran"
+                                :key="file.id"
+                                :href="attachmentUrl(file.id)"
+                                target="_blank"
+                                class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+                            >
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-slate-800">
+                                        {{ file.name }}
+                                    </p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ file.type || 'File pendukung' }}
+                                    </p>
+                                </div>
+                                <span class="text-xs font-semibold text-blue-600">
+                                    Preview
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <div class="mb-5 flex items-center gap-3">
+                    <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                        <ShieldCheck class="size-5" />
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">
+                            Riwayat Persetujuan
+                        </h2>
+                        <p class="text-sm text-slate-500">
+                            Alur proses surat dari validasi sampai keputusan akhir.
+                        </p>
+                    </div>
+                </div>
+
+                <div v-if="processTimeline.length > 0" class="space-y-4">
+                    <div
+                        v-for="(entry, index) in processTimeline"
+                        :key="entry.id"
+                        class="grid gap-4 md:grid-cols-[24px_minmax(0,1fr)_190px] md:items-start"
+                    >
+                        <div class="relative flex justify-center">
+                            <span
+                                v-if="index !== processTimeline.length - 1"
+                                class="absolute top-7 h-full w-px bg-blue-200"
+                            />
+                            <span
+                                class="relative z-10 mt-1 grid size-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"
+                            >
+                                <CheckCircle class="size-3.5" />
+                            </span>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-sm font-semibold text-slate-900">
+                                    {{ entry.label }}
+                                </p>
+                                <button
+                                    v-if="entry.note"
+                                    type="button"
+                                    class="inline-flex shrink-0 items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
+                                    :aria-expanded="expandedTimelineNoteId === entry.id"
+                                    :aria-controls="`timeline-note-${entry.id}`"
+                                    @click="toggleTimelineNote(entry.id)"
+                                >
+                                    <AlertCircle class="size-3.5" />
+                                    Catatan
+                                </button>
+                            </div>
+                            <Transition name="fade">
+                                <div
+                                    v-if="entry.note && expandedTimelineNoteId === entry.id"
+                                    :id="`timeline-note-${entry.id}`"
+                                    class="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                                >
+                                    {{ entry.note }}
+                                </div>
+                            </Transition>
+                        </div>
+
+                        <div class="pt-1 text-xs text-slate-500 md:text-right">
+                            {{ formatDate(entry.timestamp) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    v-else
+                    class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500"
+                >
+                    Riwayat belum tersedia.
+                </div>
+            </section>
+        </div>
+
+        <Transition name="fade">
+            <div
+                v-if="revisionModalOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                @click.self="closeRevisionModal"
+            >
+                <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+                    <div class="mb-4 flex items-center gap-3">
+                        <div class="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50">
+                            <AlertTriangle class="size-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-900">
+                                Kembalikan untuk Revisi
+                            </h3>
+                            <p class="text-xs text-slate-400">
+                                Berikan catatan agar pemohon tahu apa yang perlu diperbaiki.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+                            @click="closeRevisionModal"
+                        >
+                            <X class="size-4" />
+                        </button>
+                    </div>
+
+                    <textarea
+                        v-model="revisionForm.reason"
+                        rows="4"
+                        placeholder="Jelaskan alasan revisi..."
+                        class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                    />
+
+                    <p v-if="revisionForm.errors.reason" class="mt-1 text-xs text-red-500">
+                        {{ revisionForm.errors.reason }}
+                    </p>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button
+                            type="button"
+                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                            @click="closeRevisionModal"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+                            :disabled="revisionForm.processing || !revisionForm.reason.trim()"
+                            @click="submitRevision"
+                        >
+                            {{
+                                revisionForm.processing
+                                    ? 'Memproses...'
+                                    : 'Kembalikan'
+                            }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
+        <Transition name="fade">
+            <div
+                v-if="finalRejectModalOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                @click.self="closeFinalRejectModal"
+            >
+                <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+                    <div class="mb-4 flex items-center gap-3">
+                        <div class="grid size-10 shrink-0 place-items-center rounded-xl bg-red-50">
+                            <AlertTriangle class="size-5 text-red-500" />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-900">
+                                Tolak Final
+                            </h3>
+                            <p class="text-xs text-slate-400">
+                                Penolakan ini bersifat permanen dan akan menutup proses surat.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+                            @click="closeFinalRejectModal"
+                        >
+                            <X class="size-4" />
+                        </button>
+                    </div>
+
+                    <textarea
+                        v-model="finalRejectForm.reason"
+                        rows="4"
+                        placeholder="Jelaskan alasan penolakan final..."
+                        class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                    />
+
+                    <p v-if="finalRejectForm.errors.reason" class="mt-1 text-xs text-red-500">
+                        {{ finalRejectForm.errors.reason }}
+                    </p>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button
+                            type="button"
+                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                            @click="closeFinalRejectModal"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                            :disabled="finalRejectForm.processing || !finalRejectForm.reason.trim()"
+                            @click="submitFinalReject"
+                        >
+                            {{
+                                finalRejectForm.processing
+                                    ? 'Memproses...'
+                                    : 'Tolak Final'
+                            }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
+        <Transition name="fade">
+            <div
+                v-if="viewerOpen"
+                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
+                @click.self="closeViewer"
+            >
+                <template v-if="viewerType === 'html'">
+                    <div class="flex h-12 shrink-0 items-center justify-between bg-slate-900 px-4">
+                        <p class="min-w-0 truncate text-sm font-medium text-white">
+                            {{ viewerTitle }}
+                        </p>
+                        <button
+                            type="button"
+                            class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
+                            @click="closeViewer"
+                        >
+                            <X class="size-4" />
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-auto bg-slate-800 p-4">
+                        <iframe
+                            v-if="viewerUrl"
+                            :src="viewerUrl"
+                            class="w-full rounded-lg border-0 bg-white shadow-2xl"
+                            style="min-height: 80vh"
+                        />
+                    </div>
+                </template>
+
+                <template v-else-if="viewerType === 'pdf' && viewerUrl">
+                    <div class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4">
+                        <p class="min-w-0 truncate text-xs font-medium text-slate-400">
+                            {{ viewerTitle }}
+                        </p>
+                        <button
+                            type="button"
+                            class="grid size-7 place-items-center rounded-md text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
+                            @click="closeViewer"
+                        >
+                            <X class="size-4" />
+                        </button>
+                    </div>
+                    <div class="flex-1 bg-slate-900">
+                        <PdfViewer :src="viewerUrl" class="h-full w-full" />
+                    </div>
+                </template>
+            </div>
+        </Transition>
+    </AdminLayout>
+</template>

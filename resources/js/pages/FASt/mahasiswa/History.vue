@@ -1,0 +1,693 @@
+<script setup lang="ts">
+// resources/js/pages/FASt/mahasiswa/History.vue
+import FastLayout from '@/layouts/FASt/FastLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
+import { computed, defineAsyncComponent, ref } from 'vue';
+const PdfViewer = defineAsyncComponent(
+    () => import('@/components/PdfViewer.vue'),
+);
+import {
+    FileText,
+    Download,
+    Eye,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    AlertCircle,
+    X,
+    Sparkles,
+    Calendar,
+    CheckCircle2,
+    XCircle,
+    Clock3,
+    FileCheck,
+    RotateCcw,
+} from 'lucide-vue-next';
+type Surat = {
+    id: number;
+    reference: string;
+    jenisSurat: string;
+    status: string;
+    keperluan: string;
+    rejectionReason?: string | null;
+    revisionReason?: string | null;
+    rejectedByRole?: string | null;
+    needsRevision?: boolean;
+    revisionCount?: number;
+    submittedAt?: string | null;
+    neededAt?: string | null;
+    nomor_surat?: string | null;
+    canCancel?: boolean;
+    jenisSuratId?: number | null;
+    timeline?: {
+        action: string;
+        label: string;
+        description?: string | null;
+        created_at?: string | null;
+    }[];
+};
+const props = defineProps<{
+    surats: {
+        data: Surat[];
+        total: number;
+        current_page: number;
+        last_page: number;
+        per_page: number;
+    };
+    filters: { search?: string; status?: string };
+    userRole?: {
+        id?: number | null;
+        name?: string | null;
+        slug?: string | null;
+    };
+    endpoints?: { basePath: string };
+}>();
+const basePath = computed(() => props.endpoints?.basePath ?? '/mahasiswa');
+const search = ref(props.filters.search ?? '');
+const status = ref(props.filters.status ?? '');
+const expandedReasonId = ref<number | null>(null);
+const cancelConfirmId = ref<number | null>(null);
+// ── [BARU] PDF Viewer state ─────────────────────────────────────────────────
+const viewerOpen = ref(false);
+const viewerUrl = ref<string | null>(null);
+const viewerTitle = ref('');
+const viewerType = ref<'html' | 'pdf'>('html');
+const viewerStatus = ref('');
+const viewerNomor = ref<string | null>(null);
+function openViewer(item: Surat, mode: 'preview' | 'download') {
+    if (mode === 'preview') {
+        viewerUrl.value = `/documents/surat/${item.id}/generated-document`;
+        viewerTitle.value = `Preview — ${item.jenisSurat}`;
+        viewerType.value = 'html';
+    } else {
+        viewerUrl.value = `/documents/surat/${item.id}/pdf`;
+        viewerTitle.value = `${item.jenisSurat} — ${item.reference}`;
+        viewerType.value = 'pdf';
+    }
+    viewerStatus.value = item.status;
+    viewerNomor.value = item.nomor_surat ?? item.reference;
+    viewerOpen.value = true;
+}
+function closeViewer() {
+    viewerOpen.value = false;
+    setTimeout(() => {
+        viewerUrl.value = null;
+    }, 200);
+}
+// ── [END BARU] ──────────────────────────────────────────────────────────────
+const STATUS_STEPS = [
+    { key: 'pending', short: 'Diajukan' },
+    { key: 'validated_admin', short: 'Admin' },
+    { key: 'approved_kaprodi', short: 'Kaprodi' },
+    { key: 'approved_dekan', short: 'Dekan' },
+    { key: 'finished', short: 'Selesai' },
+];
+function getStepIndex(status: string): number {
+    if (status === 'rejected_admin' || status === 'rejected_approver')
+        return -1;
+    return STATUS_STEPS.findIndex((s) => s.key === status);
+}
+function statusLabel(status: string) {
+    const map: Record<string, string> = {
+        pending: 'Menunggu Validasi',
+        validated_admin: 'Divalidasi Admin',
+        revision_requested: 'Sedang Direvisi Admin',
+        approved_kaprodi: 'Disetujui Kaprodi',
+        approved_dekan: 'Disetujui Dekan',
+        finished: 'Selesai',
+        rejected_admin: 'Ditolak Admin',
+        rejected_approver: 'Ditolak Pimpinan',
+        cancelled: 'Dibatalkan',
+    };
+    return map[status] ?? 'Diproses';
+}
+function submissionStatusLabel(item: Surat) {
+    if (item.status === 'revision_requested' && item.needsRevision) {
+        return 'Perlu Revisi';
+    }
+    return statusLabel(item.status);
+}
+function statusBadgeClass(status: string) {
+    const map: Record<string, string> = {
+        pending: 'bg-amber-100 text-amber-700',
+        validated_admin: 'bg-indigo-100 text-indigo-700',
+        revision_requested: 'bg-amber-100 text-amber-700',
+        approved_kaprodi: 'bg-sky-100 text-sky-700',
+        approved_dekan: 'bg-sky-100 text-sky-700',
+        finished: 'bg-blue-100 text-blue-700',
+        rejected_admin: 'bg-red-100 text-red-700',
+        rejected_approver: 'bg-red-100 text-red-700',
+        cancelled: 'bg-slate-100 text-slate-600',
+    };
+    return map[status] ?? 'bg-slate-100 text-slate-600';
+}
+function statusIcon(s: string) {
+    if (s === 'finished') return FileCheck;
+    if (
+        s === 'rejected_admin' ||
+        s === 'rejected_approver' ||
+        s === 'cancelled'
+    )
+        return XCircle;
+    if (s.startsWith('approved')) return CheckCircle2;
+    if (s === 'validated_admin') return FileCheck;
+    return Clock3;
+}
+function statusColor(s: string) {
+    if (s === 'finished')
+        return {
+            bg: 'bg-blue-50',
+            border: 'border-blue-200',
+            text: 'text-blue-600',
+            line: 'bg-blue-300',
+        };
+    if (
+        s === 'rejected_admin' ||
+        s === 'rejected_approver' ||
+        s === 'cancelled'
+    )
+        return {
+            bg: 'bg-red-50',
+            border: 'border-red-200',
+            text: 'text-red-600',
+            line: 'bg-red-300',
+        };
+    if (s.startsWith('approved'))
+        return {
+            bg: 'bg-sky-50',
+            border: 'border-sky-200',
+            text: 'text-sky-600',
+            line: 'bg-sky-300',
+        };
+    if (s === 'validated_admin')
+        return {
+            bg: 'bg-indigo-50',
+            border: 'border-indigo-200',
+            text: 'text-indigo-600',
+            line: 'bg-indigo-300',
+        };
+    return {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        text: 'text-amber-600',
+        line: 'bg-amber-300',
+    };
+}
+function statusClass(s: string) {
+    if (s === 'finished') return 'bg-blue-100 text-blue-700';
+    if (
+        s === 'rejected_admin' ||
+        s === 'rejected_approver' ||
+        s === 'cancelled'
+    )
+        return 'bg-red-100 text-red-700';
+    if (s.startsWith('approved')) return 'bg-sky-100 text-sky-700';
+    if (s === 'validated_admin') return 'bg-indigo-100 text-indigo-700';
+    return 'bg-amber-100 text-amber-700';
+}
+function formatDate(date?: string | null) {
+    if (!date) return '-';
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    }).format(new Date(date));
+}
+function applyFilter() {
+    router.get(
+        `${basePath.value}/history`,
+        { search: search.value, status: status.value },
+        { preserveState: true },
+    );
+}
+function toggleReason(id: number) {
+    expandedReasonId.value = expandedReasonId.value === id ? null : id;
+}
+function confirmCancel(id: number) {
+    cancelConfirmId.value = id;
+}
+function cancelSurat(id: number) {
+    router.post(
+        `${basePath.value}/surat/${id}/cancel`,
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                cancelConfirmId.value = null;
+            },
+        },
+    );
+}
+function rejectionDetailLabel(item: Surat) {
+    if (item.needsRevision) {
+        return `Catatan revisi ${item.rejectedByRole === 'dekan' ? 'Dekan' : 'Kaprodi'}`;
+    }
+    return 'Alasan penolakan';
+}
+function goToPage(page: number) {
+    router.get(
+        `${basePath.value}/history`,
+        { search: search.value, status: status.value, page },
+        { preserveState: true },
+    );
+}
+</script>
+<template>
+    <FastLayout
+        title="Riwayat Surat"
+        subtitle="Semua pengajuan surat Anda"
+        active-menu="history"
+        :breadcrumbs="[
+            { label: 'Dashboard', href: `${basePath}/dashboard` },
+            { label: 'Riwayat Surat' },
+        ]"
+    >
+        <Head title="Riwayat Surat — FAST" />
+        <!-- Hero -->
+        <div
+            class="mb-6 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6"
+        >
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1">
+                    <p
+                        class="flex items-center gap-1.5 text-sm font-medium text-blue-600"
+                    >
+                        <Sparkles class="size-4" /> Tracking Pengajuan
+                    </p>
+                    <h2 class="mt-1 text-xl font-bold text-slate-900">
+                        Riwayat Surat
+                    </h2>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Pantau progres dan status pengajuan surat akademik Anda.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- Filter pills -->
+        <div class="mb-5 flex flex-wrap items-center gap-2">
+            <button
+                type="button"
+                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    !status
+                        ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                "
+                @click="
+                    status = '';
+                    applyFilter();
+                "
+            >
+                Semua
+            </button>
+            <button
+                type="button"
+                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    status === 'pending'
+                        ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                "
+                @click="
+                    status = 'pending';
+                    applyFilter();
+                "
+            >
+                Pending
+            </button>
+            <button
+                type="button"
+                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    status === 'finished'
+                        ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                "
+                @click="
+                    status = 'finished';
+                    applyFilter();
+                "
+            >
+                Selesai
+            </button>
+            <button
+                type="button"
+                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    status === 'rejected_admin'
+                        ? 'border-red-500 bg-red-500 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                "
+                @click="
+                    status = 'rejected_admin';
+                    applyFilter();
+                "
+            >
+                Ditolak Admin
+            </button>
+            <button
+                type="button"
+                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    status === 'rejected_approver'
+                        ? 'border-red-500 bg-red-500 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                "
+                @click="
+                    status = 'rejected_approver';
+                    applyFilter();
+                "
+            >
+                Ditolak Pimpinan
+            </button>
+            <div class="ml-auto flex items-center gap-2">
+                <div class="relative">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Cari..."
+                        class="h-9 w-48 rounded-xl border border-slate-200 bg-white pr-3 pl-9 text-xs outline-none focus:border-blue-400"
+                        @keyup.enter="applyFilter"
+                    />
+                </div>
+                <button
+                    type="button"
+                    class="h-9 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                    @click="applyFilter"
+                >
+                    Cari
+                </button>
+                <button
+                    v-if="search || status"
+                    type="button"
+                    class="text-xs text-slate-400 hover:text-blue-600"
+                    @click="
+                        search = '';
+                        status = '';
+                        applyFilter();
+                    "
+                >
+                    <RotateCcw class="size-3.5" />
+                </button>
+            </div>
+        </div>
+        <!-- Timeline cards -->
+        <div class="relative pl-8">
+            <div
+                class="absolute top-3 bottom-3 left-[19px] w-px bg-slate-200"
+            />
+            <div
+                v-if="surats.data.length === 0"
+                class="flex flex-col items-center gap-2 py-12 text-center"
+            >
+                <Calendar class="size-8 text-slate-300" />
+                <p class="text-sm text-slate-400">
+                    Belum ada riwayat pengajuan.
+                </p>
+            </div>
+            <div
+                v-for="(item, idx) in surats.data"
+                :key="item.id"
+                class="relative mb-4"
+            >
+                <!-- Timeline dot -->
+                <div
+                    class="absolute top-0 -left-8 z-10 grid size-10 place-items-center rounded-full border-2 bg-white"
+                    :class="statusColor(item.status).border"
+                >
+                    <component
+                        :is="statusIcon(item.status)"
+                        :class="['size-5', statusColor(item.status).text]"
+                    />
+                </div>
+                <!-- Card -->
+                <div
+                    class="rounded-2xl border bg-white p-5 transition-all hover:shadow-md"
+                    :class="[
+                        item.status === 'finished'
+                            ? 'hover:border-blue-300'
+                            : item.status === 'rejected_admin' ||
+                                item.status === 'rejected_approver' ||
+                                item.status === 'cancelled'
+                              ? 'hover:border-red-300'
+                              : item.status.startsWith('approved')
+                                ? 'hover:border-sky-300'
+                                : 'hover:border-amber-300',
+                        'border-slate-200',
+                    ]"
+                >
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-bold text-slate-900">
+                                    {{ item.jenisSurat }}
+                                </p>
+                                <span
+                                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    :class="statusClass(item.status)"
+                                >
+                                    {{ submissionStatusLabel(item) }}
+                                </span>
+                            </div>
+                            <p
+                                v-if="item.reference"
+                                class="mt-1 font-mono text-[10px] text-slate-400"
+                            >
+                                {{ item.reference }}
+                            </p>
+                            <p
+                                class="mt-2 text-xs leading-relaxed text-slate-600"
+                            >
+                                {{ item.keperluan }}
+                            </p>
+                            <div
+                                class="mt-3 flex items-center gap-3 text-[10px] text-slate-400"
+                            >
+                                <span class="flex items-center gap-1">
+                                    <Calendar class="size-3" />
+                                    {{ formatDate(item.submittedAt) }}
+                                </span>
+                                <span
+                                    v-if="item.neededAt"
+                                    class="flex items-center gap-1"
+                                >
+                                    <Clock3 class="size-3" /> Butuh:
+                                    {{ formatDate(item.neededAt) }}
+                                </span>
+                            </div>
+                            <!-- Expanded reason -->
+                            <div
+                                v-if="
+                                    expandedReasonId === item.id &&
+                                    (item.rejectionReason ||
+                                        item.revisionReason)
+                                "
+                                class="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700"
+                            >
+                                <span class="font-semibold"
+                                    >{{ rejectionDetailLabel(item) }}:</span
+                                >
+                                {{
+                                    item.needsRevision
+                                        ? item.revisionReason
+                                        : item.rejectionReason
+                                }}
+                            </div>
+                            <!-- Cancel confirm -->
+                            <div
+                                v-if="cancelConfirmId === item.id"
+                                class="mt-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2"
+                            >
+                                <p class="text-xs font-medium text-amber-800">
+                                    Batalkan pengajuan?
+                                </p>
+                                <button
+                                    type="button"
+                                    class="rounded bg-red-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-red-700"
+                                    @click="cancelSurat(item.id)"
+                                >
+                                    Ya
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600 hover:bg-slate-50"
+                                    @click="cancelConfirmId = null"
+                                >
+                                    Tidak
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Actions -->
+                        <div class="flex shrink-0 flex-wrap items-start gap-2">
+                            <button
+                                type="button"
+                                title="Preview"
+                                class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                @click="openViewer(item, 'preview')"
+                            >
+                                <Eye class="size-3" /> Preview
+                            </button>
+                            <button
+                                v-if="item.status === 'finished'"
+                                type="button"
+                                title="Download PDF"
+                                class="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700"
+                                @click="openViewer(item, 'download')"
+                            >
+                                <Download class="size-3" /> PDF
+                            </button>
+                            <button
+                                v-if="
+                                    [
+                                        'revision_requested',
+                                        'rejected_admin',
+                                        'rejected_approver',
+                                    ].includes(item.status) &&
+                                    (item.rejectionReason ||
+                                        item.revisionReason)
+                                "
+                                type="button"
+                                title="Catatan"
+                                class="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-100"
+                                @click="toggleReason(item.id)"
+                            >
+                                <AlertCircle class="size-3" /> Catatan
+                            </button>
+                            <button
+                                v-if="item.status === 'pending'"
+                                type="button"
+                                title="Batalkan"
+                                class="flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                @click="confirmCancel(item.id)"
+                            >
+                                <X class="size-3.5" /> Batal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Pagination -->
+        <div
+            v-if="surats.last_page > 1"
+            class="mt-5 flex flex-wrap items-center gap-1.5 pl-8"
+        >
+            <button
+                type="button"
+                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    surats.current_page === 1
+                        ? 'pointer-events-none bg-slate-100 text-slate-600 opacity-40'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                "
+                :disabled="surats.current_page === 1"
+                @click="goToPage(surats.current_page - 1)"
+            >
+                <ChevronLeft class="size-3.5" />
+            </button>
+            <button
+                v-for="p in surats.last_page"
+                :key="p"
+                type="button"
+                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    p === surats.current_page
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                "
+                @click="goToPage(p)"
+            >
+                {{ p }}
+            </button>
+            <button
+                type="button"
+                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="
+                    surats.current_page === surats.last_page
+                        ? 'pointer-events-none bg-slate-100 text-slate-600 opacity-40'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                "
+                :disabled="surats.current_page === surats.last_page"
+                @click="goToPage(surats.current_page + 1)"
+            >
+                <ChevronRight class="size-3.5" />
+            </button>
+        </div>
+        <!-- Document Viewer Modal -->
+        <Transition name="fade">
+            <div
+                v-if="viewerOpen"
+                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
+                @click.self="closeViewer"
+            >
+                <!-- Mode HTML: iframe -->
+                <template v-if="viewerType === 'html'">
+                    <div
+                        class="flex h-12 shrink-0 items-center justify-between bg-slate-900 px-4"
+                    >
+                        <p
+                            class="min-w-0 truncate text-sm font-medium text-white"
+                        >
+                            {{ viewerTitle }}
+                        </p>
+                        <button
+                            type="button"
+                            class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
+                            @click="closeViewer"
+                        >
+                            <X class="size-4" />
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-auto bg-slate-800 p-4">
+                        <iframe
+                            v-if="viewerUrl"
+                            :src="viewerUrl"
+                            class="w-full rounded-lg border-0 bg-white shadow-2xl"
+                            style="min-height: 80vh"
+                        />
+                    </div>
+                </template>
+                <!-- Mode PDF: PdfViewer -->
+                <template v-else-if="viewerType === 'pdf' && viewerUrl">
+                    <div
+                        class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4"
+                    >
+                        <p
+                            class="min-w-0 truncate text-xs font-medium text-slate-400"
+                        >
+                            {{ viewerTitle }}
+                        </p>
+                        <button
+                            type="button"
+                            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                            @click="closeViewer"
+                        >
+                            <X class="size-3.5" /> Tutup
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <PdfViewer
+                            :src="viewerUrl"
+                            :filename="viewerTitle"
+                            :show-thumbnails="false"
+                            :initial-zoom="100"
+                        />
+                    </div>
+                </template>
+            </div>
+        </Transition>
+    </FastLayout>
+</template>
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
