@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Surat;
+use App\Services\FASt\NotificationFeedService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -37,6 +39,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user()?->loadMissing('role');
+        $notifications = $user ? app(NotificationFeedService::class)->build($user) : ['count' => 0, 'items' => []];
 
         return [
             ...parent::share($request),
@@ -44,28 +47,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user,
             ],
+            'notifications' => $notifications,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
                 'warning' => fn () => $request->session()->get('warning'),
             ],
-            'notif_count' => function () use ($user) {
-                if (! $user) {
-                    return 0;
-                }
-
-                $roleSlug = str((string) ($user->role?->slug ?? ''))->slug()->toString();
-
-                if (! in_array($roleSlug, ['admin'], true)) {
-                    return 0;
-                }
-
-                return \Illuminate\Support\Facades\Cache::remember(
-                    'notif_count_pending_admin',
-                    30,
-                    fn () => \App\Models\Surat::where('status', \App\Models\Surat::STATUS_PENDING)->count()
-                );
-            },
+            'notif_count' => $notifications['count'] ?? 0,
             'notif_count_revision_admin' => function () use ($user) {
                 if (! $user) {
                     return 0;

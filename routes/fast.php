@@ -10,6 +10,7 @@ use App\Http\Controllers\FASt\Admin\LetterController;
 use App\Http\Controllers\FASt\Admin\LetterIndexController;
 use App\Http\Controllers\FASt\Admin\QrManageController;
 use App\Http\Controllers\FASt\Admin\TemplateController;
+use App\Http\Controllers\FASt\NotificationController;
 use App\Http\Controllers\Api\SuratController as ApiSuratController;
 use App\Http\Controllers\FASt\Dekan\ApprovalController as DekanApprovalController;
 use App\Http\Controllers\FASt\Mahasiswa\DashboardController as MahasiswaDashboardController;
@@ -56,6 +57,12 @@ Route::middleware(['auth', 'verified'])
     ->prefix('documents')
     ->name('documents.')
     ->group($documentRoutes);
+
+Route::middleware(['auth', 'verified'])
+    ->group(function (): void {
+        Route::post('/notifications/{notificationId}/read', [NotificationController::class, 'read'])
+            ->name('notifications.read');
+    });
 
 /*
 |--------------------------------------------------------------------------

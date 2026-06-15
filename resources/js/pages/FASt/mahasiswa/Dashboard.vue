@@ -30,7 +30,16 @@ import {
     UploadCloud,
     Paperclip,
     Search,
+    Calendar,
 } from 'lucide-vue-next';
+import {
+    approvalRoleLabel,
+    isProgressStepActive,
+    isProgressStepFilled,
+    getProgressPercent,
+    getProgressStepIndex,
+    progressSteps,
+} from '@/lib/fastProgress';
 
 type Summary = {
     total: number;
@@ -49,6 +58,12 @@ type LatestSubmission = {
     reference: string;
     jenisSurat: string;
     jenisSuratId?: number | null;
+    approvalRole?: {
+        id?: number | null;
+        nama?: string | null;
+        slug?: string | null;
+    } | null;
+    requiresFinalApproval?: boolean;
     status: string;
     keperluan: string;
     hasPdf: boolean;
@@ -141,7 +156,7 @@ const filteredJenis = computed(() => {
     return list;
 });
 
-const latestVisible = computed(() => props.latest.slice(0, 7));
+const latestVisible = computed(() => props.latest.slice(0, 5));
 
 type FieldValue = string | boolean | string[] | number | null;
 
@@ -279,16 +294,6 @@ const dashboardGreeting = computed(() => {
     if (roleSlug.value === 'sekfak') return 'Sekretaris Fakultas';
     return firstName.value;
 });
-const dashboardSubtitle = computed(() => {
-    if (roleSlug.value === 'lab') return 'Unit Kerja: Laboratorium';
-    if (roleSlug.value === 'sekfak') return 'Unit Kerja: Fakultas';
-    return `${props.userProfile.identifierLabel ?? 'ID'}: ${
-        props.userProfile.identifierValue ?? '-'
-    }`;
-});
-const isRestrictedStaffRole = computed(() =>
-    ['lab', 'sekfak'].includes(roleSlug.value),
-);
 const dashboardIntro = computed(() => {
     if (roleSlug.value === 'lab') {
         return 'Pantau pengajuan surat laboratorium dan aktivitas layanan Anda dalam satu platform terintegrasi.';
@@ -306,26 +311,6 @@ function formatDate(date?: string | null) {
         month: 'short',
         year: 'numeric',
     }).format(new Date(date));
-}
-
-// Timeline 2 tahap saja
-const STATUS_STEPS = [
-    { key: 'pending', short: 'Diajukan' },
-    { key: 'done', short: 'Divalidasi' },
-];
-
-const DONE_STATUSES = [
-    'validated_admin',
-    'approved_kaprodi',
-    'approved_dekan',
-    'finished',
-];
-
-function getStepIndex(status: string): number {
-    if (status === 'rejected_admin' || status === 'rejected_approver')
-        return -1;
-    if (DONE_STATUSES.includes(status)) return 1;
-    return 0; // pending
 }
 
 function statusLabel(status: string) {
@@ -358,6 +343,94 @@ function statusBadgeClass(status: string) {
     if (status === 'pending') return 'bg-sky-100 text-sky-700';
     if (status === 'cancelled') return 'bg-slate-100 text-slate-600';
     return 'bg-blue-100 text-blue-700';
+}
+
+function statusTone(status: string) {
+    if (status === 'finished') {
+        return {
+            card: 'border-emerald-200',
+            iconWrap: 'bg-emerald-50 text-emerald-600',
+            accent: 'bg-emerald-500',
+            text: 'text-emerald-600',
+            progress: 'bg-emerald-500',
+        };
+    }
+    if (status === 'rejected_admin' || status === 'rejected_approver') {
+        return {
+            card: 'border-red-200',
+            iconWrap: 'bg-red-50 text-red-600',
+            accent: 'bg-red-500',
+            text: 'text-red-600',
+            progress: 'bg-red-500',
+        };
+    }
+    if (status === 'revision_requested') {
+        return {
+            card: 'border-amber-200',
+            iconWrap: 'bg-amber-50 text-amber-600',
+            accent: 'bg-amber-500',
+            text: 'text-amber-600',
+            progress: 'bg-amber-500',
+        };
+    }
+    if (status === 'validated_admin') {
+        return {
+            card: 'border-indigo-200',
+            iconWrap: 'bg-indigo-50 text-indigo-600',
+            accent: 'bg-indigo-500',
+            text: 'text-indigo-600',
+            progress: 'bg-indigo-500',
+        };
+    }
+    if (status.startsWith('approved')) {
+        return {
+            card: 'border-sky-200',
+            iconWrap: 'bg-sky-50 text-sky-600',
+            accent: 'bg-sky-500',
+            text: 'text-sky-600',
+            progress: 'bg-sky-500',
+        };
+    }
+    return {
+        card: 'border-blue-200',
+        iconWrap: 'bg-blue-50 text-blue-600',
+        accent: 'bg-blue-500',
+        text: 'text-blue-600',
+        progress: 'bg-blue-500',
+    };
+}
+
+function dashboardProgressLabel(item: LatestSubmission): string {
+    const status = item.status;
+    if (status === 'rejected_admin') return 'Ditolak Admin';
+    if (status === 'rejected_approver') return 'Ditolak Pimpinan';
+    if (status === 'revision_requested') return 'Perlu Revisi';
+    if (status === 'cancelled') return 'Dibatalkan';
+    if (status === 'approved_kaprodi' || status === 'approved_dekan') {
+        return `Disetujui ${approvalRoleLabel(item)}`;
+    }
+    if (status === 'validated_admin') return 'Divalidasi Admin';
+    if (status === 'finished') return 'Selesai';
+    return 'Diajukan';
+}
+
+function dashboardProgressDescription(item: LatestSubmission): string {
+    if (item.status === 'rejected_admin' || item.status === 'rejected_approver') {
+        return 'Pengajuan berhenti pada tahap penolakan dan tidak melanjut ke proses berikutnya.';
+    }
+    if (item.status === 'revision_requested') {
+        return 'Pengajuan masih menunggu perbaikan sebelum diproses kembali.';
+    }
+    if (item.status === 'finished') {
+        return 'Seluruh tahap selesai dan dokumen akhir dapat diproses.';
+    }
+    const steps = progressSteps(item);
+    const idx = getProgressStepIndex(item);
+    const current = steps[idx]?.short ?? 'Diajukan';
+    const next = steps[idx + 1]?.short;
+    return next
+        ? `Saat ini berada pada tahap ${current}. Tahap berikutnya: ${next}.`
+        : `Saat ini berada pada tahap ${current}.`;
 }
 
 async function showToast(message: string) {
@@ -423,7 +496,6 @@ function fieldError(name: string): string | undefined {
 <template>
     <FastLayout
         title="Dashboard"
-        :subtitle="dashboardSubtitle"
         active-menu="dashboard"
         :breadcrumbs="[{ label: 'Dashboard' }]"
     >
@@ -431,32 +503,35 @@ function fieldError(name: string): string | undefined {
 
         <!-- Greeting -->
         <div
-            class="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-6 text-slate-800"
+            class="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
         >
-            <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
-                    <p class="text-sm text-slate-500">
-                        Selamat Datang,
-                        <span class="font-semibold">{{ dashboardGreeting }}</span>
-                    </p>
-                    <h2
-                        class="mt-1 max-w-xl text-lg font-semibold text-slate-800"
-                    >
-                        {{ dashboardIntro }}
-                    </h2>
-                </div>
-                <div class="hidden shrink-0 sm:block">
-                    <div
-                        class="grid size-16 place-items-center rounded-2xl bg-white"
-                    >
-                        <GraduationCap class="size-8 text-slate-300" />
+            <div
+                class="border-b border-slate-100 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.10),_transparent_45%),linear-gradient(135deg,_rgba(248,250,252,0.96),_#ffffff)] px-5 py-5 sm:px-6 sm:py-6"
+            >
+                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div class="max-w-3xl">
+                        <div
+                            class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/90 px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-700 uppercase shadow-sm"
+                        >
+                            <GraduationCap class="size-3.5" />
+                            {{ props.userRole.name ?? 'Portal FAST' }}
+                        </div>
+                        <p class="mt-4 text-sm text-slate-500">
+                            Selamat datang,
+                            <span class="font-semibold text-slate-900">{{ dashboardGreeting }}</span>
+                        </p>
+                        <h2
+                            class="mt-1 max-w-3xl text-xl font-semibold leading-tight text-slate-900 sm:text-2xl"
+                        >
+                            {{ dashboardIntro }}
+                        </h2>
                     </div>
                 </div>
             </div>
 
             <!-- 5 statistik -->
             <div
-                class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+                class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3 lg:grid-cols-5 sm:p-6"
             >
                 <div
                     v-for="stat in [
@@ -497,47 +572,65 @@ function fieldError(name: string): string | undefined {
                         },
                     ]"
                     :key="stat.label"
-                    class="rounded-xl border bg-white p-3"
-                    :class="stat.border"
+                    class="flex min-h-[110px] flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white"
                 >
-                    <div class="flex items-center justify-between">
-                        <p class="text-[11px] text-slate-500">
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                             {{ stat.label }}
                         </p>
                         <component
                             :is="stat.icon"
-                            class="size-4"
+                            class="size-4 shrink-0"
                             :class="stat.iconColor"
                         />
                     </div>
-                    <p class="mt-1 text-2xl font-bold text-slate-900">
-                        {{ String(stat.value).padStart(2, '0') }}
-                    </p>
+                    <div class="mt-3">
+                        <p class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                            {{ String(stat.value).padStart(2, '0') }}
+                        </p>
+                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                            <div
+                                class="h-full rounded-full"
+                                :class="[
+                                    stat.label === 'Total Surat'
+                                        ? 'bg-blue-500'
+                                        : stat.label === 'Diproses'
+                                          ? 'bg-sky-500'
+                                          : stat.label === 'Selesai'
+                                            ? 'bg-emerald-500'
+                                            : stat.label === 'Ditolak'
+                                              ? 'bg-red-500'
+                                              : 'bg-slate-500',
+                                ]"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Main grid -->
-        <div class="grid gap-6 xl:grid-cols-[1fr_300px]">
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
             <!-- Kiri: Pengajuan Terbaru -->
-            <div
-                class="overflow-hidden rounded-2xl border border-slate-200 bg-white"
-            >
+            <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <!-- Toolbar -->
                 <div
-                    class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                     <div>
-                        <h2 class="text-sm font-semibold text-slate-900">
+                        <p class="text-[11px] font-semibold tracking-[0.18em] text-blue-600 uppercase">
+                            Aktivitas Terbaru
+                        </p>
+                        <h2 class="mt-1 text-base font-semibold text-slate-900">
                             Pengajuan Terbaru
                         </h2>
-                        <p class="mt-0.5 text-xs text-slate-400">
+                        <p class="mt-1 text-xs text-slate-500">
                             {{ latestVisible.length }} pengajuan
                         </p>
                     </div>
                     <Link
                         :href="`${props.endpoints.basePath}/history`"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-200 transition-colors hover:bg-blue-700"
                     >
                         <History class="size-3.5" />
                         Lihat Semua
@@ -547,212 +640,288 @@ function fieldError(name: string): string | undefined {
                 <!-- Perlu Revisi banner -->
                 <div
                     v-if="latestVisible.some((i) => i.needsRevision)"
-                    class="mx-5 mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2"
+                    class="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
                 >
-                    <div class="flex items-center gap-2">
-                        <AlertCircle class="size-3.5 shrink-0 text-red-500" />
-                        <p class="text-xs font-medium text-red-700">
-                            Ada pengajuan yang perlu direvisi.
-                        </p>
+                    <div class="flex items-start gap-2">
+                        <AlertCircle class="mt-0.5 size-4 shrink-0 text-amber-600" />
+                        <div>
+                            <p class="text-sm font-semibold text-amber-800">
+                                Ada pengajuan yang perlu direvisi
+                            </p>
+                            <p class="mt-0.5 text-xs text-amber-700">
+                                Tinjau catatan sebelum melanjutkan.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Riwayat Pengajuan Table -->
+                <!-- Riwayat Pengajuan Cards -->
                 <div
                     v-if="latest.length === 0"
-                    class="px-5 py-12 text-center text-sm text-slate-400"
+                    class="px-5 py-14 text-center text-sm text-slate-400"
                 >
-                    <FileText class="mx-auto mb-3 size-10 text-slate-300" />
-                    <p class="font-medium text-slate-500">
+                    <div
+                        class="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-slate-100 text-slate-300"
+                    >
+                        <FileText class="size-7" />
+                    </div>
+                    <p class="font-semibold text-slate-700">
                         Belum ada pengajuan surat
+                    </p>
+                    <p class="mt-1 text-xs text-slate-400">
+                        Pengajuan terbaru akan muncul di sini setelah surat dibuat.
                     </p>
                 </div>
 
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50">
-                            <tr
-                                class="text-[10px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                <th class="w-12 px-5 py-3">No</th>
-                                <th class="px-5 py-3">Jenis Surat</th>
-                                <th class="w-36 px-5 py-3">Tanggal</th>
-                                <th class="w-40 px-5 py-3">Status</th>
-                                <th class="px-5 py-3 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template
-                                v-for="(item, i) in latestVisible"
-                                :key="item.id"
-                            >
-                                <tr
-                                    class="border-t border-slate-100 text-sm transition-colors hover:bg-slate-50/50"
+                <div v-else class="space-y-3 px-5 py-4">
+                    <article
+                        v-for="(item, i) in latestVisible"
+                        :key="item.id"
+                        class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        :class="statusTone(item.status).card"
+                    >
+                        <div class="flex flex-col gap-4 p-4 sm:p-5">
+                            <div class="flex items-start gap-3 sm:gap-4">
+                                <div
+                                    class="grid size-12 shrink-0 place-items-center rounded-2xl"
+                                    :class="statusTone(item.status).iconWrap"
                                 >
-                                    <td
-                                        class="px-5 py-3.5 text-xs text-slate-500"
-                                    >
-                                        {{ i + 1 }}
-                                    </td>
-                                    <td class="px-5 py-3.5">
-                                        <p
-                                            class="text-xs font-semibold text-slate-900"
-                                        >
-                                            {{ item.jenisSurat }}
-                                        </p>
-                                        <p class="text-[10px] text-slate-400">
-                                            {{ item.reference }}
-                                        </p>
-                                        <p
-                                            v-if="item.keperluan"
-                                            class="text-[10px] text-slate-400"
-                                        >
-                                            {{ item.keperluan }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-5 py-3.5 text-xs text-slate-400"
-                                    >
-                                        {{ formatDate(item.submittedAt) }}
-                                    </td>
-                                    <td class="px-5 py-3.5">
+                                    <FileText class="size-5" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                                                {{ item.reference }}
+                                            </p>
+                                            <h3 class="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
+                                                {{ item.jenisSurat }}
+                                            </h3>
+                                        </div>
                                         <span
-                                            class="rounded-full px-2 py-1 text-[10px] font-semibold"
-                                            :class="
-                                                statusBadgeClass(item.status)
-                                            "
+                                            class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                                            :class="statusBadgeClass(item.status)"
                                         >
                                             {{ submissionStatusLabel(item) }}
                                         </span>
-                                    </td>
-                                    <td class="px-5 py-3.5">
-                                        <div
-                                            class="flex items-center justify-end gap-1.5"
+                                    </div>
+                                    <p
+                                        v-if="item.keperluan"
+                                        class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600"
+                                    >
+                                        {{ item.keperluan }}
+                                    </p>
+                                    <div
+                                        class="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-400"
+                                    >
+                                        <span class="flex items-center gap-1">
+                                            <History class="size-3.5" />
+                                            {{ formatDate(item.submittedAt) }}
+                                        </span>
+                                        <span v-if="item.neededAt" class="flex items-center gap-1">
+                                            <Calendar class="size-3.5" />
+                                            Dibutuhkan {{ formatDate(item.neededAt) }}
+                                        </span>
+                                        <span
+                                            v-if="item.timeline?.length"
+                                            class="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-500"
                                         >
-                                            <button
-                                                type="button"
-                                                title="Preview"
-                                                class="grid size-7 place-items-center rounded-lg bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200"
-                                                @click="
-                                                    openViewer(item, 'preview')
-                                                "
-                                            >
-                                                <Eye class="size-3.5" />
-                                            </button>
-                                            <button
-                                                v-if="item.hasPdf"
-                                                type="button"
-                                                title="Download PDF"
-                                                class="grid size-7 place-items-center rounded-lg bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100"
-                                                @click="openViewer(item, 'pdf')"
-                                            >
-                                                <Download class="size-3.5" />
-                                            </button>
-                                            <button
-                                                v-if="
-                                                    item.notes &&
-                                                    item.notes.length
-                                                "
-                                                type="button"
-                                                title="Catatan Dekan"
-                                                class="grid size-7 place-items-center rounded-lg bg-sky-50 text-sky-600 transition-colors hover:bg-sky-100"
-                                                @click="toggleNotes(item.id)"
-                                            >
-                                                <Info class="size-3.5" />
-                                            </button>
-                                            <button
-                                                v-if="
-                                                    item.rejectionReason ||
-                                                    item.revisionReason
-                                                "
-                                                type="button"
-                                                title="Catatan"
-                                                class="grid size-7 place-items-center rounded-lg bg-red-50 text-red-500 transition-colors hover:bg-red-100"
-                                                @click="toggleReason(item.id)"
-                                            >
-                                                <AlertCircle class="size-3.5" />
-                                            </button>
+                                            {{ item.timeline.length }} aktivitas
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="overflow-hidden rounded-3xl border bg-white shadow-sm"
+                                :class="statusTone(item.status).card"
+                            >
+                                <div
+                                    class="h-1.5 w-full"
+                                    :class="statusTone(item.status).accent"
+                                />
+
+                                <div class="p-4">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <p class="text-[11px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                                                    Progress Surat
+                                                </p>
+                                                <span
+                                                    class="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                                                    :class="statusBadgeClass(item.status)"
+                                                >
+                                                    {{ dashboardProgressLabel(item) }}
+                                                </span>
+                                            </div>
+                                            <p class="mt-1 text-xs leading-relaxed text-slate-500">
+                                                {{ dashboardProgressDescription(item) }}
+                                            </p>
                                         </div>
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-if="
-                                        expandedNotesId === item.id &&
-                                        item.notes?.length
-                                    "
-                                    class="border-t border-slate-100 bg-sky-50/40"
-                                >
-                                    <td colspan="5" class="px-5 py-3">
-                                        <div class="space-y-2">
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <div class="mb-2 flex items-center justify-between gap-3 text-[10px] text-slate-400">
+                                            <span>Progres proses</span>
+                                            <span>
+                                                {{ getProgressStepIndex(item) < 0 ? '0%' : Math.round(((getProgressStepIndex(item) + 1) / progressSteps(item).length) * 100) }}%
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5 pb-1">
+                                        <div
+                                            class="relative mx-auto grid w-full max-w-[560px] justify-items-center gap-0"
+                                            :class="
+                                                progressSteps(item).length === 3
+                                                    ? 'grid-cols-3'
+                                                    : 'grid-cols-4'
+                                            "
+                                        >
                                             <div
-                                                v-for="(
-                                                    note, nidx
-                                                ) in item.notes"
-                                                :key="nidx"
-                                                class="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs"
+                                                class="pointer-events-none absolute left-[18px] right-[18px] top-[18px] h-px overflow-hidden rounded-full bg-slate-200"
+                                            >
+                                                <span
+                                                    class="absolute inset-y-0 left-0 rounded-full"
+                                                    :class="statusTone(item.status).progress"
+                                                    :style="{ width: `${getProgressPercent(item)}%` }"
+                                                />
+                                            </div>
+                                            <div
+                                                v-for="(step, stepIndex) in progressSteps(item)"
+                                                :key="step.key"
+                                                class="relative z-10 min-w-0 w-full px-1"
                                             >
                                                 <div
-                                                    class="mb-1 flex items-center gap-1.5"
+                                                    class="mx-auto flex size-9 items-center justify-center rounded-full border-2 text-sm font-bold transition-all"
+                                                    :class="
+                                                        isProgressStepFilled(item, stepIndex)
+                                                            ? `${statusTone(item.status).progress} border-transparent text-white shadow-sm`
+                                                            : isProgressStepActive(item, stepIndex)
+                                                              ? `border-current bg-white ${statusTone(item.status).text} shadow-sm`
+                                                              : 'border-slate-200 bg-white text-slate-400'
+                                                    "
                                                 >
-                                                    <span
-                                                        class="font-semibold text-sky-800"
-                                                        >{{
-                                                            note.oleh ?? 'Admin'
-                                                        }}</span
-                                                    >
-                                                    <span
-                                                        class="text-[10px] text-sky-400"
-                                                        >{{
-                                                            note.created_at
-                                                                ? formatDate(
-                                                                      note.created_at,
-                                                                  )
-                                                                : ''
-                                                        }}</span
-                                                    >
+                                                    {{ stepIndex + 1 }}
                                                 </div>
-                                                <p class="text-sky-700">
-                                                    {{ note.catatan }}
+                                                <p
+                                                    class="mt-3 w-full text-center text-[10px] font-semibold leading-tight"
+                                                    :class="
+                                                        isProgressStepFilled(item, stepIndex)
+                                                            ? 'text-slate-700'
+                                                            : isProgressStepActive(item, stepIndex)
+                                                              ? statusTone(item.status).text
+                                                              : 'text-slate-400'
+                                                    "
+                                                >
+                                                    {{ step.short }}
                                                 </p>
                                             </div>
                                         </div>
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-if="
-                                        expandedReasonId === item.id &&
-                                        (item.rejectionReason ||
-                                            item.revisionReason)
-                                    "
-                                    class="border-t border-slate-100 bg-red-50/40"
-                                >
-                                    <td colspan="5" class="px-5 py-3">
-                                        <div
-                                            class="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700"
-                                        >
-                                            <span class="font-semibold">{{
-                                                item.needsRevision
-                                                    ? 'Catatan revisi:'
-                                                    : 'Alasan penolakan:'
-                                            }}</span>
-                                            {{
-                                                item.needsRevision
-                                                    ? item.revisionReason
-                                                    : item.rejectionReason
-                                            }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="expandedNotesId === item.id && item.notes?.length"
+                                class="rounded-2xl border border-sky-100 bg-sky-50/60 p-3"
+                            >
+                                <div class="mb-2 flex items-center gap-2">
+                                    <Info class="size-4 text-sky-600" />
+                                    <p class="text-xs font-semibold text-sky-800">
+                                        Catatan
+                                    </p>
+                                </div>
+                                <div class="space-y-2">
+                                    <div
+                                        v-for="(note, nidx) in item.notes"
+                                        :key="nidx"
+                                        class="rounded-xl border border-sky-100 bg-white px-3 py-2 text-xs"
+                                    >
+                                        <div class="mb-1 flex items-center gap-1.5">
+                                            <span class="font-semibold text-sky-800">
+                                                {{ note.oleh ?? 'Admin' }}
+                                            </span>
+                                            <span class="text-[10px] text-sky-400">
+                                                {{ note.created_at ? formatDate(note.created_at) : '' }}
+                                            </span>
                                         </div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
+                                        <p class="text-sky-700">
+                                            {{ note.catatan }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="
+                                    expandedReasonId === item.id &&
+                                    (item.rejectionReason || item.revisionReason)
+                                "
+                                class="rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700"
+                            >
+                                <span class="font-semibold">
+                                    {{ item.needsRevision ? 'Catatan revisi:' : 'Alasan penolakan:' }}
+                                </span>
+                                {{
+                                    item.needsRevision
+                                        ? item.revisionReason
+                                        : item.rejectionReason
+                                }}
+                            </div>
+
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        title="Preview"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                        @click="openViewer(item, 'preview')"
+                                    >
+                                        <Eye class="size-3.5" /> Preview
+                                    </button>
+                                    <button
+                                        v-if="item.hasPdf"
+                                        type="button"
+                                        title="Download PDF"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                                        @click="openViewer(item, 'pdf')"
+                                    >
+                                        <Download class="size-3.5" /> PDF
+                                    </button>
+                                    <button
+                                        v-if="item.notes && item.notes.length"
+                                        type="button"
+                                        title="Catatan Dekan"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 transition-colors hover:bg-sky-100"
+                                        @click="toggleNotes(item.id)"
+                                    >
+                                        <Info class="size-3.5" /> Catatan
+                                    </button>
+                                    <button
+                                        v-if="item.rejectionReason || item.revisionReason"
+                                        type="button"
+                                        title="Catatan"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-100"
+                                        @click="toggleReason(item.id)"
+                                    >
+                                        <AlertCircle class="size-3.5" /> Detail
+                                    </button>
+                                </div>
+                                <span class="text-[11px] text-slate-400">
+                                    #{{ i + 1 }}
+                                </span>
+                            </div>
+                        </div>
+                    </article>
                 </div>
             </div>
 
-            <!-- Kanan: Ajukan + Notifikasi + Info -->
+            <!-- Kanan: Ajukan + Notifikasi -->
             <div class="space-y-4">
                 <!-- Ajukan Surat Baru -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h3
                         class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"
                     >
@@ -768,7 +937,7 @@ function fieldError(name: string): string | undefined {
                             v-model="searchQuery"
                             type="text"
                             placeholder="Cari jenis surat..."
-                            class="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 py-0 pr-7 pl-8 text-xs text-slate-700 transition outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                        class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 py-0 pr-7 pl-8 text-xs text-slate-700 transition outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                         />
                         <button
                             v-if="searchQuery"
@@ -783,11 +952,11 @@ function fieldError(name: string): string | undefined {
                     <!-- Category tabs -->
                     <div
                         v-if="categories.length > 0"
-                        class="scrollbar-hide mb-3 flex gap-1.5 overflow-x-auto pb-1"
+                        class="scrollbar-hide mb-3 flex gap-2 overflow-x-auto pb-1"
                     >
                         <button
                             type="button"
-                            class="shrink-0 rounded-md px-2 py-1 text-[10px] font-medium transition-colors"
+                            class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-medium transition-colors"
                             :class="
                                 activeCategory === null
                                     ? 'bg-blue-500 text-white'
@@ -801,7 +970,7 @@ function fieldError(name: string): string | undefined {
                             v-for="cat in categories"
                             :key="cat.id"
                             type="button"
-                            class="shrink-0 rounded-md px-2 py-1 text-[10px] font-medium transition-colors"
+                            class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-medium transition-colors"
                             :class="
                                 activeCategory === cat.id
                                     ? 'bg-blue-500 text-white'
@@ -819,10 +988,10 @@ function fieldError(name: string): string | undefined {
                     <!-- Card grid -->
                     <div
                         v-if="filteredJenis.length === 0"
-                        class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3 text-center"
+                        class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center"
                     >
-                        <FileText class="mx-auto mb-1 size-5 text-slate-300" />
-                        <p class="text-[10px] text-slate-400">
+                        <FileText class="mx-auto mb-2 size-6 text-slate-300" />
+                        <p class="text-xs font-medium text-slate-600">
                             Tidak ada jenis surat
                         </p>
                     </div>
@@ -831,19 +1000,17 @@ function fieldError(name: string): string | undefined {
                             v-for="jenis in filteredJenis"
                             :key="jenis.id"
                             type="button"
-                            class="group relative rounded-xl border border-slate-200 bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm"
+                            class="group relative rounded-2xl border border-slate-200 bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
                             @click="openForm(jenis)"
                         >
                             <div class="flex items-start gap-2.5">
                                 <div
-                                    class="grid size-8 shrink-0 place-items-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600"
+                                    class="grid size-9 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600"
                                 >
                                     <FileText class="size-4" />
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <p
-                                        class="text-xs font-semibold text-slate-900"
-                                    >
+                                    <p class="text-xs font-semibold text-slate-900">
                                         {{ jenis.nama }}
                                     </p>
                                     <p
@@ -853,16 +1020,14 @@ function fieldError(name: string): string | undefined {
                                         {{ jenis.deskripsi }}
                                     </p>
                                 </div>
-                                <Plus
-                                    class="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500"
-                                />
+                                <Plus class="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500" />
                             </div>
                         </button>
                     </div>
                 </div>
 
                 <!-- Notifikasi -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h3
                         class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"
                     >
@@ -905,54 +1070,6 @@ function fieldError(name: string): string | undefined {
                     </div>
                 </div>
 
-                <!-- Info Akademik -->
-                <div
-                    v-if="!isRestrictedStaffRole"
-                    class="rounded-2xl border border-slate-200 bg-white p-4"
-                >
-                    <h3
-                        class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"
-                    >
-                        <Info class="size-4 text-blue-500" /> Info Akademik
-                    </h3>
-                    <div class="space-y-2.5 text-xs">
-                        <div>
-                            <p
-                                class="text-[10px] tracking-wider text-slate-400 uppercase"
-                            >
-                                Program Studi
-                            </p>
-                            <p class="mt-0.5 font-semibold text-slate-800">
-                                Informatika
-                            </p>
-                        </div>
-                        <div>
-                            <p
-                                class="text-[10px] tracking-wider text-slate-400 uppercase"
-                            >
-                                Semester
-                            </p>
-                            <p class="mt-0.5 font-semibold text-slate-800">
-                                Genap 2025/2026
-                            </p>
-                        </div>
-                        <div>
-                            <p
-                                class="text-[10px] tracking-wider text-slate-400 uppercase"
-                            >
-                                Status
-                            </p>
-                            <p
-                                class="mt-0.5 inline-flex items-center gap-1 font-semibold text-green-600"
-                            >
-                                <span
-                                    class="inline-block size-1.5 rounded-full bg-green-500"
-                                />
-                                Aktif
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 

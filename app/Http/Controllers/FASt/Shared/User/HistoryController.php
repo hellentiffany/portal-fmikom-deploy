@@ -22,7 +22,7 @@ class HistoryController extends Controller
 
         $surats = Surat::query()
             ->with([
-                'jenisSurat',
+                'jenisSurat.approvalRole',
                 'approvalFlows' => fn ($q) => $q->latest('tanggal_aksi')->latest('id'),
                 'histories' => fn ($q) => $q->latest('created_at')->latest('id')->limit(8),
             ])
@@ -94,6 +94,12 @@ class HistoryController extends Controller
             'reference' => $surat->nomor_surat ?: sprintf('REQ-%05d', $surat->id),
             'jenisSurat' => $surat->jenisSurat?->nama ?? 'Surat Akademik',
             'jenisSuratId' => $surat->jenis_surat_id,
+            'approvalRole' => [
+                'id' => $surat->jenisSurat?->approvalRole?->id,
+                'nama' => $surat->jenisSurat?->approvalRole?->nama,
+                'slug' => $surat->jenisSurat?->approvalRole?->slug,
+            ],
+            'requiresFinalApproval' => $surat->requiresFinalApproval(),
             'status' => $surat->status,
             'keperluan' => $surat->keperluan,
             'rejectionReason' => $latestFinalRejectionFlow?->catatan,

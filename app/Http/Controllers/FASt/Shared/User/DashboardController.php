@@ -27,7 +27,7 @@ class DashboardController extends Controller
 
         $baseQuery = Surat::query()
             ->with([
-                'jenisSurat',
+                'jenisSurat.approvalRole',
                 'approvalFlows' => fn ($q) => $q->with('approver:id,name')->latest('tanggal_aksi')->latest('id'),
                 'histories' => fn ($q) => $q->latest('created_at')->latest('id')->limit(6),
             ])
@@ -195,6 +195,12 @@ class DashboardController extends Controller
             'reference' => $surat->nomor_surat ?: sprintf('REQ-%05d', $surat->id),
             'jenisSurat' => $surat->jenisSurat?->nama ?? 'Surat Akademik',
             'jenisSuratId' => $surat->jenisSurat?->id,
+            'approvalRole' => [
+                'id' => $surat->jenisSurat?->approvalRole?->id,
+                'nama' => $surat->jenisSurat?->approvalRole?->nama,
+                'slug' => $surat->jenisSurat?->approvalRole?->slug,
+            ],
+            'requiresFinalApproval' => $surat->requiresFinalApproval(),
             'status' => $surat->status,
             'keperluan' => $surat->keperluan,
             'rejectionReason' => $latestFinalRejectionFlow?->catatan,

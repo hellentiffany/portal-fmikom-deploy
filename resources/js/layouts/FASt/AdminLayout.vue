@@ -2,6 +2,7 @@
 // File: resources/js/layouts/FASt/AdminLayout.vue
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
+import NotificationBell from '@/components/FASt/NotificationBell.vue';
 import {
     LayoutDashboard,
     FilePlus2,
@@ -11,7 +12,6 @@ import {
     Tag,
     Settings,
     LogOut,
-    Bell,
     ChevronRight,
     Menu,
     X,
@@ -37,6 +37,17 @@ type PageProps = {
     flash?: { success?: string; error?: string; warning?: string };
     notif_count?: number;
     notif_count_revision_admin?: number;
+    notifications?: {
+        count?: number;
+        items?: Array<{
+            id: number | string;
+            title: string;
+            message: string;
+            href: string;
+            time?: string | null;
+            tone?: 'amber' | 'blue' | 'green' | 'rose' | 'slate';
+        }>;
+    };
 };
 
 const props = withDefaults(
@@ -70,7 +81,10 @@ const userInitials = computed(() =>
         .join('')
         .toUpperCase(),
 );
-const notifCount = computed(() => page.props.notif_count ?? 0);
+const notifCount = computed(
+    () => page.props.notifications?.count ?? page.props.notif_count ?? 0,
+);
+const notifItems = computed(() => page.props.notifications?.items ?? []);
 const notifCountRevisionAdmin = computed(
     () => page.props.notif_count_revision_admin ?? 0,
 );
@@ -206,6 +220,14 @@ const navItems = computed<NavItem[]>(() => {
         ];
     }
     return [];
+});
+
+const headerLabel = computed(() => {
+    const activeItem = navItems.value.find((item) => isActive(item.key));
+    if (activeItem) return activeItem.label;
+
+    const lastBreadcrumb = props.breadcrumbs?.[props.breadcrumbs.length - 1];
+    return lastBreadcrumb?.label ?? props.title;
 });
 
 function isActive(key: string) {
@@ -484,50 +506,19 @@ function batteryIcon() {
                     <nav class="hidden items-center gap-1 text-sm md:flex">
                         <span class="text-slate-400">FAST</span>
                         <ChevronRight class="size-3.5 text-slate-300" />
-                        <template v-if="props.breadcrumbs?.length">
-                            <template
-                                v-for="(bc, i) in props.breadcrumbs"
-                                :key="i"
-                            >
-                                <Link
-                                    v-if="bc.href"
-                                    :href="bc.href"
-                                    :prefetch="false"
-                                    class="text-slate-400 transition-colors hover:text-slate-600"
-                                >
-                                    {{ bc.label }}
-                                </Link>
-                                <span
-                                    v-else
-                                    class="font-medium text-slate-800"
-                                    >{{ bc.label }}</span
-                                >
-                                <ChevronRight
-                                    v-if="i < props.breadcrumbs.length - 1"
-                                    class="size-3.5 text-slate-300"
-                                />
-                            </template>
-                        </template>
-                        <span v-else class="font-medium text-slate-800">{{
-                            props.title
+                        <span class="font-medium text-slate-800">{{
+                            headerLabel
                         }}</span>
                     </nav>
                 </div>
 
                 <!-- Right -->
                 <div class="flex items-center gap-2">
-                    <button
-                        type="button"
-                        class="relative rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50"
-                    >
-                        <Bell class="size-4" />
-                        <span
-                            v-if="notifCount > 0"
-                            class="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white"
-                        >
-                            {{ notifCount > 9 ? '9+' : notifCount }}
-                        </span>
-                    </button>
+                    <NotificationBell
+                        :count="notifCount"
+                        :items="notifItems"
+                        aria-label="Notifikasi Approval"
+                    />
                 </div>
             </header>
 

@@ -15,8 +15,6 @@ import {
     ChevronRight,
     AlertCircle,
     X,
-    Sparkles,
-    Calendar,
     CheckCircle2,
     XCircle,
     Clock3,
@@ -27,6 +25,12 @@ type Surat = {
     id: number;
     reference: string;
     jenisSurat: string;
+    approvalRole?: {
+        id?: number | null;
+        nama?: string | null;
+        slug?: string | null;
+    } | null;
+    requiresFinalApproval?: boolean;
     status: string;
     keperluan: string;
     rejectionReason?: string | null;
@@ -95,18 +99,6 @@ function closeViewer() {
     }, 200);
 }
 // ── [END BARU] ──────────────────────────────────────────────────────────────
-const STATUS_STEPS = [
-    { key: 'pending', short: 'Diajukan' },
-    { key: 'validated_admin', short: 'Admin' },
-    { key: 'approved_kaprodi', short: 'Kaprodi' },
-    { key: 'approved_dekan', short: 'Dekan' },
-    { key: 'finished', short: 'Selesai' },
-];
-function getStepIndex(status: string): number {
-    if (status === 'rejected_admin' || status === 'rejected_approver')
-        return -1;
-    return STATUS_STEPS.findIndex((s) => s.key === status);
-}
 function statusLabel(status: string) {
     const map: Record<string, string> = {
         pending: 'Menunggu Validasi',
@@ -263,135 +255,119 @@ function goToPage(page: number) {
         ]"
     >
         <Head title="Riwayat Surat — FAST" />
-        <!-- Hero -->
-        <div
-            class="mb-6 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6"
-        >
-            <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
-                    <p
-                        class="flex items-center gap-1.5 text-sm font-medium text-blue-600"
-                    >
-                        <Sparkles class="size-4" /> Tracking Pengajuan
-                    </p>
-                    <h2 class="mt-1 text-xl font-bold text-slate-900">
-                        Riwayat Surat
-                    </h2>
-                    <p class="mt-1 text-sm text-slate-500">
-                        Pantau progres dan status pengajuan surat akademik Anda.
-                    </p>
-                </div>
-            </div>
-        </div>
         <!-- Filter pills -->
-        <div class="mb-5 flex flex-wrap items-center gap-2">
-            <button
-                type="button"
-                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="
-                    !status
-                        ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                "
-                @click="
-                    status = '';
-                    applyFilter();
-                "
-            >
-                Semua
-            </button>
-            <button
-                type="button"
-                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="
-                    status === 'pending'
-                        ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                "
-                @click="
-                    status = 'pending';
-                    applyFilter();
-                "
-            >
-                Pending
-            </button>
-            <button
-                type="button"
-                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="
-                    status === 'finished'
-                        ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                "
-                @click="
-                    status = 'finished';
-                    applyFilter();
-                "
-            >
-                Selesai
-            </button>
-            <button
-                type="button"
-                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="
-                    status === 'rejected_admin'
-                        ? 'border-red-500 bg-red-500 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                "
-                @click="
-                    status = 'rejected_admin';
-                    applyFilter();
-                "
-            >
-                Ditolak Admin
-            </button>
-            <button
-                type="button"
-                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="
-                    status === 'rejected_approver'
-                        ? 'border-red-500 bg-red-500 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                "
-                @click="
-                    status = 'rejected_approver';
-                    applyFilter();
-                "
-            >
-                Ditolak Pimpinan
-            </button>
-            <div class="ml-auto flex items-center gap-2">
-                <div class="relative">
-                    <Search
-                        class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                        v-model="search"
-                        type="text"
-                        placeholder="Cari..."
-                        class="h-9 w-48 rounded-xl border border-slate-200 bg-white pr-3 pl-9 text-xs outline-none focus:border-blue-400"
-                        @keyup.enter="applyFilter"
-                    />
+        <div class="mb-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        :class="
+                            !status
+                                ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        "
+                        @click="
+                            status = '';
+                            applyFilter();
+                        "
+                    >
+                        Semua
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        :class="
+                            status === 'pending'
+                                ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        "
+                        @click="
+                            status = 'pending';
+                            applyFilter();
+                        "
+                    >
+                        Pending
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        :class="
+                            status === 'finished'
+                                ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        "
+                        @click="
+                            status = 'finished';
+                            applyFilter();
+                        "
+                    >
+                        Selesai
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        :class="
+                            status === 'rejected_admin'
+                                ? 'border-red-500 bg-red-500 text-white shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        "
+                        @click="
+                            status = 'rejected_admin';
+                            applyFilter();
+                        "
+                    >
+                        Ditolak Admin
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        :class="
+                            status === 'rejected_approver'
+                                ? 'border-red-500 bg-red-500 text-white shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        "
+                        @click="
+                            status = 'rejected_approver';
+                            applyFilter();
+                        "
+                    >
+                        Ditolak Pimpinan
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    class="h-9 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-                    @click="applyFilter"
-                >
-                    Cari
-                </button>
-                <button
-                    v-if="search || status"
-                    type="button"
-                    class="text-xs text-slate-400 hover:text-blue-600"
-                    @click="
-                        search = '';
-                        status = '';
-                        applyFilter();
-                    "
-                >
-                    <RotateCcw class="size-3.5" />
-                </button>
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <Search
+                            class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
+                        />
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Cari..."
+                            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-9 text-xs outline-none focus:border-blue-400 sm:w-56"
+                            @keyup.enter="applyFilter"
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        @click="applyFilter"
+                    >
+                        Cari
+                    </button>
+                    <button
+                        v-if="search || status"
+                        type="button"
+                        class="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-600"
+                        @click="
+                            search = '';
+                            status = '';
+                            applyFilter();
+                        "
+                    >
+                        <RotateCcw class="size-3.5" />
+                    </button>
+                </div>
             </div>
         </div>
         <!-- Timeline cards -->
@@ -401,12 +377,29 @@ function goToPage(page: number) {
             />
             <div
                 v-if="surats.data.length === 0"
-                class="flex flex-col items-center gap-2 py-12 text-center"
+                class="rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm"
             >
-                <Calendar class="size-8 text-slate-300" />
-                <p class="text-sm text-slate-400">
-                    Belum ada riwayat pengajuan.
+                <div class="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-300">
+                    <Calendar class="size-8" />
+                </div>
+                <p class="mt-4 text-base font-semibold text-slate-700">
+                    Belum ada riwayat pengajuan
                 </p>
+                <p class="mt-1 text-sm text-slate-400">
+                    Pengajuan baru akan tampil setelah surat dibuat.
+                </p>
+                <button
+                    v-if="search || status"
+                    type="button"
+                    class="mt-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600"
+                    @click="
+                        search = '';
+                        status = '';
+                        applyFilter();
+                    "
+                >
+                    Bersihkan Filter
+                </button>
             </div>
             <div
                 v-for="(item, idx) in surats.data"
@@ -425,7 +418,7 @@ function goToPage(page: number) {
                 </div>
                 <!-- Card -->
                 <div
-                    class="rounded-2xl border bg-white p-5 transition-all hover:shadow-md"
+                    class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                     :class="[
                         item.status === 'finished'
                             ? 'hover:border-blue-300'
@@ -436,17 +429,16 @@ function goToPage(page: number) {
                               : item.status.startsWith('approved')
                                 ? 'hover:border-sky-300'
                                 : 'hover:border-amber-300',
-                        'border-slate-200',
                     ]"
                 >
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <p class="text-sm font-bold text-slate-900">
+                                <p class="text-base font-semibold text-slate-900">
                                     {{ item.jenisSurat }}
                                 </p>
                                 <span
-                                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    class="rounded-full px-2.5 py-1 text-[10px] font-semibold"
                                     :class="statusClass(item.status)"
                                 >
                                     {{ submissionStatusLabel(item) }}
@@ -454,27 +446,27 @@ function goToPage(page: number) {
                             </div>
                             <p
                                 v-if="item.reference"
-                                class="mt-1 font-mono text-[10px] text-slate-400"
+                                class="mt-1 font-mono text-[11px] text-slate-400"
                             >
                                 {{ item.reference }}
                             </p>
                             <p
-                                class="mt-2 text-xs leading-relaxed text-slate-600"
+                                class="mt-3 text-sm leading-relaxed text-slate-600"
                             >
                                 {{ item.keperluan }}
                             </p>
                             <div
-                                class="mt-3 flex items-center gap-3 text-[10px] text-slate-400"
+                                class="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-400"
                             >
                                 <span class="flex items-center gap-1">
-                                    <Calendar class="size-3" />
+                                    <Calendar class="size-3.5" />
                                     {{ formatDate(item.submittedAt) }}
                                 </span>
                                 <span
                                     v-if="item.neededAt"
                                     class="flex items-center gap-1"
                                 >
-                                    <Clock3 class="size-3" /> Butuh:
+                                    <Clock3 class="size-3.5" /> Butuh:
                                     {{ formatDate(item.neededAt) }}
                                 </span>
                             </div>
@@ -521,11 +513,11 @@ function goToPage(page: number) {
                             </div>
                         </div>
                         <!-- Actions -->
-                        <div class="flex shrink-0 flex-wrap items-start gap-2">
+                        <div class="flex shrink-0 flex-wrap items-start gap-2 lg:justify-end">
                             <button
                                 type="button"
                                 title="Preview"
-                                class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                class="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                                 @click="openViewer(item, 'preview')"
                             >
                                 <Eye class="size-3" /> Preview
@@ -534,7 +526,7 @@ function goToPage(page: number) {
                                 v-if="item.status === 'finished'"
                                 type="button"
                                 title="Download PDF"
-                                class="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700"
+                                class="flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700"
                                 @click="openViewer(item, 'download')"
                             >
                                 <Download class="size-3" /> PDF
@@ -551,7 +543,7 @@ function goToPage(page: number) {
                                 "
                                 type="button"
                                 title="Catatan"
-                                class="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-100"
+                                class="flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-100"
                                 @click="toggleReason(item.id)"
                             >
                                 <AlertCircle class="size-3" /> Catatan
@@ -560,7 +552,7 @@ function goToPage(page: number) {
                                 v-if="item.status === 'pending'"
                                 type="button"
                                 title="Batalkan"
-                                class="flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                class="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
                                 @click="confirmCancel(item.id)"
                             >
                                 <X class="size-3.5" /> Batal

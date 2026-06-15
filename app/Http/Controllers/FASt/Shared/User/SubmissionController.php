@@ -4,6 +4,7 @@ namespace App\Http\Controllers\FASt\Shared\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\JenisSurat;
+use App\Models\Surat;
 use App\Models\SuratCategory;
 use App\Services\SuratWorkflowService;
 use App\Support\SuratDataContract;
@@ -44,7 +45,39 @@ class SubmissionController extends Controller
             ->orderBy('nama')
             ->get(['id', 'nama', 'slug', 'deskripsi']);
 
+        $visibleJenisSuratCount = $jenisSurats->count();
+
+        $diprosesStatuses = [
+            Surat::STATUS_PENDING,
+            Surat::STATUS_VALIDATED_ADMIN,
+            Surat::STATUS_REVISION_REQUESTED,
+            Surat::STATUS_APPROVED_KAPRODI,
+            Surat::STATUS_APPROVED_DEKAN,
+        ];
+
         return Inertia::render($this->pageName(), [
+            'summary' => (function () use ($user, $diprosesStatuses, $visibleJenisSuratCount): array {
+                $counts = Surat::query()
+                    ->where('pemohon_id', $user->id)
+                    ->selectRaw("
+                        SUM(CASE WHEN status IN (" . implode(',', array_fill(0, count($diprosesStatuses), '?')) . ") THEN 1 ELSE 0 END) as diproses,
+                        SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as selesai,
+                        SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as ditolak,
+                        SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as dibatalkan
+                    ", array_merge($diprosesStatuses, [Surat::STATUS_FINISHED, Surat::STATUS_REJECTED_ADMIN, Surat::STATUS_REJECTED_APPROVER, Surat::STATUS_CANCELLED]))
+                    ->first();
+
+                $dibatalkan = (int) ($counts->dibatalkan ?? 0);
+
+                return [
+                    'total' => $visibleJenisSuratCount,
+                    'jenisSuratCount' => $visibleJenisSuratCount,
+                    'diproses' => (int) ($counts->diproses ?? 0),
+                    'selesai' => (int) ($counts->selesai ?? 0),
+                    'ditolak' => (int) ($counts->ditolak ?? 0),
+                    'dibatalkan' => $dibatalkan,
+                ];
+            })(),
             'categories' => $categories->map(fn (SuratCategory $c): array => [
                 'id'        => $c->id,
                 'nama'      => $c->nama,
