@@ -16,6 +16,9 @@ type FieldConfig = {
     add_label?: string;
     item_label?: string;
     repeatable?: boolean;
+    sumber_data?: 'data_pemohon' | 'data_kampus' | 'data_sistem';
+    editable_role?: 'mahasiswa' | 'admin' | 'sistem';
+    mode_form_pemohon?: 'editable' | 'readonly' | 'hidden';
 };
 type JenisSurat = {
     id: number;
@@ -44,7 +47,8 @@ type FormData = {
     data: Record<string, string | boolean | string[]>;
 };
 const props = defineProps<{
-    surat: { id: number; keperluan: string };
+    surat: { id: number; keperluan: string; status: string };
+    returnTo?: string | null;
     jenisSurat: JenisSurat;
     formData: FormData;
 }>();
@@ -78,6 +82,7 @@ const form = useForm({
         string,
         string | boolean | string[]
     >,
+    return_to: props.returnTo ?? `/admin/surat/${props.surat.id}`,
 });
 function stripConsumedFormKeys() {
     consumedFormKeys.forEach((key) => {
@@ -149,6 +154,7 @@ function buildPayload() {
             kepada_yth: form.kepada_yth,
             lampiran_keterangan: form.lampiran_keterangan,
         },
+        return_to: form.return_to,
     };
 }
 function fieldError(name: string): string | undefined {
@@ -159,7 +165,29 @@ function fieldError(name: string): string | undefined {
     );
 }
 const requiredFields = computed(() =>
-    props.jenisSurat.field_config.filter((f) => f.required),
+    (props.jenisSurat.field_config ?? []).filter(
+        (f): f is FieldConfig => !!f && f.required,
+    ),
+);
+const visibleFields = computed(() =>
+    (props.jenisSurat.field_config ?? []).filter(
+        (f): f is FieldConfig =>
+            !!f && (f.mode_form_pemohon ?? 'editable') !== 'hidden',
+    ),
+);
+const isPendingEdit = computed(() => props.surat.status === 'pending');
+const alertTitle = computed(() =>
+    isPendingEdit.value
+        ? 'Surat baru menunggu validasi admin'
+        : 'Surat perlu diperbarui',
+);
+const alertDescription = computed(() =>
+    isPendingEdit.value
+        ? 'Admin dapat melengkapi data yang dibutuhkan sebelum validasi diteruskan.'
+        : `Surat ini sebelumnya ditolak. Setelah diperbarui, akan diteruskan kembali ke ${props.jenisSurat.approval_role?.nama ?? 'approval'} untuk persetujuan.`,
+);
+const submitLabel = computed(() =>
+    isPendingEdit.value ? 'Simpan & Validasi' : 'Simpan & Teruskan',
 );
 </script>
 <template>
@@ -175,18 +203,29 @@ const requiredFields = computed(() =>
         <Head :title="`Edit — ${jenisSurat.nama}`" />
         <!-- Header alert -->
         <div
-            class="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4"
+            class="mb-6 flex items-start gap-3 rounded-2xl px-5 py-4"
+            :class="
+                isPendingEdit
+                    ? 'border border-blue-200 bg-blue-50'
+                    : 'border border-amber-200 bg-amber-50'
+            "
         >
-            <FileEdit class="mt-0.5 size-4 shrink-0 text-amber-600" />
+            <FileEdit
+                class="mt-0.5 size-4 shrink-0"
+                :class="isPendingEdit ? 'text-blue-600' : 'text-amber-600'"
+            />
             <div>
-                <p class="text-sm font-semibold text-amber-800">
-                    Surat perlu diperbarui
+                <p
+                    class="text-sm font-semibold"
+                    :class="isPendingEdit ? 'text-blue-800' : 'text-amber-800'"
+                >
+                    {{ alertTitle }}
                 </p>
-                <p class="text-xs text-amber-700">
-                    Surat ini sebelumnya ditolak. Setelah diperbarui, akan
-                    diteruskan kembali ke
-                    {{ jenisSurat.approval_role?.nama ?? 'approval' }} untuk
-                    persetujuan.
+                <p
+                    class="text-xs"
+                    :class="isPendingEdit ? 'text-blue-700' : 'text-amber-700'"
+                >
+                    {{ alertDescription }}
                 </p>
             </div>
         </div>
@@ -359,17 +398,14 @@ const requiredFields = computed(() =>
                 </div>
                 <!-- Field dinamis -->
                 <div
-                    v-if="jenisSurat.field_config.length > 0"
+                    v-if="visibleFields.length > 0"
                     class="rounded-2xl border border-slate-200 bg-white p-5"
                 >
                     <h3 class="mb-4 text-sm font-semibold text-slate-800">
                         Data Surat
                     </h3>
                     <div class="space-y-4">
-                        <div
-                            v-for="field in jenisSurat.field_config"
-                            :key="field.name"
-                        >
+                        <div v-for="field in visibleFields" :key="field.name">
                             <!-- Textarea -->
                             <label
                                 v-if="field.type === 'textarea'"
@@ -384,6 +420,12 @@ const requiredFields = computed(() =>
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <textarea
                                     v-model="
@@ -425,6 +467,12 @@ const requiredFields = computed(() =>
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <select
                                     v-model="
@@ -468,6 +516,12 @@ const requiredFields = computed(() =>
                                         >*</span
                                     >
                                 </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
+                                </span>
                                 <input
                                     v-model="
                                         form.form_data[field.name] as string
@@ -501,6 +555,12 @@ const requiredFields = computed(() =>
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <input
                                     v-model="
@@ -556,6 +616,12 @@ const requiredFields = computed(() =>
                                         >*</span
                                     >
                                 </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
+                                </span>
                                 <div
                                     v-for="(_, idx) in form.form_data[
                                         field.name
@@ -604,6 +670,12 @@ const requiredFields = computed(() =>
                                         >*</span
                                     >
                                 </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
+                                </span>
                                 <input
                                     v-model="
                                         form.form_data[field.name] as string
@@ -638,7 +710,7 @@ const requiredFields = computed(() =>
                     class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4"
                 >
                     <a
-                        :href="`/admin/surat/${surat.id}`"
+                        :href="returnTo"
                         class="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                     >
                         <ChevronLeft class="size-4" /> Kembali
@@ -651,7 +723,7 @@ const requiredFields = computed(() =>
                         {{
                             form.processing
                                 ? 'Menyimpan...'
-                                : 'Simpan & Teruskan'
+                                : submitLabel
                         }}
                         <Save v-if="!form.processing" class="size-4" />
                     </button>

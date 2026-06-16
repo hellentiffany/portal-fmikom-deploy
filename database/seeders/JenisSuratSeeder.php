@@ -119,17 +119,17 @@ class JenisSuratSeeder extends Seeder
                         'placeholder' => 'Contoh: Sistem Informasi',
                     ],
                     [
+                        'name' => 'akreditasi',
+                        'label' => 'Akreditasi',
+                        'type' => 'text',
+                        'required' => true,
+                        'placeholder' => 'Contoh: A',
+                    ],
+                    [
                         'name' => 'tanggal_yudisium',
                         'label' => 'Tanggal Yudisium',
                         'type' => 'date',
                         'required' => true,
-                    ],
-                    [
-                        'name' => 'ipk_akhir',
-                        'label' => 'IPK Akhir',
-                        'type' => 'number',
-                        'required' => true,
-                        'placeholder' => 'Contoh: 3.75',
                     ],
                     [
                         'name' => 'judul_tugas_akhir',

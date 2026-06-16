@@ -33,13 +33,13 @@ class SuratHistoryService
     public static function created(int $suratId, string $jenisSurat): SuratHistory
     {
         return static::record($suratId, SuratHistory::ACTION_CREATED,
-            "Surat {$jenisSurat} dibuat");
+            static::formatJenisSuratLabel($jenisSurat).' dibuat');
     }
 
     public static function submitted(int $suratId, string $jenisSurat): SuratHistory
     {
         return static::record($suratId, SuratHistory::ACTION_SUBMITTED,
-            "Surat {$jenisSurat} diajukan");
+            static::formatJenisSuratLabel($jenisSurat).' diajukan');
     }
 
     public static function validated(int $suratId, ?string $catatan = null): SuratHistory
@@ -106,5 +106,20 @@ class SuratHistoryService
         return static::record($suratId, SuratHistory::ACTION_REVISED,
             "Surat direvisi (revisi ke-{$revisiKe})",
             ['keterangan' => $catatan]);
+    }
+
+    protected static function formatJenisSuratLabel(string $jenisSurat): string
+    {
+        $label = trim($jenisSurat);
+
+        if ($label === '') {
+            return 'Surat';
+        }
+
+        if (preg_match('/^surat\b/i', $label)) {
+            return $label;
+        }
+
+        return 'Surat '.$label;
     }
 }

@@ -25,6 +25,9 @@ type FieldConfig = {
     add_label?: string;
     item_label?: string;
     repeatable?: boolean;
+    sumber_data?: 'data_pemohon' | 'data_kampus' | 'data_sistem';
+    editable_role?: 'mahasiswa' | 'admin' | 'sistem';
+    mode_form_pemohon?: 'editable' | 'readonly' | 'hidden';
 };
 type JenisSurat = {
     id: number;
@@ -131,9 +134,15 @@ function fieldError(name: string): string | undefined {
 }
 const hasRequiredFields = computed(
     () =>
-        props.jenisSurat.field_config.filter(
+        (props.jenisSurat.field_config ?? []).filter(
             (f) => f.required && f.type !== 'recipient',
         ).length,
+);
+const visibleFields = computed(() =>
+    (props.jenisSurat.field_config ?? []).filter(
+        (f): f is FieldConfig =>
+            !!f && (f.mode_form_pemohon ?? 'editable') !== 'hidden',
+    ),
 );
 </script>
 <template>
@@ -345,17 +354,14 @@ const hasRequiredFields = computed(
                 </div>
                 <!-- Field dinamis -->
                 <div
-                    v-if="jenisSurat.field_config.length > 0"
+                    v-if="visibleFields.length > 0"
                     class="rounded-2xl border border-slate-200 bg-white p-5"
                 >
                     <h3 class="mb-4 text-sm font-semibold text-slate-800">
                         Data Surat
                     </h3>
                     <div class="space-y-4">
-                        <div
-                            v-for="field in jenisSurat.field_config"
-                            :key="field.name"
-                        >
+                        <div v-for="field in visibleFields" :key="field.name">
                             <!-- Textarea -->
                             <label
                                 v-if="field.type === 'textarea'"
@@ -370,6 +376,12 @@ const hasRequiredFields = computed(
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <textarea
                                     v-model="
@@ -411,6 +423,12 @@ const hasRequiredFields = computed(
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <select
                                     v-model="
@@ -454,6 +472,12 @@ const hasRequiredFields = computed(
                                         >*</span
                                     >
                                 </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
+                                </span>
                                 <input
                                     v-model="
                                         form.form_data[field.name] as string
@@ -487,6 +511,12 @@ const hasRequiredFields = computed(
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <input
                                     v-model="
@@ -542,6 +572,12 @@ const hasRequiredFields = computed(
                                         >*</span
                                     >
                                 </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
+                                </span>
                                 <div
                                     v-for="(_, idx) in form.form_data[
                                         field.name
@@ -589,6 +625,12 @@ const hasRequiredFields = computed(
                                         class="ml-0.5 text-red-500"
                                         >*</span
                                     >
+                                </span>
+                                <span
+                                    v-if="field.sumber_data === 'data_kampus'"
+                                    class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
                                 </span>
                                 <input
                                     v-model="

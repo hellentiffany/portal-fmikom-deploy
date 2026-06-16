@@ -32,6 +32,12 @@ class Surat extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const NOMOR_SURAT_STATUS_RESERVED = 'reserved';
+
+    public const NOMOR_SURAT_STATUS_ISSUED = 'issued';
+
+    public const NOMOR_SURAT_STATUS_VOID = 'void';
+
     public const WORKFLOW_STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_VALIDATED_ADMIN,
@@ -48,6 +54,7 @@ class Surat extends Model
         'pemohon_id',
         'type',
         'nomor_surat',
+        'nomor_surat_status',
         'keperluan',
         'status',
         'isi_surat',
@@ -106,7 +113,7 @@ class Surat extends Model
      */
     public function jenisSurat(): BelongsTo
     {
-        return $this->belongsTo(JenisSurat::class);
+        return $this->belongsTo(JenisSurat::class)->withTrashed();
     }
 
     /**
@@ -244,6 +251,42 @@ class Surat extends Model
             && $this->finalApprovalRoleSlug() !== null;
     }
 
+    public function resolvedNomorSuratStatus(): ?string
+    {
+        if (blank($this->nomor_surat)) {
+            return null;
+        }
+
+        $storedStatus = strtolower(trim((string) ($this->nomor_surat_status ?? '')));
+        if (in_array($storedStatus, [
+            self::NOMOR_SURAT_STATUS_RESERVED,
+            self::NOMOR_SURAT_STATUS_ISSUED,
+            self::NOMOR_SURAT_STATUS_VOID,
+        ], true)) {
+            return $storedStatus;
+        }
+
+        if (in_array($this->status, [self::STATUS_REJECTED_ADMIN, self::STATUS_REJECTED_APPROVER], true)) {
+            return self::NOMOR_SURAT_STATUS_VOID;
+        }
+
+        if ($this->status === self::STATUS_FINISHED) {
+            return self::NOMOR_SURAT_STATUS_ISSUED;
+        }
+
+        return self::NOMOR_SURAT_STATUS_RESERVED;
+    }
+
+    public function nomorSuratStatusLabel(): ?string
+    {
+        return match ($this->resolvedNomorSuratStatus()) {
+            self::NOMOR_SURAT_STATUS_RESERVED => 'Tercatat',
+            self::NOMOR_SURAT_STATUS_ISSUED => 'Final',
+            self::NOMOR_SURAT_STATUS_VOID => 'Void',
+            default => null,
+        };
+    }
+
     public function latestRejectedFlow(): ?SuratApprovalFlow
     {
         $rejectionStatuses = [
@@ -329,5 +372,19 @@ class Surat extends Model
     public function isFinalRejected(): bool
     {
         return in_array($this->status, [self::STATUS_REJECTED_ADMIN, self::STATUS_REJECTED_APPROVER], true);
+    }
+
+    public function canBeEditedByAdmin(): bool
+    {
+        if ($this->status === self::STATUS_PENDING) {
+            return true;
+        }
+
+        if ($this->status !== self::STATUS_REVISION_REQUESTED) {
+            return false;
+        }
+
+        return $this->validated_by_admin_id !== null
+            || $this->approvalFlows()->where('role', 'admin')->where('status', 'approved')->exists();
     }
 }

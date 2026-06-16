@@ -97,11 +97,15 @@ class SubmissionController extends Controller
                         'type'        => $f['type'],
                         'required'    => (bool) $f['required'],
                         'placeholder' => (string) ($f['placeholder'] ?? ''),
+                        'help'        => (string) ($f['help'] ?? ''),
                         'options'     => collect($f['options'] ?? [])
                             ->map(fn ($o) => is_array($o)
                                 ? ['label' => (string) ($o['label'] ?? $o['value'] ?? ''), 'value' => (string) ($o['value'] ?? '')]
                                 : ['label' => (string) $o, 'value' => (string) $o]
                             )->filter(fn ($o) => $o['value'] !== '')->values()->all(),
+                        'sumber_data' => (string) ($f['sumber_data'] ?? 'data_pemohon'),
+                        'editable_role' => (string) ($f['editable_role'] ?? 'mahasiswa'),
+                        'mode_form_pemohon' => (string) ($f['mode_form_pemohon'] ?? 'editable'),
                     ])->values()->all(),
             ])->values(),
             'selectedJenisId' => $request->integer('jenis') ?: null,
@@ -152,6 +156,10 @@ class SubmissionController extends Controller
         $dynamicMessages = [];
 
         foreach ($this->normalizeFieldConfig($jenisSurat->field_config ?? []) as $field) {
+            if ((string) ($field['mode_form_pemohon'] ?? 'editable') !== 'editable') {
+                continue;
+            }
+
             $key = 'field_data.'.$field['name'];
             $rules = [($field['required'] ?? false) ? 'required' : 'nullable'];
 
@@ -287,13 +295,7 @@ class SubmissionController extends Controller
     protected function normalizeFieldConfig(array $fieldConfig): array
     {
         return collect(SuratDataContract::filterDynamicFieldConfig($fieldConfig))
-            ->map(fn (array $field): array => [
-                'name' => (string) $field['name'],
-                'label' => $field['label'] ?? $field['name'],
-                'type' => strtolower((string) ($field['type'] ?? 'text')),
-                'required' => (bool) ($field['required'] ?? false),
-                'options' => $field['options'] ?? [],
-            ])
+            ->map(fn (array $field): array => SuratDataContract::normalizeDynamicFieldConfigItem($field))
             ->values()
             ->all();
     }

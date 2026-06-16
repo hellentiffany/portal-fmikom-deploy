@@ -37,7 +37,23 @@ const props = withDefaults(
 const open = ref(false);
 const root = ref<HTMLElement | null>(null);
 
-const visibleItems = computed(() => props.items.slice(0, 6));
+const visibleItems = computed(() =>
+    [...props.items]
+        .sort((left, right) => {
+            const leftTime = left.time ? new Date(left.time).getTime() : 0;
+            const rightTime = right.time ? new Date(right.time).getTime() : 0;
+
+            if (leftTime !== rightTime) {
+                return rightTime - leftTime;
+            }
+
+            const leftId = typeof left.id === 'number' ? left.id : parseInt(String(left.id), 10) || 0;
+            const rightId = typeof right.id === 'number' ? right.id : parseInt(String(right.id), 10) || 0;
+
+            return rightId - leftId;
+        })
+        .slice(0, 6),
+);
 
 function toggle() {
     open.value = !open.value;
@@ -57,6 +73,23 @@ function openItem(item: NotificationItem) {
     router.post(
         `/notifications/${item.id}/read`,
         { redirect_to: item.href },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => close(),
+        },
+    );
+}
+
+function markAllAsRead() {
+    if (props.count <= 0) {
+        close();
+        return;
+    }
+
+    router.post(
+        '/notifications/read-all',
+        {},
         {
             preserveScroll: true,
             preserveState: true,
@@ -160,7 +193,17 @@ function formatTime(value?: string | null) {
                             {{ count > 0 ? `${count} pembaruan terbaru` : 'Tidak ada pembaruan baru' }}
                         </p>
                     </div>
-                    <Bell class="size-4 text-slate-400" />
+                    <div class="flex items-center gap-2">
+                        <button
+                            v-if="count > 0"
+                            type="button"
+                            class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                            @click.stop="markAllAsRead"
+                        >
+                            Tandai semua dibaca
+                        </button>
+                        <Bell class="size-4 text-slate-400" />
+                    </div>
                 </div>
 
                 <div class="max-h-[26rem] overflow-y-auto">

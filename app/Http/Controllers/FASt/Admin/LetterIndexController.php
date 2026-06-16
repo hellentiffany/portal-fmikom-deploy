@@ -69,7 +69,7 @@ class LetterIndexController extends Controller
                         default => 'Dikembalikan untuk Revisi',
                     }
                     : null,
-                'can_edit'         => $surat->status === Surat::STATUS_REVISION_REQUESTED,
+                'can_edit'         => $surat->canBeEditedByAdmin(),
                 'keperluan'        => $surat->keperluan,
                 'tanggal_pengajuan' => $surat->tanggal_pengajuan?->toISOString(),
                 'tanggal_selesai'  => $surat->tanggal_selesai?->toISOString(),

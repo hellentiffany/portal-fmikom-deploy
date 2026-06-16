@@ -12,11 +12,25 @@ class TemplatePlaceholderSynchronizer
      */
     public static function syncTemplate(SuratTemplate $template, array $fieldConfig = []): void
     {
-        $keys = static::extractPlaceholderKeys(
+        $templateKeys = static::extractPlaceholderKeys(
             (string) ($template->template_header ?? ''),
             (string) ($template->template_body ?? ''),
             (string) ($template->template_footer ?? ''),
         );
+
+        $fieldKeys = collect($fieldConfig)
+            ->filter(fn ($field): bool => is_array($field) && filled($field['name'] ?? null))
+            ->map(fn (array $field): string => trim((string) $field['name']))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $keys = collect(array_merge($templateKeys, $fieldKeys))
+            ->filter(fn ($key): bool => is_string($key) && $key !== '')
+            ->unique()
+            ->values()
+            ->all();
 
         $existing = $template->placeholders()->get()->keyBy('placeholder_key');
         $fieldMap = collect($fieldConfig)

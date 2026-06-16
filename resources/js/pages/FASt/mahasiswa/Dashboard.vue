@@ -22,7 +22,6 @@ import {
     RotateCcw as ResetZoom,
     ExternalLink,
     RefreshCw,
-    Bell,
     Info,
     FilePlus2,
     History,
@@ -90,6 +89,13 @@ type FieldConfig = {
     required: boolean;
     placeholder: string;
     options: FieldOption[];
+    help?: string;
+    repeatable?: boolean;
+    add_label?: string;
+    item_label?: string;
+    sumber_data?: 'data_pemohon' | 'data_kampus' | 'data_sistem';
+    editable_role?: 'mahasiswa' | 'admin' | 'sistem';
+    mode_form_pemohon?: 'editable' | 'readonly' | 'hidden';
 };
 type JenisSuratOption = {
     id: number;
@@ -187,6 +193,12 @@ function initFormData(jenis: JenisSuratOption) {
         else fieldValues[f.name] = '';
     }
     submitForm.field_data = fieldValues;
+}
+function isApplicantFieldVisible(field: FieldConfig) {
+    return (field.mode_form_pemohon ?? 'editable') !== 'hidden';
+}
+function isApplicantFieldReadonly(field: FieldConfig) {
+    return (field.mode_form_pemohon ?? 'editable') === 'readonly';
 }
 
 function fieldDisplayValue(field: FieldConfig): string {
@@ -320,7 +332,7 @@ function statusLabel(status: string) {
         validated_admin: 'Sudah Divalidasi',
         approved_kaprodi: 'Sudah Divalidasi',
         approved_dekan: 'Sudah Divalidasi',
-        finished: 'Sudah Divalidasi',
+        finished: 'Selesai',
         rejected_admin: 'Ditolak Admin',
         rejected_approver: 'Ditolak Pimpinan',
         cancelled: 'Dibatalkan',
@@ -331,6 +343,20 @@ function statusLabel(status: string) {
 function submissionStatusLabel(item: LatestSubmission) {
     if (item.status === 'revision_requested' && item.needsRevision) {
         return 'Perlu Revisi';
+    }
+
+    if (
+        item.status === 'finished' ||
+        (item.hasPdf &&
+            ![
+                'pending',
+                'revision_requested',
+                'rejected_admin',
+                'rejected_approver',
+                'cancelled',
+            ].includes(item.status))
+    ) {
+        return 'Selesai';
     }
 
     return statusLabel(item.status);
@@ -795,6 +821,7 @@ function fieldError(name: string): string | undefined {
                                             >
                                                 <div
                                                     class="mx-auto flex size-9 items-center justify-center rounded-full border-2 text-sm font-bold transition-all"
+                                                    :aria-label="step.short"
                                                     :class="
                                                         isProgressStepFilled(item, stepIndex)
                                                             ? `${statusTone(item.status).progress} border-transparent text-white shadow-sm`
@@ -803,7 +830,14 @@ function fieldError(name: string): string | undefined {
                                                               : 'border-slate-200 bg-white text-slate-400'
                                                     "
                                                 >
-                                                    {{ stepIndex + 1 }}
+                                                    <CheckCircle2
+                                                        v-if="isProgressStepFilled(item, stepIndex)"
+                                                        class="size-4"
+                                                    />
+                                                    <span
+                                                        v-else
+                                                        class="block size-1.5 rounded-full bg-current"
+                                                    />
                                                 </div>
                                                 <p
                                                     class="mt-3 w-full text-center text-[10px] font-semibold leading-tight"
@@ -873,14 +907,13 @@ function fieldError(name: string): string | undefined {
 
                             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button
-                                        type="button"
-                                        title="Preview"
+                                    <Link
+                                        :href="`${props.endpoints.basePath}/history/${item.id}`"
+                                        title="Detail Surat"
                                         class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                                        @click="openViewer(item, 'preview')"
                                     >
-                                        <Eye class="size-3.5" /> Preview
-                                    </button>
+                                        <FileText class="size-3.5" /> Detail Surat
+                                    </Link>
                                     <button
                                         v-if="item.hasPdf"
                                         type="button"
@@ -909,16 +942,13 @@ function fieldError(name: string): string | undefined {
                                         <AlertCircle class="size-3.5" /> Detail
                                     </button>
                                 </div>
-                                <span class="text-[11px] text-slate-400">
-                                    #{{ i + 1 }}
-                                </span>
                             </div>
                         </div>
                     </article>
                 </div>
             </div>
 
-            <!-- Kanan: Ajukan + Notifikasi -->
+            <!-- Kanan: Ajukan -->
             <div class="space-y-4">
                 <!-- Ajukan Surat Baru -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1026,50 +1056,6 @@ function fieldError(name: string): string | undefined {
                     </div>
                 </div>
 
-                <!-- Notifikasi -->
-                <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h3
-                        class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"
-                    >
-                        <Bell class="size-4 text-blue-500" /> Notifikasi
-                    </h3>
-                    <div class="space-y-3">
-                        <template v-if="latestVisible.length">
-                            <div
-                                v-for="(item, idx) in latestVisible.slice(0, 3)"
-                                :key="idx"
-                                class="flex items-start gap-2"
-                            >
-                                <div
-                                    class="mt-1.5 size-1.5 rounded-full"
-                                    :class="
-                                        item.status === 'rejected_admin' ||
-                                        item.status === 'rejected_approver'
-                                            ? 'bg-red-500'
-                                            : item.status === 'finished'
-                                              ? 'bg-green-500'
-                                              : 'bg-blue-500'
-                                    "
-                                />
-                                <div>
-                                    <p
-                                        class="text-xs font-medium text-slate-700"
-                                    >
-                                        {{ item.jenisSurat }} -
-                                        {{ submissionStatusLabel(item) }}
-                                    </p>
-                                    <p class="text-[10px] text-slate-400">
-                                        {{ formatDate(item.submittedAt) }}
-                                    </p>
-                                </div>
-                            </div>
-                        </template>
-                        <p v-else class="text-xs text-slate-400">
-                            Belum ada notifikasi
-                        </p>
-                    </div>
-                </div>
-
             </div>
         </div>
 
@@ -1162,7 +1148,7 @@ function fieldError(name: string): string | undefined {
                             v-for="field in selectedJenis?.fieldConfig ?? []"
                             :key="field.name"
                         >
-                            <div>
+                            <div v-if="isApplicantFieldVisible(field)">
                                 <label
                                     class="mb-1 block text-xs font-medium text-slate-700"
                                 >
@@ -1173,7 +1159,12 @@ function fieldError(name: string): string | undefined {
                                         >*</span
                                     >
                                 </label>
-
+                                <span
+                                    v-if="isApplicantFieldReadonly(field)"
+                                    class="mb-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                >
+                                    Data oleh kampus
+                                </span>
                                 <!-- textarea -->
                                 <textarea
                                     v-if="field.type === 'textarea'"
@@ -1187,9 +1178,12 @@ function fieldError(name: string): string | undefined {
                                     "
                                     :placeholder="field.placeholder"
                                     rows="3"
-                                    class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400"
+                                    :readonly="isApplicantFieldReadonly(field)"
+                                    :class="[
+                                        'w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400',
+                                        isApplicantFieldReadonly(field) ? 'cursor-not-allowed bg-slate-100 text-slate-500' : '',
+                                    ]"
                                 ></textarea>
-
                                 <!-- select -->
                                 <select
                                     v-else-if="field.type === 'select'"
@@ -1201,7 +1195,11 @@ function fieldError(name: string): string | undefined {
                                             >
                                         )[field.name]
                                     "
-                                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400"
+                                    :disabled="isApplicantFieldReadonly(field)"
+                                    :class="[
+                                        'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400',
+                                        isApplicantFieldReadonly(field) ? 'cursor-not-allowed bg-slate-100 text-slate-500' : '',
+                                    ]"
                                 >
                                     <option value="">-- Pilih --</option>
                                     <option
@@ -1212,7 +1210,6 @@ function fieldError(name: string): string | undefined {
                                         {{ opt.label }}
                                     </option>
                                 </select>
-
                                 <!-- radio -->
                                 <div
                                     v-else-if="field.type === 'radio'"
@@ -1230,16 +1227,16 @@ function fieldError(name: string): string | undefined {
                                                 (
                                                     submitForm.field_data as Record<
                                                         string,
-                                                        FieldValue
-                                                    >
-                                                )[field.name]
+                                                    FieldValue
+                                                >
+                                            )[field.name]
                                             "
+                                            :disabled="isApplicantFieldReadonly(field)"
                                             class="text-blue-600"
                                         />
                                         {{ opt.label }}
                                     </label>
                                 </div>
-
                                 <!-- checkbox -->
                                 <label
                                     v-else-if="field.type === 'checkbox'"
@@ -1255,13 +1252,13 @@ function fieldError(name: string): string | undefined {
                                                 >
                                             )[field.name]
                                         "
+                                        :disabled="isApplicantFieldReadonly(field)"
                                         class="rounded text-blue-600"
                                     />
                                     <span class="text-sm text-slate-700">{{
                                         field.placeholder || field.label
                                     }}</span>
                                 </label>
-
                                 <!-- checkbox-group / multiselect -->
                                 <div
                                     v-else-if="
@@ -1281,19 +1278,19 @@ function fieldError(name: string): string | undefined {
                                             type="checkbox"
                                             :value="opt.value"
                                             v-model="
-                                                (
-                                                    submitForm.field_data as Record<
-                                                        string,
-                                                        FieldValue
-                                                    >
-                                                )[field.name] as string[]
+                                        (
+                                            submitForm.field_data as Record<
+                                                string,
+                                                FieldValue
+                                            >
+                                        )[field.name] as string[]
                                             "
+                                            :disabled="isApplicantFieldReadonly(field)"
                                             class="rounded text-blue-600"
                                         />
                                         {{ opt.label }}
                                     </label>
                                 </div>
-
                                 <!-- default: text / number / date / email -->
                                 <input
                                     v-else
@@ -1315,9 +1312,13 @@ function fieldError(name: string): string | undefined {
                                                 : 'text'
                                     "
                                     :placeholder="field.placeholder"
-                                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:bg-white"
+                                    :readonly="isApplicantFieldReadonly(field)"
+                                    :disabled="isApplicantFieldReadonly(field)"
+                                    :class="[
+                                        'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:bg-white',
+                                        isApplicantFieldReadonly(field) ? 'cursor-not-allowed bg-slate-100 text-slate-500' : '',
+                                    ]"
                                 />
-
                                 <p
                                     v-if="fieldError(field.name)"
                                     class="mt-1 text-xs text-red-500"

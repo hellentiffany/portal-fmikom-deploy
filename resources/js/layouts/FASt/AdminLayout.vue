@@ -37,6 +37,10 @@ type PageProps = {
     flash?: { success?: string; error?: string; warning?: string };
     notif_count?: number;
     notif_count_revision_admin?: number;
+    nav_counts?: {
+        admin_queue?: number;
+        approval_queue?: number;
+    };
     notifications?: {
         count?: number;
         items?: Array<{
@@ -68,6 +72,7 @@ const page = usePage<PageProps>();
 const sidebarOpen = ref(true);
 const mobileOpen = ref(false);
 const isMobile = ref(false);
+const profileMenuOpen = ref(false);
 
 const user = computed(() => page.props.auth?.user);
 const userName = computed(() => user.value?.name ?? 'Admin');
@@ -85,12 +90,61 @@ const notifCount = computed(
     () => page.props.notifications?.count ?? page.props.notif_count ?? 0,
 );
 const notifItems = computed(() => page.props.notifications?.items ?? []);
+const navAdminQueueCount = computed(() => page.props.nav_counts?.admin_queue ?? 0);
+const navApprovalQueueCount = computed(() => page.props.nav_counts?.approval_queue ?? 0);
 const notifCountRevisionAdmin = computed(
     () => page.props.notif_count_revision_admin ?? 0,
 );
-const flashSuccess = computed(() => page.props.flash?.success);
-const flashError = computed(() => page.props.flash?.error);
-const flashWarning = computed(() => page.props.flash?.warning);
+const flashSuccess = ref('');
+const flashError = ref('');
+const flashWarning = ref('');
+
+let flashSuccessTimer: ReturnType<typeof window.setTimeout> | null = null;
+let flashErrorTimer: ReturnType<typeof window.setTimeout> | null = null;
+let flashWarningTimer: ReturnType<typeof window.setTimeout> | null = null;
+
+function syncFlash(
+    target: typeof flashSuccess,
+    timerRef: { current: ReturnType<typeof window.setTimeout> | null },
+    message?: string | null,
+    timeout = 3000,
+) {
+    if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+    }
+
+    target.value = typeof message === 'string' && message.trim().length > 0 ? message : '';
+
+    if (target.value) {
+        timerRef.current = window.setTimeout(() => {
+            target.value = '';
+            timerRef.current = null;
+        }, timeout);
+    }
+}
+
+watch(
+    () => page.props.flash?.success,
+    (message) => syncFlash(flashSuccess, { get current() { return flashSuccessTimer; }, set current(value) { flashSuccessTimer = value; } }, message),
+    { immediate: true },
+);
+watch(
+    () => page.props.flash?.error,
+    (message) => syncFlash(flashError, { get current() { return flashErrorTimer; }, set current(value) { flashErrorTimer = value; } }, message),
+    { immediate: true },
+);
+watch(
+    () => page.props.flash?.warning,
+    (message) => syncFlash(flashWarning, { get current() { return flashWarningTimer; }, set current(value) { flashWarningTimer = value; } }, message),
+    { immediate: true },
+);
+
+onUnmounted(() => {
+    if (flashSuccessTimer !== null) window.clearTimeout(flashSuccessTimer);
+    if (flashErrorTimer !== null) window.clearTimeout(flashErrorTimer);
+    if (flashWarningTimer !== null) window.clearTimeout(flashWarningTimer);
+});
 
 function checkMobile() {
     isMobile.value = window.innerWidth < 1024;
@@ -106,6 +160,7 @@ watch(
     () => page.url,
     () => {
         mobileOpen.value = false;
+        closeProfileMenu();
     },
 );
 
@@ -147,7 +202,7 @@ const navItems = computed<NavItem[]>(() => {
                 label: 'Pengajuan',
                 href: '/admin/surat',
                 icon: ClipboardList,
-                badge: notifCount.value || undefined,
+                badge: navAdminQueueCount.value || undefined,
                 badgeColor: 'amber',
             },
             {
@@ -192,7 +247,7 @@ const navItems = computed<NavItem[]>(() => {
                 label: 'Antrian Approval',
                 href: `/${slug}/antrian`,
                 icon: Clock,
-                badge: notifCount.value || undefined,
+                badge: navApprovalQueueCount.value || undefined,
                 badgeColor: 'amber',
             },
             {
@@ -237,6 +292,14 @@ function isActive(key: string) {
 function toggleSidebar() {
     if (isMobile.value) mobileOpen.value = !mobileOpen.value;
     else sidebarOpen.value = !sidebarOpen.value;
+}
+
+function toggleProfileMenu() {
+    profileMenuOpen.value = !profileMenuOpen.value;
+}
+
+function closeProfileMenu() {
+    profileMenuOpen.value = false;
 }
 
 function logout() {
@@ -305,6 +368,21 @@ onUnmounted(() => {
     if (clockTimer) clearInterval(clockTimer);
 });
 
+function handleWindowClick(event: MouseEvent) {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('[data-profile-menu]')) {
+        closeProfileMenu();
+    }
+}
+
+onMounted(() => {
+    window.addEventListener('click', handleWindowClick);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('click', handleWindowClick);
+});
+
 function batteryIcon() {
     if (!battery.value) return Battery;
     if (battery.value.charging) return BatteryCharging;
@@ -353,30 +431,6 @@ function batteryIcon() {
                     >
                         FMIKOM
                     </p>
-                </div>
-            </div>
-
-            <!-- User chip -->
-            <div class="shrink-0 px-2 pt-3">
-                <div
-                    class="flex items-center gap-2 rounded-xl px-2 py-2"
-                    :class="sidebarExpanded ? 'bg-slate-50' : 'justify-center'"
-                >
-                    <div
-                        class="grid size-7 shrink-0 place-items-center rounded-lg bg-blue-500 text-[11px] font-bold text-white"
-                    >
-                        {{ userInitials }}
-                    </div>
-                    <div v-if="sidebarExpanded" class="min-w-0">
-                        <p
-                            class="truncate text-xs font-semibold text-slate-900"
-                        >
-                            {{ userName }}
-                        </p>
-                        <p class="truncate text-[10px] text-slate-400">
-                            {{ userRole }}
-                        </p>
-                    </div>
                 </div>
             </div>
 
@@ -514,6 +568,81 @@ function batteryIcon() {
 
                 <!-- Right -->
                 <div class="flex items-center gap-2">
+                    <div class="relative" data-profile-menu>
+                        <button
+                            type="button"
+                            class="flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-2 text-left transition-colors hover:bg-slate-100"
+                            aria-label="Profil pengguna"
+                            @click.stop="toggleProfileMenu"
+                        >
+                            <span
+                                class="grid size-7 shrink-0 place-items-center rounded-lg bg-blue-500 text-[11px] font-bold text-white shadow-sm"
+                            >
+                                {{ userInitials }}
+                            </span>
+                            <span class="hidden sm:block min-w-0">
+                                <span
+                                    class="block truncate text-xs font-semibold text-slate-900"
+                                >
+                                    {{ userName }}
+                                </span>
+                                <span
+                                    class="block truncate text-[10px] text-slate-400"
+                                >
+                                    {{ userRole }}
+                                </span>
+                            </span>
+                        </button>
+
+                        <Transition name="fade">
+                            <div
+                                v-if="profileMenuOpen"
+                                class="absolute right-0 top-full z-40 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg"
+                            >
+                                <div class="flex items-start gap-3">
+                                    <div
+                                        class="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-500 text-sm font-bold text-white"
+                                    >
+                                        {{ userInitials }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-semibold text-slate-900">
+                                            {{ userName }}
+                                        </p>
+                                        <p class="truncate text-xs text-slate-500">
+                                            {{ userRole }}
+                                        </p>
+                                        <p
+                                            v-if="user?.email"
+                                            class="mt-1 truncate text-[11px] text-slate-400"
+                                        >
+                                            {{ user.email }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 grid gap-2 border-t border-slate-100 pt-3">
+                                    <div class="flex gap-2">
+                                        <button
+                                            type="button"
+                                            class="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                            @click="closeProfileMenu"
+                                        >
+                                            Tutup
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="flex-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"
+                                            @click="logout"
+                                        >
+                                            Keluar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </Transition>
+                    </div>
+
                     <NotificationBell
                         :count="notifCount"
                         :items="notifItems"

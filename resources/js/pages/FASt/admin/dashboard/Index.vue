@@ -12,7 +12,6 @@ import {
     AlertTriangle,
     X,
     RefreshCw,
-    Bell,
     Ban,
     ArrowRight,
 } from 'lucide-vue-next';
@@ -368,7 +367,7 @@ function activityBadgeClass(action?: string | null) {
                     <h3
                         class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"
                     >
-                        <Bell class="size-4 text-blue-500" /> Ringkasan Cepat
+                        <Clock3 class="size-4 text-blue-500" /> Ringkasan Cepat
                     </h3>
                     <div class="space-y-3">
                         <template v-if="quickSubmissions.length">

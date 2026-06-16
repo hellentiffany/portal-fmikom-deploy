@@ -22,7 +22,9 @@ class LetterTypeController extends Controller
                 'id' => $jenisSurat->id,
                 'nama' => $jenisSurat->nama,
                 'deskripsi' => $jenisSurat->deskripsi,
-                'field_config' => SuratDataContract::filterDynamicFieldConfig($jenisSurat->field_config ?? []),
+                'field_config' => SuratDataContract::normalizeDynamicFieldConfig(
+                    SuratDataContract::filterDynamicFieldConfig($jenisSurat->field_config ?? []),
+                ),
             ],
         ]);
     }

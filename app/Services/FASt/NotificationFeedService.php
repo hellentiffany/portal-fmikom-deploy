@@ -25,23 +25,24 @@ class NotificationFeedService
         };
 
         if (! Schema::hasTable('fast_notifications')) {
+            $fallbackItems = array_map(function (array $item): array {
+                return [
+                    'id' => $item['notification_key'],
+                    'notification_key' => $item['notification_key'],
+                    'title' => $item['title'],
+                    'message' => $item['message'],
+                    'href' => $item['href'],
+                    'time' => now()->toISOString(),
+                    'tone' => $item['tone'],
+                    'readAt' => null,
+                ];
+            }, $items);
+
             return [
-                'count' => count($items),
-                'items' => array_map(function (array $item): array {
-                    return [
-                        'id' => $item['notification_key'],
-                        'notification_key' => $item['notification_key'],
-                        'title' => $item['title'],
-                        'message' => $item['message'],
-                        'href' => $item['href'],
-                        'time' => now()->toISOString(),
-                        'tone' => $item['tone'],
-                        'readAt' => null,
-                    ];
-                }, $items),
+                'count' => count($fallbackItems),
+                'items' => $this->sortNewestFirst($fallbackItems),
             ];
         }
-
         $this->sync($user, $items);
 
         $records = FastNotification::query()
@@ -57,7 +58,7 @@ class NotificationFeedService
                 ->where('user_id', $user->id)
                 ->whereNull('read_at')
                 ->count(),
-            'items' => $records->map(fn (FastNotification $notification): array => [
+            'items' => $this->sortNewestFirst($records->map(fn (FastNotification $notification): array => [
                 'id' => $notification->id,
                 'notification_key' => $notification->notification_key,
                 'title' => $notification->title,
@@ -66,8 +67,28 @@ class NotificationFeedService
                 'time' => $notification->updated_at?->toISOString(),
                 'tone' => $notification->tone,
                 'readAt' => $notification->read_at?->toISOString(),
-            ])->values()->all(),
+            ])->values()->all()),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    protected function sortNewestFirst(array $items): array
+    {
+        usort($items, function (array $left, array $right): int {
+            $leftTime = strtotime((string) ($left['time'] ?? '')) ?: 0;
+            $rightTime = strtotime((string) ($right['time'] ?? '')) ?: 0;
+
+            if ($leftTime !== $rightTime) {
+                return $rightTime <=> $leftTime;
+            }
+
+            return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+        });
+
+        return array_values($items);
     }
 
     /**

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // resources/js/pages/FASt/mahasiswa/History.vue
 import FastLayout from '@/layouts/FASt/FastLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, defineAsyncComponent, ref } from 'vue';
 const PdfViewer = defineAsyncComponent(
     () => import('@/components/PdfViewer.vue'),
@@ -212,6 +212,9 @@ function applyFilter() {
         { preserveState: true },
     );
 }
+function detailHref(item: Surat) {
+    return `${basePath.value}/history/${item.id}`;
+}
 function toggleReason(id: number) {
     expandedReasonId.value = expandedReasonId.value === id ? null : id;
 }
@@ -255,17 +258,54 @@ function goToPage(page: number) {
         ]"
     >
         <Head title="Riwayat Surat — FAST" />
-        <!-- Filter pills -->
-        <div class="mb-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex flex-wrap items-center gap-2">
+        <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-2xl">
+                    <p class="text-[10px] font-semibold tracking-[0.2em] text-slate-400 uppercase">
+                        Filter surat
+                    </p>
+                    <h3 class="mt-1 text-lg font-semibold text-slate-900">
+                        Temukan riwayat pengajuan dengan cepat
+                    </h3>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Gunakan pencarian untuk nama surat atau keperluan, lalu pilih status yang paling relevan.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-4 space-y-3">
+                <div class="relative">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Cari riwayat surat, misalnya observasi atau cuti..."
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-0 pr-10 pl-10 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @keyup.enter="applyFilter"
+                    />
+                    <button
+                        v-if="search"
+                        type="button"
+                        class="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        @click="
+                            search = '';
+                            applyFilter();
+                        "
+                    >
+                        <X class="size-4" />
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
                     <button
                         type="button"
-                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
                         :class="
                             !status
-                                ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
                         "
                         @click="
                             status = '';
@@ -276,11 +316,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'pending'
-                                ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
                         "
                         @click="
                             status = 'pending';
@@ -291,11 +331,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'finished'
-                                ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
                         "
                         @click="
                             status = 'finished';
@@ -306,11 +346,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'rejected_admin'
-                                ? 'border-red-500 bg-red-500 text-white shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
                         "
                         @click="
                             status = 'rejected_admin';
@@ -321,11 +361,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'rejected_approver'
-                                ? 'border-red-500 bg-red-500 text-white shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
                         "
                         @click="
                             status = 'rejected_approver';
@@ -335,41 +375,9 @@ function goToPage(page: number) {
                         Ditolak Pimpinan
                     </button>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="relative">
-                        <Search
-                            class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Cari..."
-                            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-9 text-xs outline-none focus:border-blue-400 sm:w-56"
-                            @keyup.enter="applyFilter"
-                        />
-                    </div>
-                    <button
-                        type="button"
-                        class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-                        @click="applyFilter"
-                    >
-                        Cari
-                    </button>
-                    <button
-                        v-if="search || status"
-                        type="button"
-                        class="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-600"
-                        @click="
-                            search = '';
-                            status = '';
-                            applyFilter();
-                        "
-                    >
-                        <RotateCcw class="size-3.5" />
-                    </button>
-                </div>
+
             </div>
-        </div>
+        </section>
         <!-- Timeline cards -->
         <div class="relative pl-8">
             <div
@@ -388,18 +396,6 @@ function goToPage(page: number) {
                 <p class="mt-1 text-sm text-slate-400">
                     Pengajuan baru akan tampil setelah surat dibuat.
                 </p>
-                <button
-                    v-if="search || status"
-                    type="button"
-                    class="mt-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600"
-                    @click="
-                        search = '';
-                        status = '';
-                        applyFilter();
-                    "
-                >
-                    Bersihkan Filter
-                </button>
             </div>
             <div
                 v-for="(item, idx) in surats.data"
@@ -514,14 +510,13 @@ function goToPage(page: number) {
                         </div>
                         <!-- Actions -->
                         <div class="flex shrink-0 flex-wrap items-start gap-2 lg:justify-end">
-                            <button
-                                type="button"
-                                title="Preview"
-                                class="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                                @click="openViewer(item, 'preview')"
+                            <Link
+                                :href="detailHref(item)"
+                                title="Detail Surat"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                             >
-                                <Eye class="size-3" /> Preview
-                            </button>
+                                <FileText class="size-3" /> Detail Surat
+                            </Link>
                             <button
                                 v-if="item.status === 'finished'"
                                 type="button"

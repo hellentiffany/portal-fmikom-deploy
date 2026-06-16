@@ -8,12 +8,211 @@ use Illuminate\Support\Str;
 class SuratDataContract
 {
     /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function fieldSourceOptions(): array
+    {
+        return [
+            ['value' => 'data_pemohon', 'label' => 'Data Pemohon'],
+            ['value' => 'data_kampus', 'label' => 'Data Kampus'],
+            ['value' => 'data_sistem', 'label' => 'Data Sistem'],
+        ];
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function fieldEditableRoleOptions(): array
+    {
+        return [
+            ['value' => 'mahasiswa', 'label' => 'Mahasiswa'],
+            ['value' => 'admin', 'label' => 'Admin'],
+            ['value' => 'sistem', 'label' => 'Sistem'],
+        ];
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function fieldFormModeOptions(): array
+    {
+        return [
+            ['value' => 'editable', 'label' => 'Bisa diisi pemohon'],
+            ['value' => 'readonly', 'label' => 'Hanya dibaca pemohon'],
+            ['value' => 'hidden', 'label' => 'Tidak tampil di form pemohon'],
+        ];
+    }
+
+    public static function fieldSourceLabel(string $source): string
+    {
+        return match ($source) {
+            'data_kampus' => 'Data Kampus',
+            'data_sistem' => 'Data Sistem',
+            default => 'Data Pemohon',
+        };
+    }
+
+    public static function fieldEditableRoleLabel(string $role): string
+    {
+        return match ($role) {
+            'admin' => 'Admin',
+            'sistem' => 'Sistem',
+            default => 'Mahasiswa',
+        };
+    }
+
+    public static function fieldFormModeLabel(string $mode): string
+    {
+        return match ($mode) {
+            'readonly' => 'Hanya dibaca pemohon',
+            'hidden' => 'Tidak tampil di form pemohon',
+            default => 'Bisa diisi pemohon',
+        };
+    }
+
+    public static function inferFieldSource(string $name, ?string $type = null): string
+    {
+        $key = strtolower(trim($name));
+
+        if (preg_match('/^(nomor_sk_|ipk_akhir|akreditasi|nama_penandatangan|nik_penandatangan|jabatan_penandatangan)/', $key)) {
+            return 'data_kampus';
+        }
+
+        if (preg_match('/^(nomor_surat|tanggal_surat|kota_surat|status|tanggal_pengajuan|tanggal_selesai)/', $key)) {
+            return 'data_sistem';
+        }
+
+        if ($type !== null && in_array(strtolower($type), ['recipient'], true)) {
+            return 'data_kampus';
+        }
+
+        return 'data_pemohon';
+    }
+
+    public static function inferFieldEditableRole(string $source, ?string $mode = null): string
+    {
+        if ($mode === 'hidden') {
+            return 'sistem';
+        }
+
+        return match ($source) {
+            'data_kampus' => 'admin',
+            'data_sistem' => 'sistem',
+            default => 'mahasiswa',
+        };
+    }
+
+    public static function inferFieldFormMode(string $source): string
+    {
+        return match ($source) {
+            'data_kampus' => 'readonly',
+            'data_sistem' => 'hidden',
+            default => 'editable',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array<string, mixed>
+     */
+    public static function normalizeDynamicFieldConfigItem(array $field): array
+    {
+        $name = trim((string) ($field['name'] ?? ''));
+        $label = trim((string) ($field['label'] ?? '')) ?: $name;
+        $type = strtolower(trim((string) ($field['type'] ?? 'text')));
+
+        $source = strtolower(trim((string) ($field['sumber_data'] ?? $field['source_type'] ?? '')));
+        if (! in_array($source, ['data_pemohon', 'data_kampus', 'data_sistem'], true)) {
+            $source = static::inferFieldSource($name, $type);
+        }
+
+        $mode = strtolower(trim((string) ($field['mode_form_pemohon'] ?? $field['applicant_mode'] ?? '')));
+        if (! in_array($mode, ['editable', 'readonly', 'hidden'], true)) {
+            $mode = static::inferFieldFormMode($source);
+        }
+
+        $editableRole = strtolower(trim((string) ($field['editable_role'] ?? '')));
+        if (! in_array($editableRole, ['mahasiswa', 'admin', 'sistem'], true)) {
+            $editableRole = static::inferFieldEditableRole($source, $mode);
+        }
+
+        return [
+            'name' => $name,
+            'label' => $label,
+            'type' => $type ?: 'text',
+            'required' => (bool) ($field['required'] ?? false),
+            'placeholder' => (string) ($field['placeholder'] ?? ''),
+            'help' => (string) ($field['help'] ?? ''),
+            'options' => is_array($field['options'] ?? null) ? $field['options'] : [],
+            'repeatable' => (bool) ($field['repeatable'] ?? false) || $type === 'repeatable',
+            'add_label' => (string) ($field['add_label'] ?? 'Tambah'),
+            'item_label' => (string) ($field['item_label'] ?? 'Item'),
+            'sumber_data' => $source,
+            'editable_role' => $editableRole,
+            'mode_form_pemohon' => $mode,
+        ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $fieldConfig
+     * @return array<int, array<string, mixed>>
+     */
+    public static function normalizeDynamicFieldConfig(array $fieldConfig): array
+    {
+        return collect($fieldConfig)
+            ->filter(fn ($field): bool => is_array($field) && filled($field['name'] ?? null))
+            ->map(fn (array $field): array => static::normalizeDynamicFieldConfigItem($field))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, mixed>  $fieldConfig
+     * @return array<int, array<string, mixed>>
+     */
+    public static function applicantVisibleFieldConfig(array $fieldConfig): array
+    {
+        return collect(static::normalizeDynamicFieldConfig($fieldConfig))
+            ->reject(fn (array $field): bool => (string) ($field['mode_form_pemohon'] ?? 'editable') === 'hidden')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, mixed>  $fieldConfig
+     * @return array<int, array<string, mixed>>
+     */
+    public static function applicantEditableFieldConfig(array $fieldConfig): array
+    {
+        return collect(static::normalizeDynamicFieldConfig($fieldConfig))
+            ->filter(fn (array $field): bool => (string) ($field['mode_form_pemohon'] ?? 'editable') === 'editable')
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<int, string>
      */
     public static function accountBoundFieldKeys(): array
     {
         return [
             'nama_pemohon',
+            'nama_mahasiswa',
+            'nama_dosen',
+            'nama_kaprodi',
+            'nama_dekan',
+            'nim_mahasiswa',
+            'nip_dosen',
+            'nip_kaprodi',
+            'nip_dekan',
+            'nomor_induk_mahasiswa',
+            'nomor_induk_dosen',
+            'nomor_induk_kaprodi',
+            'nomor_induk_dekan',
+            'program_studi_mahasiswa',
+            'program_studi_dosen',
+            'program_studi_kaprodi',
+            'program_studi_dekan',
             'email_pemohon',
             'nim_pemohon',
             'nomor_induk_pemohon',
@@ -129,8 +328,7 @@ class SuratDataContract
         $type = strtolower(trim((string) ($field['type'] ?? '')));
 
         return $type === 'recipient'
-            || in_array($name, static::adminManualDataKeys(), true)
-            || in_array($name, static::accountBoundFieldKeys(), true);
+            || in_array($name, static::adminManualDataKeys(), true);
     }
 
     /**
@@ -167,6 +365,22 @@ class SuratDataContract
             'telepon_pemohon' => ['label' => 'Telepon Pemohon', 'source_type' => 'computed', 'source_key' => 'telepon_pemohon', 'is_required' => false, 'default_value' => null, 'description' => 'Nomor telepon pemohon dari akun pengguna.'],
             'nama' => ['label' => 'Nama', 'source_type' => 'user', 'source_key' => 'name', 'is_required' => false, 'default_value' => null, 'description' => 'Nama dari akun pengguna.'],
             'email' => ['label' => 'Email', 'source_type' => 'user', 'source_key' => 'email', 'is_required' => false, 'default_value' => null, 'description' => 'Email pengguna.'],
+            'nama_mahasiswa' => ['label' => 'Nama Mahasiswa', 'source_type' => 'user', 'source_key' => 'name', 'is_required' => false, 'default_value' => null, 'description' => 'Nama pemohon yang berperan sebagai mahasiswa.'],
+            'nim_mahasiswa' => ['label' => 'NIM Mahasiswa', 'source_type' => 'computed', 'source_key' => 'nim_mahasiswa', 'is_required' => false, 'default_value' => null, 'description' => 'NIM mahasiswa dari akun pemohon.'],
+            'nomor_induk_mahasiswa' => ['label' => 'Nomor Induk Mahasiswa', 'source_type' => 'computed', 'source_key' => 'nomor_induk_mahasiswa', 'is_required' => false, 'default_value' => null, 'description' => 'Nomor induk mahasiswa dari akun pemohon.'],
+            'program_studi_mahasiswa' => ['label' => 'Program Studi Mahasiswa', 'source_type' => 'computed', 'source_key' => 'program_studi_mahasiswa', 'is_required' => false, 'default_value' => null, 'description' => 'Program studi mahasiswa dari akun pemohon.'],
+            'nama_dosen' => ['label' => 'Nama Dosen', 'source_type' => 'user', 'source_key' => 'name', 'is_required' => false, 'default_value' => null, 'description' => 'Nama pemohon yang berperan sebagai dosen.'],
+            'nip_dosen' => ['label' => 'NIP Dosen', 'source_type' => 'computed', 'source_key' => 'nip_dosen', 'is_required' => false, 'default_value' => null, 'description' => 'NIP dosen dari akun pemohon.'],
+            'nomor_induk_dosen' => ['label' => 'Nomor Induk Dosen', 'source_type' => 'computed', 'source_key' => 'nomor_induk_dosen', 'is_required' => false, 'default_value' => null, 'description' => 'Nomor induk dosen dari akun pemohon.'],
+            'program_studi_dosen' => ['label' => 'Program Studi Dosen', 'source_type' => 'computed', 'source_key' => 'program_studi_dosen', 'is_required' => false, 'default_value' => null, 'description' => 'Program studi dosen dari akun pemohon.'],
+            'nama_kaprodi' => ['label' => 'Nama Kaprodi', 'source_type' => 'computed', 'source_key' => 'nama_kaprodi', 'is_required' => false, 'default_value' => null, 'description' => 'Nama pejabat Kaprodi aktif.'],
+            'nip_kaprodi' => ['label' => 'NIP Kaprodi', 'source_type' => 'computed', 'source_key' => 'nip_kaprodi', 'is_required' => false, 'default_value' => null, 'description' => 'NIP Kaprodi aktif.'],
+            'nomor_induk_kaprodi' => ['label' => 'Nomor Induk Kaprodi', 'source_type' => 'computed', 'source_key' => 'nomor_induk_kaprodi', 'is_required' => false, 'default_value' => null, 'description' => 'Nomor induk Kaprodi aktif.'],
+            'program_studi_kaprodi' => ['label' => 'Program Studi Kaprodi', 'source_type' => 'computed', 'source_key' => 'program_studi_kaprodi', 'is_required' => false, 'default_value' => null, 'description' => 'Program studi Kaprodi aktif.'],
+            'nama_dekan' => ['label' => 'Nama Dekan', 'source_type' => 'computed', 'source_key' => 'nama_dekan', 'is_required' => false, 'default_value' => null, 'description' => 'Nama pejabat Dekan aktif.'],
+            'nip_dekan' => ['label' => 'NIP Dekan', 'source_type' => 'computed', 'source_key' => 'nip_dekan', 'is_required' => false, 'default_value' => null, 'description' => 'NIP Dekan aktif.'],
+            'nomor_induk_dekan' => ['label' => 'Nomor Induk Dekan', 'source_type' => 'computed', 'source_key' => 'nomor_induk_dekan', 'is_required' => false, 'default_value' => null, 'description' => 'Nomor induk Dekan aktif.'],
+            'program_studi_dekan' => ['label' => 'Program Studi Dekan', 'source_type' => 'computed', 'source_key' => 'program_studi_dekan', 'is_required' => false, 'default_value' => null, 'description' => 'Program studi Dekan aktif.'],
             'nama_penanda_tangan' => ['label' => 'Nama Penanda Tangan', 'source_type' => 'computed', 'source_key' => 'nama_penanda_tangan', 'is_required' => false, 'default_value' => null, 'description' => 'Nama pejabat penanda tangan dari akun approver aktif.'],
             'email_penanda_tangan' => ['label' => 'Email Penanda Tangan', 'source_type' => 'computed', 'source_key' => 'email_penanda_tangan', 'is_required' => false, 'default_value' => null, 'description' => 'Email pejabat penanda tangan dari akun approver aktif.'],
             'nik_penanda_tangan' => ['label' => 'Nomor Induk Penanda Tangan', 'source_type' => 'computed', 'source_key' => 'nik_penanda_tangan', 'is_required' => false, 'default_value' => null, 'description' => 'Alias nomor induk pejabat penanda tangan.'],
@@ -216,3 +430,4 @@ class SuratDataContract
         ];
     }
 }
+

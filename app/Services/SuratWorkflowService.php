@@ -223,6 +223,52 @@ class SuratWorkflowService
     }
 
     /**
+     * Admin melengkapi atau mengubah surat yang masih pending sebelum validasi.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function editPending(Surat $surat, User $admin, array $payload): Surat
+    {
+        abort_unless($admin->hasRole('admin'), 403, 'Hanya admin yang dapat mengedit surat.');
+        abort_unless($surat->status === Surat::STATUS_PENDING, 403, 'Hanya surat pending yang dapat diedit dengan alur validasi admin.');
+
+        $jenisSurat = $surat->jenisSurat;
+        $jenisSurat->loadMissing('template.placeholders', 'approvalRole');
+
+        $dynamicData = array_replace(
+            $this->extractExistingData($surat),
+            Arr::wrap($payload['data'] ?? []),
+        );
+        $dynamicData = $this->validateDynamicData($jenisSurat, $dynamicData);
+
+        return DB::transaction(function () use ($surat, $admin, $payload, $dynamicData, $jenisSurat): Surat {
+            if (array_key_exists('keperluan', $payload)) {
+                $surat->keperluan = (string) $payload['keperluan'];
+            }
+
+            $surat->isi_surat = json_encode([
+                'jenis_surat_id' => $surat->jenis_surat_id,
+                'jenis_surat' => $jenisSurat->nama,
+                'keperluan' => $surat->keperluan,
+                'data' => $dynamicData,
+            ], JSON_THROW_ON_ERROR);
+
+            $surat->save();
+
+            $this->syncSuratData($surat, $dynamicData);
+
+            $this->approvalWorkflow->approve(
+                $surat->fresh(),
+                ApprovalWorkflowService::ROLE_ADMIN,
+                $admin,
+                $payload['admin_note'] ?? null,
+            );
+
+            return $this->freshReviewedSurat($surat);
+        });
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     public function adminReview(Surat $surat, User $admin, array $payload): Surat
@@ -346,6 +392,10 @@ class SuratWorkflowService
         $messages = [];
 
         foreach ($this->normalizeFieldConfig($jenisSurat->field_config ?? []) as $field) {
+            if ((string) ($field['mode_form_pemohon'] ?? 'editable') === 'hidden') {
+                continue;
+            }
+
             $fieldRules = [($field['required'] ?? false) ? 'required' : 'nullable'];
             $options = collect($field['options'] ?? [])
                 ->map(fn ($option) => is_array($option) ? ($option['value'] ?? null) : $option)
@@ -460,13 +510,7 @@ class SuratWorkflowService
     protected function normalizeFieldConfig(array $fieldConfig): array
     {
         return collect(SuratDataContract::filterDynamicFieldConfig($fieldConfig))
-            ->map(static fn (array $field): array => [
-                'name' => (string) $field['name'],
-                'label' => $field['label'] ?? $field['name'],
-                'type' => strtolower((string) ($field['type'] ?? 'text')),
-                'required' => (bool) ($field['required'] ?? false),
-                'options' => $field['options'] ?? [],
-            ])
+            ->map(static fn (array $field): array => SuratDataContract::normalizeDynamicFieldConfigItem($field))
             ->values()
             ->all();
     }

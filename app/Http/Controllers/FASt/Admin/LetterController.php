@@ -143,6 +143,7 @@ class LetterController extends Controller
                     ],
                 ],
             ],
+            'pdf',
         );
 
         return Inertia::render('admin/letters/Preview', [
@@ -195,25 +196,30 @@ class LetterController extends Controller
             ->with('success', 'PDF surat berhasil digenerate.');
     }
 
-    public function edit(int $id): Response
+    public function edit(Request $request, int $id): Response
     {
         $surat = Surat::query()
             ->with(['jenisSurat.category', 'jenisSurat.template', 'jenisSurat.approvalRole', 'dataEntries', 'approvalFlows'])
             ->findOrFail($id);
 
-        abort_unless($surat->status === Surat::STATUS_REVISION_REQUESTED, 403);
+        abort_unless(in_array($surat->status, [Surat::STATUS_PENDING, Surat::STATUS_REVISION_REQUESTED], true), 403);
         abort_unless(auth()->user()?->hasRole('admin'), 403);
-        abort_unless($surat->latestRevisionRequestFlow() !== null, 403);
+        if ($surat->status === Surat::STATUS_REVISION_REQUESTED) {
+            abort_unless($surat->latestRevisionRequestFlow() !== null, 403);
+        }
 
         $jenisSurat = $surat->jenisSurat;
         $existingData = $this->workflow->extractExistingData($surat);
         $manualData = SuratDataContract::extractManualDataFromValidatedPayload($existingData);
+        $returnTo = $this->safeReturnTo((string) $request->query('return_to', '/admin/surat/'.$surat->id), '/admin/surat/'.$surat->id);
 
         return Inertia::render('admin/letters/Edit', [
             'surat' => [
                 'id' => $surat->id,
                 'keperluan' => $surat->keperluan,
+                'status' => $surat->status,
             ],
+            'returnTo' => $returnTo,
             'jenisSurat' => $this->serializeJenisSurat($jenisSurat),
             'formData' => [
                 'jenis_surat_id' => $jenisSurat->id,
@@ -237,11 +243,17 @@ class LetterController extends Controller
 
         [, $payload] = $this->validatedPayload($request);
 
-        $updatedSurat = $this->workflow->editRejected($surat, $user, $payload);
+        $updatedSurat = $surat->status === Surat::STATUS_PENDING
+            ? $this->workflow->editPending($surat, $user, $payload)
+            : $this->workflow->editRejected($surat, $user, $payload);
+
+        $returnTo = $this->safeReturnTo((string) $request->input('return_to', '/admin/surat/'.$updatedSurat->id), '/admin/surat/'.$updatedSurat->id);
 
         return redirect()
-            ->route('admin.surat.show', $updatedSurat->id)
-            ->with('success', 'Surat berhasil diperbarui dan diteruskan kembali untuk persetujuan.');
+            ->to($returnTo)
+            ->with('success', $surat->status === Surat::STATUS_PENDING
+                ? 'Surat berhasil diperbarui dan divalidasi admin.'
+                : 'Surat berhasil diperbarui dan diteruskan kembali untuk persetujuan.');
     }
 
     /**
@@ -309,40 +321,7 @@ class LetterController extends Controller
                 'subject' => $jenisSurat->template?->subject,
             ],
             'field_config' => collect(SuratDataContract::filterDynamicFieldConfig($jenisSurat->field_config ?? []))
-                ->map(function (array $field): array {
-                    $options = collect($field['options'] ?? [])
-                        ->map(function ($option): array {
-                            if (is_array($option)) {
-                                $value = (string) ($option['value'] ?? '');
-
-                                return [
-                                    'label' => (string) ($option['label'] ?? $value),
-                                    'value' => $value,
-                                ];
-                            }
-
-                            return [
-                                'label' => (string) $option,
-                                'value' => (string) $option,
-                            ];
-                        })
-                        ->filter(fn (array $option): bool => $option['value'] !== '')
-                        ->values()
-                        ->all();
-
-                    return [
-                        'name' => (string) $field['name'],
-                        'label' => (string) ($field['label'] ?? $field['name']),
-                        'type' => strtolower((string) ($field['type'] ?? 'text')),
-                        'required' => (bool) ($field['required'] ?? false),
-                        'placeholder' => (string) ($field['placeholder'] ?? ''),
-                        'help' => (string) ($field['help'] ?? ''),
-                        'options' => $options,
-                        'repeatable' => (bool) ($field['repeatable'] ?? false) || strtolower((string) ($field['type'] ?? '')) === 'repeatable',
-                        'add_label' => (string) ($field['add_label'] ?? 'Tambah'),
-                        'item_label' => (string) ($field['item_label'] ?? 'Item'),
-                    ];
-                })
+                ->map(fn (array $field): array => SuratDataContract::normalizeDynamicFieldConfigItem($field))
                 ->values()
                 ->all(),
         ];
@@ -372,5 +351,24 @@ class LetterController extends Controller
                 return [(string) $field['name'] => ''];
             })
             ->all();
+    }
+
+    protected function safeReturnTo(string $returnTo, string $fallback): string
+    {
+        $returnTo = trim($returnTo);
+
+        if ($returnTo === '') {
+            return $fallback;
+        }
+
+        if (! str_starts_with($returnTo, '/')) {
+            return $fallback;
+        }
+
+        if (preg_match('#^//|^[a-zA-Z][a-zA-Z0-9+.-]*:#', $returnTo) === 1) {
+            return $fallback;
+        }
+
+        return $returnTo;
     }
 }

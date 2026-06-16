@@ -11,6 +11,7 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\Process\Process;
 use Mpdf\Config\ConfigVariables;
 use Mpdf\Config\FontVariables;
 use Mpdf\Mpdf;
@@ -100,6 +101,7 @@ class SuratDocumentGeneratorService
             'template_version' => $rendered['template']->version,
             'status' => Surat::STATUS_FINISHED,
             'tanggal_selesai' => $finalizedAt,
+            'nomor_surat_status' => Surat::NOMOR_SURAT_STATUS_ISSUED,
         ];
 
         if ($this->suratTableHasColumn('generated_by')) {
@@ -116,6 +118,7 @@ class SuratDocumentGeneratorService
         if (blank($surat->nomor_surat)) {
             $surat->forceFill([
                 'nomor_surat' => $this->generateNomorSurat($surat),
+                'nomor_surat_status' => Surat::NOMOR_SURAT_STATUS_RESERVED,
             ])->save();
         }
 
@@ -193,6 +196,11 @@ class SuratDocumentGeneratorService
 
     protected function renderPdfOutput(array $viewPayload): string
     {
+        $browserPdf = $this->renderPdfOutputWithChrome($viewPayload);
+        if ($browserPdf !== null) {
+            return $browserPdf;
+        }
+
         $styles     = (string) ($viewPayload['styles'] ?? '');
         $customCss  = (string) ($viewPayload['customCss'] ?? '');
         $bodyHtml   = (string) ($viewPayload['bodyHtml'] ?? '');
@@ -265,8 +273,8 @@ CSS;
         $mpdf = new Mpdf([
             'mode'          => 'utf-8',
             'format'        => 'A4',
-            'margin_top'    => 48,
-            'margin_bottom' => 28,
+            'margin_top'    => 38,
+            'margin_bottom' => 16,
             'margin_left'   => 15,
             'margin_right'  => 15,
             'margin_header' => 5,
@@ -286,6 +294,96 @@ CSS;
         $mpdf->WriteHTML($bodyHtml, \Mpdf\HTMLParserMode::HTML_BODY);
 
         return $mpdf->Output('', 'S');
+    }
+
+    protected function renderPdfOutputWithChrome(array $viewPayload): ?string
+    {
+        $chromeBinary = $this->resolveChromeBinary();
+
+        if ($chromeBinary === null) {
+            return null;
+        }
+
+        $tempDir = $this->resolveBrowserTempDir();
+        $profileDir = $tempDir . DIRECTORY_SEPARATOR . 'profile';
+        File::ensureDirectoryExists($profileDir);
+
+        $htmlPath = $tempDir . DIRECTORY_SEPARATOR . 'document.html';
+        $pdfPath = $tempDir . DIRECTORY_SEPARATOR . 'document.pdf';
+        $html = $this->buildBrowserPdfHtml($viewPayload);
+
+        File::put($htmlPath, $html);
+
+        $process = new Process([
+            $chromeBinary,
+            '--headless=new',
+            '--disable-gpu',
+            '--disable-extensions',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--hide-scrollbars',
+            '--run-all-compositor-stages-before-draw',
+            '--virtual-time-budget=4000',
+            '--user-data-dir=' . $profileDir,
+            '--allow-file-access-from-files',
+            '--print-to-pdf=' . $pdfPath,
+            '--print-to-pdf-no-header',
+            'file:///' . str_replace('\\', '/', $htmlPath),
+        ]);
+
+        $process->setTimeout(120);
+        $process->run();
+
+        if (! $process->isSuccessful() || ! File::exists($pdfPath)) {
+            return null;
+        }
+
+        return File::get($pdfPath);
+    }
+
+    protected function buildBrowserPdfHtml(array $viewPayload): string
+    {
+        return $this->renderer->wrapDocumentHtml(
+            (string) ($viewPayload['title'] ?? 'Surat'),
+            (string) ($viewPayload['html'] ?? ''),
+            $viewPayload['template'] ?? null,
+        );
+    }
+
+    protected function resolveChromeBinary(): ?string
+    {
+        $candidates = array_filter([
+            env('FAST_PDF_CHROME_PATH'),
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && $candidate !== '' && File::exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    protected function resolveBrowserTempDir(): string
+    {
+        $baseDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR . 'projek-fast-browser-pdf';
+        $suffix = app()->runningUnitTests()
+            ? 'tests'
+            : 'run';
+
+        $dir = $baseDir
+            . DIRECTORY_SEPARATOR . $suffix
+            . DIRECTORY_SEPARATOR . Str::uuid()->toString();
+
+        File::ensureDirectoryExists($dir);
+
+        return $dir;
     }
 
     protected function resolveMpdfTempDir(): string

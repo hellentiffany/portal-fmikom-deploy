@@ -360,15 +360,21 @@ function initials(name?: string | null) {
                                 <CheckCircle2 class="size-3" /> Proses
                             </button>
                             <Link
-                                v-if="
-                                    item.status === 'revision_requested' &&
-                                    item.can_edit
-                                "
-                                :href="`/admin/surat/${item.id}/edit`"
+                                v-if="item.can_edit"
+                                :href="`/admin/surat/${item.id}/edit?return_to=/admin/surat`"
                                 class="flex items-center gap-1 rounded-lg bg-amber-600 px-2.5 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-amber-700"
-                                title="Edit & Teruskan"
+                                :title="
+                                    item.status === 'pending'
+                                        ? 'Lengkapi Data & Validasi'
+                                        : 'Edit & Teruskan'
+                                "
                             >
-                                <CheckCircle2 class="size-3" /> Proses Ulang
+                                <CheckCircle2 class="size-3" />
+                                {{
+                                    item.status === 'pending'
+                                        ? 'Lengkapi'
+                                        : 'Proses Ulang'
+                                }}
                             </Link>
                             <button
                                 v-if="item.status === 'pending'"

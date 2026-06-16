@@ -33,15 +33,21 @@ type Category = {
     warna?: string | null;
     icon?: string | null;
 };
-const props = defineProps<{
-    jenisSurats: JenisSurat[];
-    categories: Category[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        jenisSurats?: JenisSurat[];
+        categories?: Category[];
+    }>(),
+    {
+        jenisSurats: () => [],
+        categories: () => [],
+    },
+);
 const form = useForm({ jenis_surat_id: '' });
 const searchQuery = ref('');
 const activeCategory = ref<number | null>(null);
 const filtered = computed(() => {
-    let list = props.jenisSurats;
+    let list = props.jenisSurats ?? [];
     if (activeCategory.value !== null) {
         list = list.filter((j) => j.category?.id === activeCategory.value);
     }
@@ -58,7 +64,7 @@ const filtered = computed(() => {
 });
 const selected = computed(
     () =>
-        props.jenisSurats.find((j) => String(j.id) === form.jenis_surat_id) ??
+        (props.jenisSurats ?? []).find((j) => String(j.id) === form.jenis_surat_id) ??
         null,
 );
 const colorMap: Record<string, string> = {

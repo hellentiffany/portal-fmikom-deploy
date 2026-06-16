@@ -273,6 +273,8 @@ HTML;
             'subjudul'        => static::renderSubjudul($komp, $data),
             'paragraf'        => static::renderParagraf($komp, $data),
             'paragraf_indent' => static::renderParagrafIndent($komp, $data),
+            'daftar_bernomor',
+            'paragraf_bernomor' => static::renderParagrafBernomor($komp, $data),
             'header_surat'    => static::renderHeaderSurat($komp, $data),
             'kepada_yth'      => static::renderKepadaYth($komp, $data),
             'tabel_data'      => static::renderTabelData($komp, $data),
@@ -320,12 +322,12 @@ HTML;
         $align       = $komp['align'] ?? 'justify';
         $italic      = ($komp['italic'] ?? false) ? 'font-style: italic;' : '';
         $bold        = ($komp['bold'] ?? false) ? 'font-weight: bold;' : '';
-        $textIndent  = isset($komp['text_indent']) && $komp['text_indent'] > 0
-                        ? "text-indent: {$komp['text_indent']}px;" : '';
         $size        = $komp['font_size'] ?? '12pt';
         $lineHeight  = trim((string) ($data['line_height_paragraf'] ?? '1.45')) ?: '1.45';
         $teks        = nl2br($teks);
-        return "<p style=\"margin: 0 0 6px 0; text-align: {$align}; font-size: {$size}; line-height: {$lineHeight}; {$italic} {$bold} {$textIndent}\">{$teks}</p>\n";
+        $indentStyle = static::paragraphIndentStyle((string) ($komp['teks'] ?? ''), $komp['text_indent'] ?? null);
+
+        return "<p style=\"margin: 0 0 6px 0; text-align: {$align}; font-size: {$size}; line-height: {$lineHeight}; white-space: pre-wrap; overflow-wrap: anywhere; {$italic} {$bold} {$indentStyle}\">{$teks}</p>\n";
     }
 
     // ── PARAGRAF INDENT (seluruh blok menjorok) ────────────────────────────
@@ -336,12 +338,91 @@ HTML;
         $indent      = $komp['indent'] ?? 40;
         $italic      = ($komp['italic'] ?? false) ? 'font-style: italic;' : '';
         $bold        = ($komp['bold'] ?? false) ? 'font-weight: bold;' : '';
-        $textIndent  = isset($komp['text_indent']) && $komp['text_indent'] > 0
-                        ? "text-indent: {$komp['text_indent']}px;" : '';
         $size        = $komp['font_size'] ?? '12pt';
         $lineHeight  = trim((string) ($data['line_height_paragraf'] ?? '1.45')) ?: '1.45';
         $teks        = nl2br($teks);
-        return "<p style=\"margin: 0 0 6px {$indent}px; text-align: {$align}; font-size: {$size}; line-height: {$lineHeight}; {$italic} {$bold} {$textIndent}\">{$teks}</p>\n";
+        $indentStyle = static::paragraphIndentStyle((string) ($komp['teks'] ?? ''), $komp['text_indent'] ?? null);
+
+        return "<p style=\"margin: 0 0 6px {$indent}px; text-align: {$align}; font-size: {$size}; line-height: {$lineHeight}; white-space: pre-wrap; overflow-wrap: anywhere; {$italic} {$bold} {$indentStyle}\">{$teks}</p>\n";
+    }
+
+    protected static function renderParagrafBernomor(array $komp, array $data): string
+    {
+        $items = static::daftarBernomorItems($komp, $data);
+        if ($items === []) {
+            return '';
+        }
+
+        $align      = $komp['align'] ?? 'justify';
+        $italic     = ($komp['italic'] ?? false) ? 'font-style: italic;' : '';
+        $bold       = ($komp['bold'] ?? false) ? 'font-weight: bold;' : '';
+        $size       = $komp['font_size'] ?? '12pt';
+        $lineHeight = trim((string) ($data['line_height_paragraf'] ?? '1.45')) ?: '1.45';
+        $marginLeft = (int) ($komp['margin_left'] ?? 0);
+        $numWidth   = (int) ($komp['text_indent'] ?? 24);
+        if ($numWidth < 18) {
+            $numWidth = 18;
+        }
+        $contentPadding = 6;
+
+        $rows = '';
+        foreach ($items as $index => $item) {
+            $number = $index + 1;
+            $content = static::fill($item, $data);
+            $content = nl2br($content);
+
+            $rows .= <<<HTML
+<tr>
+    <td style="width: {$numWidth}px; padding: 0 {$contentPadding}px 2px 0; vertical-align: top; text-align: right; white-space: nowrap;">{$number}.</td>
+    <td style="padding: 0 0 2px 0; vertical-align: top; text-align: {$align}; white-space: pre-wrap; overflow-wrap: anywhere; line-height: {$lineHeight};">{$content}</td>
+</tr>
+HTML;
+        }
+
+        return <<<HTML
+<table style="margin: 0 0 6px {$marginLeft}px; border-collapse: collapse; font-size: {$size}; line-height: {$lineHeight}; {$italic} {$bold}">
+    <tbody>
+        {$rows}
+    </tbody>
+</table>
+HTML;
+    }
+
+    protected static function daftarBernomorItems(array $komp, array $data): array
+    {
+        $items = $komp['items'] ?? null;
+        if (is_array($items)) {
+            $filtered = array_values(array_filter(array_map(static function ($item): string {
+                return trim((string) $item);
+            }, $items), static fn (string $item): bool => $item !== ''));
+
+            if ($filtered !== []) {
+                return $filtered;
+            }
+        }
+
+        $raw = trim((string) ($komp['teks'] ?? ''));
+        if ($raw === '') {
+            return [];
+        }
+
+        $lines = preg_split("/\r\n|\n|\r/", $raw) ?: [];
+        $result = [];
+
+        foreach ($lines as $line) {
+            $item = preg_replace('/^\s*\d+[.)-]?\s+/', '', $line);
+            $item = preg_replace('/^\s*[-*•]\s+/', '', $item ?? '');
+            $item = trim((string) $item);
+            if ($item !== '') {
+                $result[] = $item;
+            }
+        }
+
+        if ($result !== []) {
+            return $result;
+        }
+
+        return [$raw];
     }
 
     // ── HEADER SURAT (Nomor/Lampiran/Perihal kiri | Kota,Tanggal kanan) ───
@@ -438,7 +519,7 @@ HTML;
             $label = htmlspecialchars($row['label'] ?? '');
             $nilai = static::fill($row['nilai'] ?? '', $data);
             $html .= "<tr>
-                <td style=\"width: 110px; padding: 1.5px 0; vertical-align: top; line-height: {$lineHeight};\">{$label}</td>
+                <td style=\"width: 150px; white-space: nowrap; padding: 1.5px 0; vertical-align: top; line-height: {$lineHeight};\">{$label}</td>
                 <td style=\"width: 12px; padding: 1.5px 0; vertical-align: top; text-align: center; line-height: {$lineHeight};\">:</td>
                 <td style=\"padding: 1.5px 0; vertical-align: top; white-space: nowrap; line-height: {$lineHeight};\">{$nilai}</td>
             </tr>\n";
@@ -461,7 +542,7 @@ HTML;
             $label = htmlspecialchars($row['label'] ?? '');
             $nilai = static::fill($row['nilai'] ?? '', $data);
             $html .= "<tr>
-                <td style=\"width: 96px; padding: 1.5px 0; vertical-align: top; line-height: {$lineHeight};\">{$label}</td>
+                <td style=\"width: 150px; white-space: nowrap; padding: 1.5px 0; vertical-align: top; line-height: {$lineHeight};\">{$label}</td>
                 <td style=\"width: 12px; padding: 1.5px 0; vertical-align: top; text-align: center; line-height: {$lineHeight};\">:</td>
                 <td style=\"padding: 1.5px 0; vertical-align: top; white-space: nowrap; line-height: {$lineHeight};\">{$nilai}</td>
             </tr>\n";
@@ -611,6 +692,27 @@ HTML;
     }
 
     // ── SPASI ──────────────────────────────────────────────────────────────
+    protected static function paragraphIndentStyle(string $rawText, mixed $configuredIndent = null, bool $forceHanging = false): string
+    {
+        $text = trim($rawText);
+        $configuredIndent = is_numeric($configuredIndent) ? (int) $configuredIndent : 0;
+
+        if ($text === '') {
+            return $configuredIndent > 0 ? "text-indent: {$configuredIndent}px;" : '';
+        }
+
+        $isNumbered = preg_match('/^\s*\d+[.)-]?\s+/', $text) === 1;
+        $isBulleted = preg_match('/^\s*[-*•]\s+/', $text) === 1;
+
+        if (! $forceHanging && ! $isNumbered && ! $isBulleted) {
+            return $configuredIndent > 0 ? "text-indent: {$configuredIndent}px;" : '';
+        }
+
+        $hang = $configuredIndent > 0 ? $configuredIndent : 18;
+
+        return "padding-left: {$hang}px; text-indent: -{$hang}px;";
+    }
+
     protected static function renderSpasi(array $komp): string
     {
         $tinggi = intval($komp['tinggi'] ?? 20);

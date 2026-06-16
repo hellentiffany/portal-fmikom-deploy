@@ -98,6 +98,9 @@ class FastApprovalWorkflowService
                 'status' => Surat::STATUS_REJECTED_ADMIN,
                 'catatan_revisi' => null,
                 'rejection_reason' => $notes,
+                'nomor_surat_status' => filled($surat->nomor_surat)
+                    ? Surat::NOMOR_SURAT_STATUS_VOID
+                    : $surat->nomor_surat_status,
             ]);
 
             SuratHistoryService::rejected(
@@ -166,6 +169,9 @@ class FastApprovalWorkflowService
                 'status' => Surat::STATUS_REJECTED_APPROVER,
                 'catatan_revisi' => null,
                 'rejection_reason' => $notes,
+                'nomor_surat_status' => filled($surat->nomor_surat)
+                    ? Surat::NOMOR_SURAT_STATUS_VOID
+                    : $surat->nomor_surat_status,
             ]);
 
             SuratHistoryService::rejected(

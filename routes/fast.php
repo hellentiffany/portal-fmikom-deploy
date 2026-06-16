@@ -62,6 +62,8 @@ Route::middleware(['auth', 'verified'])
     ->group(function (): void {
         Route::post('/notifications/{notificationId}/read', [NotificationController::class, 'read'])
             ->name('notifications.read');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])
+            ->name('notifications.read-all');
     });
 
 /*
@@ -92,6 +94,9 @@ Route::middleware(['auth', 'verified', 'fast.user'])
             ->name('submissions.store');
         Route::get('/history', [MahasiswaHistoryController::class, 'index'])
             ->name('history');
+        Route::get('/history/{id}', [MahasiswaHistoryController::class, 'show'])
+            ->whereNumber('id')
+            ->name('history.show');
         Route::post('/surat/{id}/cancel', [MahasiswaHistoryController::class, 'cancel'])
             ->whereNumber('id')
             ->name('surat.cancel');
@@ -117,6 +122,9 @@ $userRoutes = function (
         ->name('submissions.store');
     Route::get('/history', [$historyController, 'index'])
         ->name('history');
+    Route::get('/history/{id}', [$historyController, 'show'])
+        ->whereNumber('id')
+        ->name('history.show');
     Route::post('/surat/{id}/cancel', [$historyController, 'cancel'])
         ->whereNumber('id')
         ->name('surat.cancel');

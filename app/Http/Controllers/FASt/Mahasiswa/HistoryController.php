@@ -6,4 +6,8 @@ use App\Http\Controllers\FASt\Shared\User\HistoryController as BaseHistoryContro
 
 class HistoryController extends BaseHistoryController
 {
+    protected function basePath(): string
+    {
+        return '/mahasiswa';
+    }
 }

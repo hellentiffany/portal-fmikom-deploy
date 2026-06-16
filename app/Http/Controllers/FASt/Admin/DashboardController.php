@@ -252,12 +252,7 @@ class DashboardController extends Controller
                 })
                 ->values(),
             'can_approve' => $surat->canBeValidatedByAdmin(),
-            'can_edit' => $surat->status === Surat::STATUS_REVISION_REQUESTED
-                && (
-                    $surat->validated_by_admin_id !== null
-                    || $surat->approvalFlows->contains(fn ($flow) => $flow->role === 'admin' && $flow->status === 'approved')
-                )
-                && $surat->latestRevisionRequestFlow() !== null,
+            'can_edit' => $surat->canBeEditedByAdmin(),
             'previewTemplateUrl' => route('documents.surat.template-preview', $surat->id, absolute: false),
             'generatedDocumentUrl' => filled($surat->nomor_surat) || filled($surat->rendered_snapshot)
                 ? (
@@ -275,7 +270,7 @@ class DashboardController extends Controller
             ->with(['pemohon', 'jenisSurat.template.placeholders', 'dataEntries'])
             ->findOrFail($id);
 
-        $rendered = $this->templateRenderer->renderForSurat($surat);
+        $rendered = $this->templateRenderer->renderForSurat($surat, true, 'pdf');
 
         return response(
             $this->templateRenderer->wrapDocumentHtml('Preview ' . $surat->jenisSurat?->nama, $rendered['html'], $surat->jenisSurat?->template),
@@ -314,19 +309,33 @@ class DashboardController extends Controller
             ->with(['pemohon', 'jenisSurat.template.placeholders', 'dataEntries'])
             ->findOrFail($id);
 
-        $snapshotHtml = trim((string) ($surat->rendered_snapshot ?? ''));
-        if ($snapshotHtml !== '') {
-            return response(
-                $this->templateRenderer->wrapDocumentHtml(
-                    ($surat->jenisSurat?->nama ?? 'Surat') . ' - ' . ($surat->nomor_surat ?? ''),
-                    $snapshotHtml,
-                    $surat->jenisSurat?->template,
-                ),
-                200,
-            )->header('Content-Type', 'text/html; charset=UTF-8');
+        $filename = sprintf(
+            '%s-%d.pdf',
+            str_replace(' ', '-', strtolower((string) ($surat->jenisSurat?->nama ?: 'surat'))),
+            $surat->id,
+        );
+
+        if (
+            $surat->status === Surat::STATUS_FINISHED &&
+            filled($surat->generated_file_path) &&
+            Storage::disk('public')->exists($surat->generated_file_path)
+        ) {
+            return Storage::disk('public')->response(
+                $surat->generated_file_path,
+                $filename,
+                [
+                    'Content-Type'        => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+                    'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+                    'Pragma'              => 'no-cache',
+                    'Expires'             => '0',
+                ],
+            );
         }
 
-        $rendered = $this->templateRenderer->renderForSurat($surat);
+        abort_if($surat->status === Surat::STATUS_FINISHED, 404, 'File PDF final tidak ditemukan.');
+
+        $rendered = $this->templateRenderer->renderForSurat($surat, true, 'pdf');
 
         return response(
             $this->templateRenderer->wrapDocumentHtml(
@@ -358,23 +367,10 @@ class DashboardController extends Controller
             'Expires'             => '0',
         ];
 
-        $templateReady = $surat->jenisSurat?->template !== null;
-
-        // Jika template masih tersedia, PDF harus selalu digenerate ulang
-        // supaya preview/detail tidak memakai file cached yang sudah lama.
-        if ($templateReady) {
-            $generated = app(\App\Services\SuratDocumentGeneratorService::class)->generate($surat);
-
-            return \Illuminate\Support\Facades\Storage::disk('public')->response(
-                $generated->generated_file_path,
-                $filename,
-                $headers,
-            );
-        }
-
         if (
+            $surat->status === Surat::STATUS_FINISHED &&
             filled($surat->generated_file_path) &&
-            \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->generated_file_path)
+            Storage::disk('public')->exists($surat->generated_file_path)
         ) {
             return \Illuminate\Support\Facades\Storage::disk('public')->response(
                 $surat->generated_file_path,
@@ -384,7 +380,7 @@ class DashboardController extends Controller
         }
 
         abort_if($user === null, 403);
-        abort(404);
+        abort(404, 'PDF final belum tersedia.');
     }
 
     public function previewAttachment(int $id): StreamedResponse
@@ -430,6 +426,3 @@ class DashboardController extends Controller
         return back()->with('success', 'Pengajuan berhasil ditolak.');
     }
 }
-
-
-

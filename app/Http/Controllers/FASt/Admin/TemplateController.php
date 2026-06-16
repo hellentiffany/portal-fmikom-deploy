@@ -4,13 +4,13 @@ namespace App\Http\Controllers\FASt\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\JenisSurat;
-use App\Models\Surat;
 use App\Models\SuratTemplate;
 use App\Models\SuratCategory;
 use App\Models\TemplateGlobalSetting;
 use App\Models\Role;
 use App\Services\SuratTemplateRendererService;
 use App\Support\SuratDataContract;
+use App\Support\TemplatePlaceholderSynchronizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -274,6 +274,7 @@ class TemplateController extends Controller
         $request->validate([
             'template_body'           => ['required', 'string'],
             'name'                    => ['nullable', 'string', 'max:255'],
+            'jenis_surat_nama'       => ['nullable', 'string', 'max:255'],
             'field_config'            => ['nullable', 'array'],
             'field_config.*.name'     => ['nullable', 'string'],
             'field_config.*.label'    => ['nullable', 'string'],
@@ -282,6 +283,12 @@ class TemplateController extends Controller
             'field_config.*.repeatable' => ['nullable', 'boolean'],
             'field_config.*.add_label'  => ['nullable', 'string'],
             'field_config.*.item_label' => ['nullable', 'string'],
+            'field_config.*.placeholder' => ['nullable', 'string'],
+            'field_config.*.help' => ['nullable', 'string'],
+            'field_config.*.options' => ['nullable', 'array'],
+            'field_config.*.sumber_data' => ['nullable', 'in:data_pemohon,data_kampus,data_sistem'],
+            'field_config.*.editable_role' => ['nullable', 'in:mahasiswa,admin,sistem'],
+            'field_config.*.mode_form_pemohon' => ['nullable', 'in:editable,readonly,hidden'],
             'layout'                  => ['nullable', 'array'],
         ]);
 
@@ -294,23 +301,20 @@ class TemplateController extends Controller
         if ($request->has('allowed_role_id')) $meta['allowed_role_id']  = $request->input('allowed_role_id') ?: null;
         if ($request->has('perlu_approval'))  $meta['perlu_approval']   = $request->boolean('perlu_approval');
         if ($request->has('is_active'))       $meta['is_active']        = $request->boolean('is_active');
+        if ($request->filled('jenis_surat_nama')) {
+            $newName = trim((string) $request->input('jenis_surat_nama'));
+
+            if ($newName !== '' && $newName !== $jenisSurat->nama) {
+                $meta['nama'] = $newName;
+                $meta['slug'] = Str::slug($newName) . '-' . time();
+            }
+        }
 
         // ── Simpan field_config ────────────────────────────────────────────
         if ($request->has('field_config')) {
             $fieldConfig = collect(SuratDataContract::filterDynamicFieldConfig($request->input('field_config', [])))
                 ->filter(fn ($f) => is_array($f) && !empty(trim($f['name'] ?? '')) && !empty(trim($f['label'] ?? '')))
-                ->map(fn ($f) => [
-                    'name'        => trim((string) ($f['name'] ?? '')),
-                    'label'       => trim((string) ($f['label'] ?? '')),
-                    'type'        => (string) ($f['type'] ?? 'text'),
-                    'required'    => (bool) ($f['required'] ?? false),
-                    'placeholder' => (string) ($f['placeholder'] ?? ''),
-                    'help'        => (string) ($f['help'] ?? ''),
-                    'options'     => $f['options'] ?? [],
-                    'repeatable'  => (bool) ($f['repeatable'] ?? false) || (string) ($f['type'] ?? '') === 'repeatable',
-                    'add_label'   => (string) ($f['add_label'] ?? 'Tambah'),
-                    'item_label'  => (string) ($f['item_label'] ?? 'Item'),
-                ])
+                ->map(fn ($f) => SuratDataContract::normalizeDynamicFieldConfigItem($f))
                 ->values()
                 ->all();
 
@@ -370,6 +374,11 @@ class TemplateController extends Controller
             $template = $activeTemplate;
         }
 
+        TemplatePlaceholderSynchronizer::syncTemplate(
+            $template,
+            $jenisSurat->field_config ?? []
+        );
+
         // ── Simpan layout (margin & indent) ke css_style
         if ($request->has('layout')) {
             $layout = $request->input('layout', []);
@@ -415,7 +424,7 @@ class TemplateController extends Controller
     public function preview(JenisSurat $jenisSurat): HttpResponse
     {
         $template = $jenisSurat->template()->with('placeholders')->firstOrFail();
-        $rendered = $this->templateRenderer->renderTemplatePreview($template);
+        $rendered = $this->templateRenderer->renderTemplatePreview($template, 'pdf');
 
         return response(
             $this->templateRenderer->wrapDocumentHtml('Preview Template ' . $jenisSurat->nama, $rendered['html'], $template),
@@ -426,38 +435,40 @@ class TemplateController extends Controller
     // ── Destroy ───────────────────────────────────────────────────────────────
     public function destroy(JenisSurat $jenisSurat): RedirectResponse
     {
-        $activeSuratCount = Surat::query()
-            ->where('jenis_surat_id', $jenisSurat->id)
-            ->whereNotIn('status', [
-                Surat::STATUS_FINISHED,
-                Surat::STATUS_REJECTED_ADMIN,
-                Surat::STATUS_REJECTED_APPROVER,
-                Surat::STATUS_CANCELLED,
-            ])
-            ->count();
-
-        if ($activeSuratCount > 0) {
-            return back()->with('error', "Template tidak bisa dihapus karena masih ada {$activeSuratCount} surat aktif yang memakai jenis surat ini.");
-        }
-
         $deletedCount = 0;
+        $jenisSuratDeleted = false;
         $templateName = $jenisSurat->template?->name ?? $jenisSurat->nama;
 
-        DB::transaction(function () use ($jenisSurat, &$deletedCount): void {
-            $template = $jenisSurat->template()->with('placeholders')->first();
+        DB::transaction(function () use ($jenisSurat, &$deletedCount, &$jenisSuratDeleted): void {
+            $template = $jenisSurat->template()
+                ->withTrashed()
+                ->with('placeholders')
+                ->first();
 
             if ($template === null) {
+                if ($jenisSurat->trashed() === false) {
+                    $jenisSurat->delete();
+                    $jenisSuratDeleted = true;
+                }
+
                 return;
             }
 
-            $template->placeholders()->delete();
-            $deletedCount = (int) $template->delete();
+            $template->placeholders()->withTrashed()->get()->each->forceDelete();
+            $deletedCount = (int) $template->forceDelete();
+
+            if ($jenisSurat->trashed() === false) {
+                $jenisSurat->delete();
+                $jenisSuratDeleted = true;
+            }
         });
 
         return redirect()
             ->route('admin.templates.index')
-            ->with('success', $deletedCount > 0
-                ? "Template surat \"{$templateName}\" berhasil dihapus. Surat yang sudah dibuat tetap aman."
+            ->with('success', $jenisSuratDeleted
+                ? ($deletedCount > 0
+                    ? "Template aktif \"{$templateName}\" berhasil dihapus dan jenis suratnya disembunyikan dari gallery. Surat lama, riwayat, dan arsip tetap aman."
+                    : "Jenis surat \"{$templateName}\" berhasil disembunyikan dari gallery.")
                 : 'Tidak ada template aktif yang perlu dihapus.');
     }
 
@@ -528,24 +539,7 @@ class TemplateController extends Controller
                 'nama' => $jenisSurat->allowedRole?->nama,
             ],
             'field_config' => collect(SuratDataContract::filterDynamicFieldConfig($jenisSurat->field_config ?? []))
-                ->map(fn (array $f): array => [
-                    'name'        => (string) $f['name'],
-                    'label'       => (string) ($f['label'] ?? $f['name']),
-                    'type'        => strtolower((string) ($f['type'] ?? 'text')),
-                    'required'    => (bool) ($f['required'] ?? false),
-                    'placeholder' => (string) ($f['placeholder'] ?? ''),
-                    'help'        => (string) ($f['help'] ?? ''),
-                    'options'     => collect($f['options'] ?? [])
-                        ->map(fn ($o): array => is_array($o)
-                            ? ['label' => (string) ($o['label'] ?? $o['value'] ?? ''), 'value' => (string) ($o['value'] ?? '')]
-                            : ['label' => (string) $o, 'value' => (string) $o]
-                        )
-                        ->filter(fn ($o): bool => $o['value'] !== '')
-                        ->values()->all(),
-                    'repeatable' => (bool) ($f['repeatable'] ?? false),
-                    'add_label'  => (string) ($f['add_label'] ?? 'Tambah'),
-                    'item_label' => (string) ($f['item_label'] ?? 'Item'),
-                ])
+                ->map(fn (array $f): array => SuratDataContract::normalizeDynamicFieldConfigItem($f))
                 ->values()
                 ->all(),
             'template' => $jenisSurat->template ? [

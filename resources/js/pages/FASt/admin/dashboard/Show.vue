@@ -411,11 +411,11 @@ function toggleTimelineNote(id: number) {
 
                     <div v-if="can_edit" class="mt-4">
                         <Link
-                            :href="`/admin/surat/${id}/edit`"
+                            :href="`/admin/surat/${id}/edit?return_to=/admin/dashboard`"
                             class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
                         >
                             <FileEdit class="size-4" />
-                            Edit & Teruskan
+                            {{ status === 'pending' ? 'Lengkapi Data' : 'Edit & Teruskan' }}
                         </Link>
                     </div>
 

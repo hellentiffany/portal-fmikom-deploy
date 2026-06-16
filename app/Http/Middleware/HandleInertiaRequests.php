@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Models\Surat;
 use App\Services\FASt\NotificationFeedService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -40,6 +39,36 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user()?->loadMissing('role');
         $notifications = $user ? app(NotificationFeedService::class)->build($user) : ['count' => 0, 'items' => []];
+        $roleSlug = str((string) ($user?->role?->slug ?? ''))->slug()->toString();
+
+        $navCounts = [
+            'admin_queue' => 0,
+            'approval_queue' => 0,
+        ];
+
+        if ($user) {
+            if ($roleSlug === 'admin') {
+                $navCounts['admin_queue'] = \App\Models\Surat::query()
+                    ->where('type', 'pengajuan')
+                    ->whereIn('status', [
+                        \App\Models\Surat::STATUS_PENDING,
+                        \App\Models\Surat::STATUS_REVISION_REQUESTED,
+                    ])
+                    ->count();
+            }
+
+            if (in_array($roleSlug, ['kaprodi', 'dekan'], true)) {
+                $navCounts['approval_queue'] = \App\Models\Surat::query()
+                    ->where('status', \App\Models\Surat::STATUS_VALIDATED_ADMIN)
+                    ->whereHas('jenisSurat.approvalRole', function ($q) use ($roleSlug): void {
+                        $q->where(function ($nested) use ($roleSlug): void {
+                            $nested->where('slug', 'like', "%{$roleSlug}%")
+                                ->orWhere('nama', 'like', "%{$roleSlug}%");
+                        });
+                    })
+                    ->count();
+            }
+        }
 
         return [
             ...parent::share($request),
@@ -54,6 +83,7 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
             ],
             'notif_count' => $notifications['count'] ?? 0,
+            'nav_counts' => $navCounts,
             'notif_count_revision_admin' => function () use ($user) {
                 if (! $user) {
                     return 0;
@@ -65,13 +95,10 @@ class HandleInertiaRequests extends Middleware
                     return 0;
                 }
 
-                return \Illuminate\Support\Facades\Cache::remember(
-                    'notif_count_revision_admin',
-                    30,
-                    fn () => \App\Models\Surat::where('type', 'surat_keluar')
-                        ->where('status', \App\Models\Surat::STATUS_REVISION_REQUESTED)
-                        ->count()
-                );
+                return \App\Models\Surat::query()
+                    ->where('type', 'surat_keluar')
+                    ->where('status', \App\Models\Surat::STATUS_REVISION_REQUESTED)
+                    ->count();
             },
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

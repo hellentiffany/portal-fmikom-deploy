@@ -37,6 +37,7 @@ const layout = reactive({
     paragraph_indent: 0,
     table_indent: 0,
 });
+const deletingTemplate = ref(false);
 const defaultLayoutState = () => ({
     margin_top: '',
     margin_right: '',
@@ -104,13 +105,13 @@ type SuratKomponen =
       }
     | {
           type: 'tabel_data';
-          rows: Array<{ label: string; nilai: string }>;
+          rows: Array<{ label: string; nilai: string; __auto_nilai?: boolean }>;
           font_size?: string;
           margin_left?: number;
       }
     | {
           type: 'tabel_indent';
-          rows: Array<{ label: string; nilai: string }>;
+          rows: Array<{ label: string; nilai: string; __auto_nilai?: boolean }>;
           indent?: number;
           font_size?: string;
           margin_left?: number;
@@ -144,6 +145,10 @@ type FieldConfig = {
     repeatable?: boolean;
     add_label?: string;
     item_label?: string;
+    sumber_data?: 'data_pemohon' | 'data_kampus' | 'data_sistem';
+    editable_role?: 'mahasiswa' | 'admin' | 'sistem';
+    mode_form_pemohon?: 'editable' | 'readonly' | 'hidden';
+    __auto_name?: boolean;
 };
 type Template = {
     id: number;
@@ -204,6 +209,8 @@ const props = withDefaults(
 );
 // ── State ──────────────────────────────────────────────────────────────────
 const sidebarSearch = ref('');
+const categoryFilter = ref<'all' | string>('all');
+const statusFilter = ref<'all' | 'active' | 'inactive'>('all');
 const showAddDialog = ref(false);
 const showGlobalSettings = ref(false);
 const activeTab = ref<'template' | 'fields' | 'meta'>('template');
@@ -220,20 +227,72 @@ function closeGlobalSettings() {
     showGlobalSettings.value = false;
 }
 const filteredJenisSurats = computed(() => {
-    if (!sidebarSearch.value.trim()) return props.jenisSurats ?? [];
-    const q = sidebarSearch.value.toLowerCase();
-    return (props.jenisSurats ?? []).filter(
+    const q = sidebarSearch.value.toLowerCase().trim();
+    let items = props.jenisSurats ?? [];
+
+    if (categoryFilter.value !== 'all') {
+        items = items.filter(
+            (j) => String(j.category?.id ?? '') === categoryFilter.value,
+        );
+    }
+
+    if (statusFilter.value !== 'all') {
+        items = items.filter((j) =>
+            statusFilter.value === 'active' ? j.is_active : !j.is_active,
+        );
+    }
+
+    if (!q) return items;
+
+    return items.filter(
         (j) =>
             j.nama.toLowerCase().includes(q) ||
             (j.category?.nama ?? '').toLowerCase().includes(q),
     );
 });
 // ── Form builder ───────────────────────────────────────────────────────────
+const categoryFilterOptions = computed(() => [
+    { label: 'Semua kategori', value: 'all' },
+    ...(props.categories ?? []).map((category) => ({
+        label: category.nama,
+        value: String(category.id),
+    })),
+]);
+function resetTemplateFilters() {
+    sidebarSearch.value = '';
+    categoryFilter.value = 'all';
+    statusFilter.value = 'all';
+}
 function cloneFieldConfig(fieldConfig?: FieldConfig[]) {
     return JSON.parse(JSON.stringify(fieldConfig ?? [])) as FieldConfig[];
 }
+function prepareFieldConfigForUi(fieldConfig?: FieldConfig[]) {
+    return cloneFieldConfig(fieldConfig).map((field) => ({
+        ...field,
+        __auto_name:
+            !String(field.name ?? '').trim() ||
+            slugifyLabel(field.label ?? '') === slugifyLabel(field.name ?? ''),
+    }));
+}
 function cloneKomponen(items?: SuratKomponen[]) {
     return JSON.parse(JSON.stringify(items ?? [])) as SuratKomponen[];
+}
+function prepareKomponenForUi(items?: SuratKomponen[]) {
+    return cloneKomponen(items).map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        if (!('rows' in item) || !Array.isArray((item as any).rows)) return item;
+
+        return {
+            ...item,
+            rows: (item as any).rows.map((row: any) => ({
+                ...row,
+                __auto_nilai:
+                    !String(row.nilai ?? '').trim() ||
+                    suggestPlaceholderKey(row.label ?? '') ===
+                        String(row.nilai ?? '').trim(),
+            })),
+        } as SuratKomponen;
+    });
 }
 function normalizeKomponenFontSize(items: SuratKomponen[]): SuratKomponen[] {
     return items.map((item) => {
@@ -245,11 +304,12 @@ function normalizeKomponenFontSize(items: SuratKomponen[]): SuratKomponen[] {
 }
 function createFormState(source: JenisSurat | null) {
     return {
+        jenis_surat_nama: source?.nama ?? '',
         name: source?.template?.name ?? source?.nama ?? '',
         template_header: source?.template?.template_header ?? '',
         template_body: source?.template?.template_body ?? '',
         template_footer: source?.template?.template_footer ?? '',
-        field_config: cloneFieldConfig(source?.field_config ?? []),
+        field_config: prepareFieldConfigForUi(source?.field_config ?? []),
         kode_klasifikasi: source?.kode_klasifikasi ?? '',
         category_id: (source?.category?.id ?? '') as any,
         approval_role_id: (source?.approval_role?.id ?? '') as any,
@@ -259,7 +319,7 @@ function createFormState(source: JenisSurat | null) {
     };
 }
 const komponen = ref<SuratKomponen[]>(
-    cloneKomponen(props.selectedJenisSurat?.template?.template_components),
+    prepareKomponenForUi(props.selectedJenisSurat?.template?.template_components),
 );
 const form = useForm(createFormState(props.selectedJenisSurat));
 const selectedTemplateBody = computed(
@@ -280,6 +340,9 @@ watch(
         form.defaults(nextState);
         form.reset();
         Object.assign(form, nextState);
+        komponen.value = prepareKomponenForUi(
+            value?.template?.template_components,
+        );
         Object.assign(layout, defaultLayoutState());
     },
     { immediate: true },
@@ -305,6 +368,52 @@ const fieldTypeOptions = [
     { label: 'Pilihan', value: 'select' },
     { label: 'Centang', value: 'checkbox' },
 ];
+const fieldSourceOptions = [
+    { label: 'Data Pemohon', value: 'data_pemohon' },
+    { label: 'Data Kampus', value: 'data_kampus' },
+    { label: 'Data Sistem', value: 'data_sistem' },
+];
+const fieldEditableRoleOptions = [
+    { label: 'Mahasiswa', value: 'mahasiswa' },
+    { label: 'Admin', value: 'admin' },
+    { label: 'Sistem', value: 'sistem' },
+];
+const fieldModeOptions = [
+    { label: 'Bisa diisi pemohon', value: 'editable' },
+    { label: 'Hanya dibaca pemohon', value: 'readonly' },
+    { label: 'Tidak tampil di form pemohon', value: 'hidden' },
+];
+function fieldSourceLabel(value?: string) {
+    if (value === 'data_kampus') return 'Data Kampus';
+    if (value === 'data_sistem') return 'Data Sistem';
+    return 'Data Pemohon';
+}
+function fieldEditableRoleLabel(value?: string) {
+    if (value === 'admin') return 'Admin';
+    if (value === 'sistem') return 'Sistem';
+    return 'Mahasiswa';
+}
+function fieldModeLabel(value?: string) {
+    if (value === 'readonly') return 'Hanya dibaca pemohon';
+    if (value === 'hidden') return 'Tidak tampil di form pemohon';
+    return 'Bisa diisi pemohon';
+}
+function applyFieldSourcePreset(field: FieldConfig) {
+    if (field.sumber_data === 'data_kampus') {
+        field.editable_role = 'admin';
+        field.mode_form_pemohon = 'readonly';
+        return;
+    }
+
+    if (field.sumber_data === 'data_sistem') {
+        field.editable_role = 'sistem';
+        field.mode_form_pemohon = 'hidden';
+        return;
+    }
+
+    field.editable_role = 'mahasiswa';
+    field.mode_form_pemohon = 'editable';
+}
 watch(
     selectedTemplateComponents,
     (value) => {
@@ -400,7 +509,7 @@ function removePenerima(komp: any, index: number) {
 }
 function addRow(komp: any) {
     komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
-    komp.rows.push({ label: '', nilai: '' });
+    komp.rows.push({ label: '', nilai: '', __auto_nilai: true });
 }
 function removeRow(komp: any, index: number) {
     komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
@@ -431,33 +540,84 @@ function addField() {
         placeholder: '',
         help: '',
         options: [],
+        sumber_data: 'data_pemohon',
+        editable_role: 'mahasiswa',
+        mode_form_pemohon: 'editable',
+        __auto_name: true,
     });
 }
 function removeField(index: number) {
     form.field_config.splice(index, 1);
 }
-function syncName(field: FieldConfig) {
-    if (field.name?.trim()) return;
-    field.name = (field.label || '')
+function slugifyLabel(label: string): string {
+    return (label || '')
         .toLowerCase()
         .trim()
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '');
 }
+function suggestPlaceholderKey(label: string): string {
+    const key = slugifyLabel(label);
+    return key ? `{{${key}}}` : '';
+}
+function syncName(field: FieldConfig, force = false) {
+    const suggested = slugifyLabel(field.label || '');
+    if (!suggested) return;
+
+    if (force || field.__auto_name || !field.name?.trim()) {
+        field.name = suggested;
+        field.__auto_name = true;
+    }
+}
+function markFieldNameManual(field: FieldConfig) {
+    const suggested = slugifyLabel(field.label || '');
+    const current = slugifyLabel(field.name || '');
+    field.__auto_name = !suggested || current === suggested;
+}
+function syncRowPlaceholder(row: any, force = false) {
+    const suggested = suggestPlaceholderKey(row.label || '');
+    if (!suggested) return;
+
+    if (force || row.__auto_nilai || !String(row.nilai ?? '').trim()) {
+        row.nilai = suggested;
+        row.__auto_nilai = true;
+    }
+}
+function markRowValueManual(row: any) {
+    const suggested = suggestPlaceholderKey(row.label || '');
+    row.__auto_nilai = !suggested || String(row.nilai ?? '').trim() === suggested;
+}
 function toPlaceholderKey(label: string): string {
-    const key = (label || '')
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-    return key ? `{{${key}}}` : 'Nilai atau {{placeholder}}';
+    return suggestPlaceholderKey(label) || 'Nilai atau {{placeholder}}';
+}
+function stripUiMetaFromFieldConfig(fields: FieldConfig[]): FieldConfig[] {
+    return fields.map((field) => {
+        const { __auto_name, ...rest } = field as FieldConfig & { __auto_name?: boolean };
+        return rest;
+    });
+}
+function stripUiMetaFromKomponen(items: SuratKomponen[]): SuratKomponen[] {
+    return items.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        if ('rows' in item && Array.isArray((item as any).rows)) {
+            return {
+                ...item,
+                rows: (item as any).rows.map((row: any) => {
+                    const { __auto_nilai, ...rest } = row;
+                    return rest;
+                }),
+            } as SuratKomponen;
+        }
+        return item;
+    });
 }
 function saveTemplate() {
     if (!props.selectedJenisSurat) return;
     form.transform((data) => ({
         ...data,
         layout: { ...layout },
-        template_body: JSON.stringify(komponen.value),
+        field_config: stripUiMetaFromFieldConfig(form.field_config),
+        template_body: JSON.stringify(stripUiMetaFromKomponen(komponen.value)),
     })).put(`/admin/templates/${props.selectedJenisSurat.id}`, {
         preserveScroll: true,
         onSuccess: () => {
@@ -534,13 +694,22 @@ function deleteTemplate() {
     if (!props.selectedJenisSurat) return;
     if (
         !confirm(
-            `Hapus template surat "${props.selectedJenisSurat.nama}"? Surat yang sudah dibuat tetap aman.`,
+            `Hapus template aktif untuk jenis surat "${props.selectedJenisSurat.nama}"?\n\nTemplate aktif akan dinonaktifkan/dihapus, tetapi surat lama, riwayat, dan arsip tetap aman.`,
         )
     ) {
         return;
     }
+    deletingTemplate.value = true;
     router.delete(`/admin/templates/${props.selectedJenisSurat.id}`, {
+        preserveScroll: true,
         onSuccess: () => router.visit('/admin/templates'),
+        onFinish: () => {
+            deletingTemplate.value = false;
+        },
+        onError: () => {
+            deletingTemplate.value = false;
+            alert('Template gagal dihapus. Coba lagi atau cek log server.');
+        },
     });
 }
 // ── Tambah ─────────────────────────────────────────────────────────────────
@@ -722,15 +891,65 @@ function settingLabel(key: string): string {
                 </div>
             </div>
         </div>
-        <div class="mb-5">
-            <div class="relative max-w-md">
-                <Search class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-                <input
-                    v-model="sidebarSearch"
-                    type="text"
-                    placeholder="Cari template surat..."
-                    class="h-11 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                />
+        <div
+            v-if="!selectedJenisSurat"
+            class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+            <div class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_200px_200px_auto] lg:items-end">
+                <label class="block">
+                    <span class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        Cari template
+                    </span>
+                    <div class="relative">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            v-model="sidebarSearch"
+                            type="text"
+                            placeholder="Cari template surat..."
+                            class="h-11 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        />
+                    </div>
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        Kategori
+                    </span>
+                    <select
+                        v-model="categoryFilter"
+                        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    >
+                        <option
+                            v-for="option in categoryFilterOptions"
+                            :key="option.value"
+                            :value="option.value"
+                        >
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        Status
+                    </span>
+                    <select
+                        v-model="statusFilter"
+                        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    >
+                        <option value="all">Semua status</option>
+                        <option value="active">Aktif</option>
+                        <option value="inactive">Nonaktif</option>
+                    </select>
+                </label>
+
+                <button
+                    type="button"
+                    class="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    @click="resetTemplateFilters"
+                >
+                    Reset Filter
+                </button>
             </div>
         </div>
         <div v-if="!selectedJenisSurat" class="space-y-4">
@@ -890,10 +1109,12 @@ function settingLabel(key: string): string {
                         </button>
                         <button
                             type="button"
-                            class="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+                            class="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="deletingTemplate"
                             @click="deleteTemplate"
                         >
-                            <Trash2 class="size-3.5" /> Hapus Template
+                            <Trash2 class="size-3.5" />
+                            {{ deletingTemplate ? 'Menghapus...' : 'Hapus Template Aktif' }}
                         </button>
                     </div>
                 </div>
@@ -1415,6 +1636,8 @@ function settingLabel(key: string): string {
                                 type="text"
                                 class="h-8 w-32 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400"
                                 placeholder="Label"
+                                @input="syncRowPlaceholder(row)"
+                                @keydown.enter.prevent="syncRowPlaceholder(row, true)"
                             />
                             <span class="font-semibold text-slate-500">:</span>
                             <input
@@ -1422,6 +1645,7 @@ function settingLabel(key: string): string {
                                 type="text"
                                 class="h-8 flex-1 rounded-lg border border-slate-300 bg-white px-2 font-mono text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400"
                                 :placeholder="toPlaceholderKey(row.label)"
+                                @input="markRowValueManual(row)"
                             />
                             <button
                                 type="button"
@@ -1788,12 +2012,12 @@ function settingLabel(key: string): string {
                         <Eye class="size-3.5 text-slate-500" /> Preview PDF
                     </a>
                     <div class="ml-auto">
-                        <button
-                            type="button"
-                            class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-                            @click="saveTemplate"
-                        >
-                            <Save class="size-3.5" /> Simpan Template
+                    <button
+                        type="button"
+                        class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        @click="saveTemplate"
+                    >
+                            <Save class="size-3.5" /> Simpan Isi Surat
                         </button>
                     </div>
                 </div>
@@ -1830,78 +2054,161 @@ function settingLabel(key: string): string {
                     <div
                         v-for="(field, idx) in form.field_config"
                         :key="idx"
-                        class="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                        class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                     >
-                        <div class="mb-3 flex items-center justify-between">
-                            <code
-                                class="rounded-lg bg-blue-100 px-2 py-0.5 font-mono text-[10px] text-blue-800"
-                                >&#123;&#123;{{
-                                    field.name || 'nama_field'
-                                }}&#125;&#125;</code
-                            >
+                        <div class="mb-4 flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1 space-y-2">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <code
+                                        class="rounded-lg bg-blue-100 px-2.5 py-1 font-mono text-[10px] font-semibold text-blue-800"
+                                        >&#123;&#123;{{
+                                            field.name || 'nama_field'
+                                        }}&#125;&#125;</code
+                                    >
+                                    <span
+                                        class="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                                        :class="
+                                            field.sumber_data === 'data_kampus'
+                                                ? 'bg-amber-50 text-amber-700'
+                                                : field.sumber_data ===
+                                                            'data_sistem'
+                                                  ? 'bg-slate-100 text-slate-600'
+                                                  : 'bg-emerald-50 text-emerald-700'
+                                        "
+                                    >
+                                        {{ fieldSourceLabel(field.sumber_data) }}
+                                    </span>
+                                    <span
+                                        class="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                                        :class="
+                                            field.mode_form_pemohon === 'readonly'
+                                                ? 'bg-blue-50 text-blue-700'
+                                                : field.mode_form_pemohon ===
+                                                            'hidden'
+                                                  ? 'bg-slate-100 text-slate-600'
+                                                  : 'bg-emerald-50 text-emerald-700'
+                                        "
+                                    >
+                                        {{ fieldModeLabel(field.mode_form_pemohon) }}
+                                    </span>
+                                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
+                                        {{ fieldEditableRoleLabel(field.editable_role) }}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-400">
+                                    Atur label, placeholder, dan kontrol akses
+                                    field dari panel ini.
+                                </p>
+                            </div>
                             <button
                                 type="button"
-                                class="text-slate-400 hover:text-red-500"
+                                class="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
                                 @click="removeField(idx)"
                             >
                                 <Trash2 class="size-4" />
                             </button>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="space-y-1"
-                                ><span
-                                    class="text-[10px] font-medium text-slate-600"
-                                    >Label</span
-                                >
-                                <input
-                                    v-model="field.label"
-                                    type="text"
-                                    placeholder="Contoh: NIM Mahasiswa"
-                                    class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400"
-                                    @input="syncName(field)"
-                            /></label>
-                            <label class="space-y-1"
-                                ><span
-                                    class="text-[10px] font-medium text-slate-600"
-                                    >Key (placeholder)</span
-                                >
-                                <input
-                                    v-model="field.name"
-                                    type="text"
-                                    placeholder="nim_mahasiswa"
-                                    class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400"
-                            /></label>
-                            <label class="space-y-1"
-                                ><span
-                                    class="text-[10px] font-medium text-slate-600"
-                                    >Tipe Input</span
-                                >
-                                <select
-                                    v-model="field.type"
-                                    class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 outline-none focus:border-blue-400"
-                                >
-                                    <option
-                                        v-for="opt in fieldTypeOptions"
-                                        :key="opt.value"
-                                        :value="opt.value"
+                        <div class="space-y-4">
+                            <div class="grid gap-3 lg:grid-cols-2">
+                                <label class="space-y-1.5">
+                                    <span class="text-[10px] font-medium text-slate-600">Label</span>
+                                    <input
+                                        v-model="field.label"
+                                        type="text"
+                                        placeholder="Contoh: NIM Mahasiswa"
+                                        class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-400 focus:bg-white"
+                                        @input="syncName(field)"
+                                        @keydown.enter.prevent="syncName(field, true)"
+                                    />
+                                </label>
+                                <label class="space-y-1.5">
+                                    <span class="text-[10px] font-medium text-slate-600">Key (placeholder)</span>
+                                    <input
+                                        v-model="field.name"
+                                        type="text"
+                                        :placeholder="suggestPlaceholderKey(field.label) || 'nim_mahasiswa'"
+                                        class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 font-mono text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-400 focus:bg-white"
+                                        @input="markFieldNameManual(field)"
+                                    />
+                                </label>
+                                <label class="space-y-1.5">
+                                    <span class="text-[10px] font-medium text-slate-600">Tipe Input</span>
+                                    <select
+                                        v-model="field.type"
+                                        class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white"
                                     >
-                                        {{ opt.label }}
-                                    </option>
-                                </select></label
-                            >
-                            <div class="flex items-end pb-1">
-                                <label
-                                    class="flex cursor-pointer items-center gap-2"
-                                >
+                                        <option
+                                            v-for="opt in fieldTypeOptions"
+                                            :key="opt.value"
+                                            :value="opt.value"
+                                        >
+                                            {{ opt.label }}
+                                        </option>
+                                    </select>
+                                </label>
+                                <label class="space-y-1.5">
+                                    <span class="text-[10px] font-medium text-slate-600">Sumber Data</span>
+                                    <select
+                                        v-model="field.sumber_data"
+                                        class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white"
+                                        @change="applyFieldSourcePreset(field)"
+                                    >
+                                        <option
+                                            v-for="opt in fieldSourceOptions"
+                                            :key="opt.value"
+                                            :value="opt.value"
+                                        >
+                                            {{ opt.label }}
+                                        </option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="grid gap-3 lg:grid-cols-2">
+                                <label class="space-y-1.5">
+                                    <span class="text-[10px] font-medium text-slate-600">Dapat diedit oleh</span>
+                                    <select
+                                        v-model="field.editable_role"
+                                        class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white"
+                                    >
+                                        <option
+                                            v-for="opt in fieldEditableRoleOptions"
+                                            :key="opt.value"
+                                            :value="opt.value"
+                                        >
+                                            {{ opt.label }}
+                                        </option>
+                                    </select>
+                                </label>
+                                <label class="space-y-1.5">
+                                    <span class="text-[10px] font-medium text-slate-600">Tampil di form pemohon</span>
+                                    <select
+                                        v-model="field.mode_form_pemohon"
+                                        class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white"
+                                    >
+                                        <option
+                                            v-for="opt in fieldModeOptions"
+                                            :key="opt.value"
+                                            :value="opt.value"
+                                        >
+                                            {{ opt.label }}
+                                        </option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <label class="flex cursor-pointer items-center gap-2">
                                     <input
                                         v-model="field.required"
                                         type="checkbox"
-                                        class="rounded border-slate-300"
+                                        class="rounded border-slate-300 text-blue-600"
                                     />
-                                    <span class="text-xs text-slate-700"
-                                        >Wajib diisi</span
-                                    >
+                                    <span class="text-xs font-medium text-slate-700">Wajib diisi</span>
                                 </label>
+                                <span class="text-[11px] text-slate-400">
+                                    Field akan muncul sesuai mode yang dipilih.
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1915,7 +2222,7 @@ function settingLabel(key: string): string {
                         class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                         @click="saveTemplate"
                     >
-                        <Save class="size-3.5" /> Simpan
+                        <Save class="size-3.5" /> Simpan Field Dinamis
                     </button>
                 </div>
             </div>
@@ -1928,6 +2235,16 @@ function settingLabel(key: string): string {
                     Informasi Jenis Surat
                 </h3>
                 <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="space-y-1.5 sm:col-span-2"
+                        ><span class="text-xs font-medium text-slate-700"
+                            >Nama Jenis Surat</span
+                        >
+                        <input
+                            v-model="form.jenis_surat_nama"
+                            type="text"
+                            class="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400"
+                            placeholder="Contoh: Surat Keterangan Lulus"
+                    /></label>
                     <label class="space-y-1.5"
                         ><span class="text-xs font-medium text-slate-700"
                             >Kode Klasifikasi</span
@@ -2021,7 +2338,7 @@ function settingLabel(key: string): string {
                         class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                         @click="saveTemplate"
                     >
-                        <Save class="size-3.5" /> Simpan
+                        <Save class="size-3.5" /> Simpan Info Jenis Surat
                     </button>
                 </div>
             </div>
@@ -2644,4 +2961,3 @@ function settingLabel(key: string): string {
         </Dialog>
     </AdminLayout>
 </template>
-

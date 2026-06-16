@@ -16,10 +16,7 @@ import {
     AlertCircle,
     Filter,
     Clock3,
-    CircleCheckBig,
-    CircleX,
     BarChart3,
-    Sparkles,
 } from 'lucide-vue-next';
 type FieldOption = { label: string; value: string };
 type FieldConfig = {
@@ -29,6 +26,13 @@ type FieldConfig = {
     required: boolean;
     placeholder: string;
     options: FieldOption[];
+    help?: string;
+    repeatable?: boolean;
+    add_label?: string;
+    item_label?: string;
+    sumber_data?: 'data_pemohon' | 'data_kampus' | 'data_sistem';
+    editable_role?: 'mahasiswa' | 'admin' | 'sistem';
+    mode_form_pemohon?: 'editable' | 'readonly' | 'hidden';
 };
 type JenisSuratOption = {
     id: number;
@@ -116,20 +120,6 @@ const summaryCards = computed(() => [
         icon: Clock3,
         tone: 'amber',
     },
-    {
-        key: 'selesai',
-        label: 'Surat Selesai',
-        value: props.summary?.selesai ?? 0,
-        icon: CircleCheckBig,
-        tone: 'green',
-    },
-    {
-        key: 'ditolak',
-        label: 'Surat Ditolak',
-        value: props.summary?.ditolak ?? 0,
-        icon: CircleX,
-        tone: 'slate',
-    },
 ]);
 
 function categoryName(id?: number | null): string {
@@ -210,6 +200,18 @@ function initFieldData(jenis: JenisSuratOption | null) {
     }
     form.field_data = values;
 }
+function isApplicantFieldVisible(field: FieldConfig) {
+    return (field.mode_form_pemohon ?? 'editable') !== 'hidden';
+}
+function isApplicantFieldReadonly(field: FieldConfig) {
+    return (field.mode_form_pemohon ?? 'editable') === 'readonly';
+}
+function isApplicantFieldDisabled(field: FieldConfig) {
+    return isApplicantFieldReadonly(field);
+}
+function applicantFieldHelp(field: FieldConfig) {
+    return field.help ?? '';
+}
 onMounted(() => {
     if (props.selectedJenisId) {
         form.jenis_surat_id = String(props.selectedJenisId);
@@ -264,23 +266,8 @@ function fieldError(name: string): string | undefined {
     >
         <Head title="Ajukan Surat â€” FAST" />
         <div class="mx-auto max-w-7xl space-y-6">
-            <!-- Hero -->
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div class="flex flex-col gap-3">
-                    <p class="flex items-center gap-1.5 text-sm font-medium text-blue-600">
-                        <Sparkles class="size-4" /> Kelola Pengajuan
-                    </p>
-                    <h2 class="text-xl font-bold text-slate-900">
-                        Ajukan Surat
-                    </h2>
-                    <p class="max-w-3xl text-sm text-slate-500">
-                        Pilih jenis surat, gunakan filter kategori, lalu lanjutkan ke formulir pengajuan tanpa keluar dari halaman ini.
-                    </p>
-                </div>
-            </section>
-
             <!-- Summary -->
-            <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <section class="grid gap-3 sm:grid-cols-2">
                 <article
                     v-for="stat in summaryCards"
                     :key="stat.key"
@@ -327,10 +314,6 @@ function fieldError(name: string): string | undefined {
                             Gunakan pencarian untuk nama surat, lalu pilih kategori yang paling relevan.
                         </p>
                     </div>
-                    <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500">
-                        <Filter class="size-4 text-slate-400" />
-                        Filter aktif ditandai biru
-                    </div>
                 </div>
 
                 <div class="mt-4 space-y-3">
@@ -354,40 +337,6 @@ function fieldError(name: string): string | undefined {
                         </button>
                     </div>
 
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
-                            :class="
-                                activeCategory === null
-                                    ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
-                            "
-                            @click="activeCategory = null"
-                        >
-                            Semua
-                            <span class="ml-1 rounded-full bg-white/70 px-1.5 py-0.5 text-[10px]">
-                                {{ jenisSurats.length }}
-                            </span>
-                        </button>
-                        <button
-                            v-for="cat in categories"
-                            :key="cat.id"
-                            type="button"
-                            class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
-                            :class="
-                                activeCategory === cat.id
-                                    ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
-                            "
-                            @click="
-                                activeCategory =
-                                    activeCategory === cat.id ? null : cat.id
-                            "
-                        >
-                            {{ cat.nama }}
-                        </button>
-                    </div>
                 </div>
             </section>
 
@@ -541,24 +490,43 @@ function fieldError(name: string): string | undefined {
                                     </div>
 
                                     <template v-for="field in selectedJenis.fieldConfig ?? []" :key="field.name">
-                                        <div>
-                                            <label class="mb-1 block text-xs font-medium text-slate-700">
-                                                {{ field.label }}
-                                                <span v-if="field.required" class="text-red-500">*</span>
-                                            </label>
+                                        <div v-if="isApplicantFieldVisible(field)">
+                                        <label class="mb-1 block text-xs font-medium text-slate-700">
+                                            {{ field.label }}
+                                            <span v-if="field.required" class="text-red-500">*</span>
+                                        </label>
+                                            <span
+                                                v-if="isApplicantFieldReadonly(field)"
+                                                class="mb-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700"
+                                            >
+                                                Data oleh kampus
+                                            </span>
+                                            <p
+                                                v-if="applicantFieldHelp(field)"
+                                                class="mb-2 text-[10px] text-amber-600"
+                                            >
+                                                {{ applicantFieldHelp(field) }}
+                                            </p>
 
                                             <textarea
                                                 v-if="field.type === 'textarea'"
                                                 v-model="form.field_data[field.name] as string"
                                                 :placeholder="field.placeholder"
                                                 rows="3"
-                                                class="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                :readonly="isApplicantFieldReadonly(field)"
+                                                :class="[
+                                                    'w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100',
+                                                    isApplicantFieldReadonly(field) ? 'cursor-not-allowed bg-slate-50 text-slate-500' : '',
+                                                ]"
                                             />
-
                                             <div v-else-if="field.type === 'select'" class="relative">
                                                 <select
                                                     v-model="form.field_data[field.name]"
-                                                    class="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                    :disabled="isApplicantFieldReadonly(field)"
+                                                    :class="[
+                                                        'h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100',
+                                                        isApplicantFieldReadonly(field) ? 'cursor-not-allowed bg-slate-50 text-slate-500' : '',
+                                                    ]"
                                                 >
                                                     <option value="">-- Pilih --</option>
                                                     <option
@@ -571,7 +539,6 @@ function fieldError(name: string): string | undefined {
                                                 </select>
                                                 <ChevronDown class="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-400" />
                                             </div>
-
                                             <div v-else-if="field.type === 'radio'" class="flex flex-wrap gap-3 pt-1">
                                                 <label
                                                     v-for="opt in field.options"
@@ -582,21 +549,21 @@ function fieldError(name: string): string | undefined {
                                                         type="radio"
                                                         :value="opt.value"
                                                         v-model="form.field_data[field.name]"
+                                                        :disabled="isApplicantFieldReadonly(field)"
                                                         class="text-blue-600"
                                                     />
                                                     {{ opt.label }}
                                                 </label>
                                             </div>
-
                                             <label v-else-if="field.type === 'checkbox'" class="flex cursor-pointer items-center gap-2 pt-1">
                                                 <input
                                                     type="checkbox"
                                                     v-model="form.field_data[field.name]"
+                                                    :disabled="isApplicantFieldReadonly(field)"
                                                     class="rounded text-blue-600"
                                                 />
                                                 <span class="text-sm text-slate-700">{{ field.placeholder || field.label }}</span>
                                             </label>
-
                                             <div
                                                 v-else-if="['checkbox-group', 'multiselect'].includes(field.type)"
                                                 class="flex flex-wrap gap-3 pt-1"
@@ -610,12 +577,12 @@ function fieldError(name: string): string | undefined {
                                                         type="checkbox"
                                                         :value="opt.value"
                                                         v-model="form.field_data[field.name] as string[]"
+                                                        :disabled="isApplicantFieldReadonly(field)"
                                                         class="rounded text-blue-600"
                                                     />
                                                     {{ opt.label }}
                                                 </label>
                                             </div>
-
                                             <input
                                                 v-else
                                                 v-model="form.field_data[field.name] as string"
@@ -625,13 +592,17 @@ function fieldError(name: string): string | undefined {
                                                         : field.type === 'date'
                                                           ? 'date'
                                                           : field.type === 'email'
-                                                            ? 'email'
-                                                            : 'text'
+                                                          ? 'email'
+                                                          : 'text'
                                                 "
                                                 :placeholder="field.placeholder"
-                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                :readonly="isApplicantFieldReadonly(field)"
+                                                :disabled="isApplicantFieldReadonly(field)"
+                                                :class="[
+                                                    'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100',
+                                                    isApplicantFieldReadonly(field) ? 'cursor-not-allowed bg-slate-50 text-slate-500' : '',
+                                                ]"
                                             />
-
                                             <p v-if="fieldError(field.name)" class="mt-1 text-xs text-red-500">
                                                 {{ fieldError(field.name) }}
                                             </p>

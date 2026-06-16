@@ -100,18 +100,16 @@ class DashboardController extends Controller
                 'slug'        => $j->slug,
                 'deskripsi'   => $j->deskripsi,
                 'fieldConfig' => collect(SuratDataContract::filterDynamicFieldConfig($j->field_config ?? []))
-                    ->map(fn (array $f): array => [
-                        'name'        => (string) $f['name'],
-                        'label'       => (string) ($f['label'] ?? $f['name']),
-                        'type'        => strtolower((string) ($f['type'] ?? 'text')),
-                        'required'    => (bool) ($f['required'] ?? false),
-                        'placeholder' => (string) ($f['placeholder'] ?? ''),
-                        'options'     => collect($f['options'] ?? [])
-                            ->map(fn ($o) => is_array($o)
-                                ? ['label' => (string) ($o['label'] ?? $o['value'] ?? ''), 'value' => (string) ($o['value'] ?? '')]
-                                : ['label' => (string) $o, 'value' => (string) $o]
-                            )->filter(fn ($o) => $o['value'] !== '')->values()->all(),
-                    ])->values()->all(),
+                    ->map(fn (array $f): array => array_merge(
+                        SuratDataContract::normalizeDynamicFieldConfigItem($f),
+                        [
+                            'options' => collect($f['options'] ?? [])
+                                ->map(fn ($o) => is_array($o)
+                                    ? ['label' => (string) ($o['label'] ?? $o['value'] ?? ''), 'value' => (string) ($o['value'] ?? '')]
+                                    : ['label' => (string) $o, 'value' => (string) $o]
+                                )->filter(fn ($o) => $o['value'] !== '')->values()->all(),
+                        ],
+                    ))->values()->all(),
             ])->values(),
             'userRole' => [
                 'id'   => $user->role?->id,
