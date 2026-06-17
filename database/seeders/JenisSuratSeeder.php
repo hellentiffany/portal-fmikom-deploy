@@ -26,8 +26,6 @@ class JenisSuratSeeder extends Seeder
         $dosenRoleId = Role::query()->where('slug', 'dosen')->value('id');
         $kaprodiRoleId = Role::query()->where('slug', 'kaprodi')->value('id');
         $dekanRoleId = Role::query()->where('slug', 'dekan')->value('id');
-        $kepalaLabRoleId = Role::query()->where('slug', 'kepala-lab')->value('id');
-        $sekretarisFakultasRoleId = Role::query()->where('slug', 'sekretaris-fakultas')->value('id');
         $suratPermohonanCategoryId = SuratCategory::query()->where('slug', 'surat-permohonan')->value('id');
         $suratKeteranganCategoryId = SuratCategory::query()->where('slug', 'surat-keterangan')->value('id');
         $suratTugasCategoryId = SuratCategory::query()->where('slug', 'surat-tugas')->value('id');
@@ -378,109 +376,6 @@ class JenisSuratSeeder extends Seeder
                         'type' => 'text',
                         'required' => false,
                         'placeholder' => 'Contoh: Ruang Sidang 1',
-                    ],
-                ],
-            ],
-            [
-                'category_id' => $suratTugasCategoryId,
-                'nama' => 'Surat Tugas Laboratorium',
-                'slug' => 'surat-tugas-laboratorium',
-                'kode_surat' => 'ST-LAB',
-                'deskripsi' => 'Surat tugas internal yang diterbitkan oleh Kepala Laboratorium.',
-                'allowed_role_id' => $kepalaLabRoleId,
-                'approval_role_id' => null,
-                'perlu_approval' => false,
-                'alur_pengajuan' => 'submission',
-                'is_active' => true,
-                'field_config' => [
-                    [
-                        'name' => 'nama_petugas',
-                        'label' => 'Nama Petugas',
-                        'type' => 'text',
-                        'required' => true,
-                        'placeholder' => 'Nama personel yang ditugaskan',
-                    ],
-                    [
-                        'name' => 'jabatan_petugas',
-                        'label' => 'Jabatan / Posisi',
-                        'type' => 'text',
-                        'required' => true,
-                        'placeholder' => 'Contoh: Asisten Lab',
-                    ],
-                    [
-                        'name' => 'uraian_tugas',
-                        'label' => 'Uraian Tugas',
-                        'type' => 'textarea',
-                        'required' => true,
-                        'placeholder' => 'Jelaskan tugas yang diberikan',
-                    ],
-                    [
-                        'name' => 'tempat_tugas',
-                        'label' => 'Tempat Tugas',
-                        'type' => 'text',
-                        'required' => false,
-                        'placeholder' => 'Contoh: Laboratorium Komputasi',
-                    ],
-                    [
-                        'name' => 'tanggal_mulai',
-                        'label' => 'Tanggal Mulai',
-                        'type' => 'date',
-                        'required' => true,
-                    ],
-                    [
-                        'name' => 'tanggal_selesai',
-                        'label' => 'Tanggal Selesai',
-                        'type' => 'date',
-                        'required' => true,
-                    ],
-                ],
-            ],
-            [
-                'category_id' => $suratUndanganCategoryId,
-                'nama' => 'Surat Undangan Fakultas',
-                'slug' => 'surat-undangan-fakultas',
-                'kode_surat' => 'UND-FK',
-                'deskripsi' => 'Surat undangan internal yang diterbitkan oleh Sekretaris Fakultas.',
-                'allowed_role_id' => $sekretarisFakultasRoleId,
-                'approval_role_id' => null,
-                'perlu_approval' => false,
-                'alur_pengajuan' => 'submission',
-                'is_active' => true,
-                'field_config' => [
-                    [
-                        'name' => 'kepada',
-                        'label' => 'Kepada',
-                        'type' => 'text',
-                        'required' => true,
-                        'placeholder' => 'Contoh: Seluruh Dosen',
-                    ],
-                    [
-                        'name' => 'perihal',
-                        'label' => 'Perihal',
-                        'type' => 'text',
-                        'required' => true,
-                        'placeholder' => 'Contoh: Rapat Koordinasi',
-                    ],
-                    [
-                        'name' => 'agenda',
-                        'label' => 'Agenda',
-                        'type' => 'textarea',
-                        'required' => true,
-                        'placeholder' => 'Isi agenda kegiatan',
-                    ],
-                    [
-                        'name' => 'waktu_acara',
-                        'label' => 'Waktu Acara',
-                        'type' => 'text',
-                        'required' => true,
-                        'placeholder' => 'Contoh: Jumat, 10.00 WIB',
-                    ],
-                    [
-                        'name' => 'tempat_acara',
-                        'label' => 'Tempat Acara',
-                        'type' => 'text',
-                        'required' => true,
-                        'placeholder' => 'Contoh: Aula Fakultas',
                     ],
                 ],
             ],

@@ -30,7 +30,9 @@ class DashboardController extends Controller
         $query = Surat::query()
             ->with(['pemohon', 'jenisSurat'])
             ->where('type', 'pengajuan')
-            ->whereIn('status', [Surat::STATUS_PENDING, Surat::STATUS_REVISION_REQUESTED]);
+            ->whereIn('status', [
+                Surat::STATUS_PENDING,
+            ]);
 
         $search = $request->string('search')->trim()->toString();
         $categoryId = $request->integer('category_id');
@@ -100,14 +102,13 @@ class DashboardController extends Controller
                     ->where('type', 'pengajuan')
                     ->selectRaw("
                         COUNT(*) as total,
-                        SUM(CASE WHEN status IN (?,?) THEN 1 ELSE 0 END) as pending,
+                        SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending,
                         SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as validated,
                         SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as finished,
                         SUM(CASE WHEN status IN (?,?) THEN 1 ELSE 0 END) as rejected,
                         SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as cancelled
                     ", [
                         Surat::STATUS_PENDING,
-                        Surat::STATUS_REVISION_REQUESTED,
                         Surat::STATUS_VALIDATED_ADMIN,
                         Surat::STATUS_FINISHED,
                         Surat::STATUS_REJECTED_ADMIN,

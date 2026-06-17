@@ -518,16 +518,6 @@ function batteryIcon() {
 
             <!-- Bottom -->
             <div class="shrink-0 border-t border-slate-100 px-2 py-2">
-                <Link
-                    href="/settings/profile"
-                    :prefetch="false"
-                    class="flex items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-                    :class="!sidebarExpanded ? 'justify-center' : ''"
-                    :title="!sidebarExpanded ? 'Pengaturan' : undefined"
-                >
-                    <Settings class="size-4 shrink-0 text-slate-400" />
-                    <span v-if="sidebarExpanded">Pengaturan</span>
-                </Link>
                 <button
                     type="button"
                     class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium text-red-500 transition-colors hover:bg-red-50"

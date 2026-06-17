@@ -143,7 +143,7 @@ const statCards = computed(() => [
 function statusLabel(s: string) {
     const map: Record<string, string> = {
         pending: 'Pending',
-        validated_admin: 'Pending',
+        validated_admin: 'Diteruskan ke Approver',
         approved_kaprodi: 'Disetujui Kaprodi',
         approved_dekan: 'Disetujui Dekan',
         revision_requested: 'Revisi',
@@ -156,14 +156,14 @@ function statusLabel(s: string) {
 }
 
 function statusClass(s: string) {
-    if (s === 'finished') return 'bg-blue-100 text-blue-700';
+    if (s === 'finished') return 'bg-emerald-50 text-emerald-700';
     if (s === 'rejected_admin' || s === 'rejected_approver')
-        return 'bg-red-100 text-red-700';
-    if (s === 'revision_requested') return 'bg-amber-100 text-amber-700';
-    if (s.startsWith('approved')) return 'bg-blue-100 text-blue-700';
-    if (s === 'validated_admin') return 'bg-indigo-100 text-indigo-700';
+        return 'bg-red-50 text-red-700';
+    if (s === 'revision_requested') return 'bg-amber-50 text-amber-700';
+    if (s.startsWith('approved')) return 'bg-emerald-50 text-emerald-700';
+    if (s === 'validated_admin') return 'bg-slate-100 text-slate-700';
     if (s === 'cancelled') return 'bg-slate-100 text-slate-600';
-    return 'bg-amber-100 text-amber-700';
+    return 'bg-amber-50 text-amber-700';
 }
 
 function formatDate(d?: string | null) {
@@ -194,13 +194,13 @@ function historyColor(action: string) {
 function activityBadgeClass(action?: string | null) {
     const value = String(action ?? '').toLowerCase();
     if (value.includes('approved') || value.includes('validated')) {
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-emerald-50 text-emerald-700';
     }
     if (value.includes('revised') || value.includes('revision')) {
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-50 text-amber-700';
     }
     if (value.includes('rejected')) {
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-50 text-red-700';
     }
     return 'bg-slate-100 text-slate-600';
 }
@@ -219,7 +219,7 @@ function activityBadgeClass(action?: string | null) {
             <div
                 v-for="stat in statCards"
                 :key="stat.label"
-                class="rounded-xl border bg-white p-3"
+                class="rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                 :class="stat.border"
             >
                 <div class="flex items-center justify-between">
@@ -242,7 +242,7 @@ function activityBadgeClass(action?: string | null) {
         <div class="grid gap-6 xl:grid-cols-[1fr_300px]">
             <!-- Tabel surat -->
             <div
-                class="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
             >
                 <!-- Toolbar -->
                 <div
@@ -363,7 +363,7 @@ function activityBadgeClass(action?: string | null) {
             <!-- Kanan: Ringkasan & Info -->
             <div class="space-y-4">
                 <!-- Aktivitas Terbaru -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
                     <h3
                         class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"
                     >
@@ -374,7 +374,7 @@ function activityBadgeClass(action?: string | null) {
                             <div
                                 v-for="item in quickSubmissions"
                                 :key="item.id"
-                                class="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                                class="rounded-xl border border-slate-100 bg-slate-50/70 p-3"
                             >
                                 <div class="flex items-start gap-2">
                                     <div

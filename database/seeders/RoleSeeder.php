@@ -35,16 +35,6 @@ class RoleSeeder extends Seeder
                 'nama' => 'Dekan',
                 'deskripsi' => 'Pemberi persetujuan surat tingkat fakultas.',
             ],
-            [
-                'slug' => 'kepala-lab',
-                'nama' => 'Kepala Lab',
-                'deskripsi' => 'Pengelola surat dan layanan laboratorium FAST.',
-            ],
-            [
-                'slug' => 'sekretaris-fakultas',
-                'nama' => 'Sekretaris Fakultas',
-                'deskripsi' => 'Pengelola surat dan layanan administrasi fakultas FAST.',
-            ],
         ];
 
         foreach ($roles as $role) {

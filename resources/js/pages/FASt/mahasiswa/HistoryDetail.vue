@@ -197,7 +197,7 @@ function isTimelineNoteVisible(status?: string | null, action?: string | null): 
 
 const statusMap: Record<string, string> = {
     pending: 'Menunggu Validasi',
-    validated_admin: 'Divalidasi Admin',
+    validated_admin: 'Diteruskan ke Approver',
     revision_requested: 'Perlu Revisi',
     approved_kaprodi: 'Disetujui Kaprodi',
     approved_dekan: 'Disetujui Dekan',
@@ -209,10 +209,10 @@ const statusMap: Record<string, string> = {
 
 const statusClassMap: Record<string, string> = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    validated_admin: 'bg-blue-50 text-blue-700 border-blue-200',
+    validated_admin: 'bg-slate-100 text-slate-700 border-slate-200',
     revision_requested: 'bg-amber-50 text-amber-700 border-amber-200',
-    approved_kaprodi: 'bg-sky-50 text-sky-700 border-sky-200',
-    approved_dekan: 'bg-sky-50 text-sky-700 border-sky-200',
+    approved_kaprodi: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    approved_dekan: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     finished: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected_admin: 'bg-red-50 text-red-700 border-red-200',
     rejected_approver: 'bg-red-50 text-red-700 border-red-200',
@@ -415,7 +415,7 @@ async function copyNomor() {
             <section class="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)]">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                     <div class="mb-4 flex items-center gap-3">
-                        <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                        <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                             <FileText class="size-5" />
                         </div>
                         <div>
@@ -533,7 +533,7 @@ async function copyNomor() {
                 <aside class="space-y-4">
                     <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                         <div class="flex items-center gap-3">
-                            <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                            <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                                 <Download class="size-5" />
                             </div>
                             <div>
@@ -660,7 +660,7 @@ async function copyNomor() {
 
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                 <div class="flex items-center gap-3">
-                    <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                    <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                         <CheckCircle2 class="size-5" />
                     </div>
                     <div>

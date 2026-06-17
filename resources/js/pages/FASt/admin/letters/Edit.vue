@@ -57,8 +57,6 @@ const defaultPresets = [
     'Dekan FMIKOM',
     'Ketua Program Studi Informatika',
     'Ketua Program Studi Sistem Informasi',
-    'Kepala Laboratorium',
-    'Sekretaris Fakultas',
     'Wakil Dekan Bidang Akademik',
 ];
 const consumedFormKeys = ['kepada_yth', 'lampiran_keterangan', 'perihal'] as const;

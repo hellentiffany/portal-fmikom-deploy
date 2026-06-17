@@ -118,17 +118,8 @@ class DashboardController extends Controller
             ],
             'userProfile' => [
                 'name'            => $user->name,
-                'identifierLabel' => match (true) {
-                    $user->isLab() => 'Unit Kerja',
-                    $user->isSekfak() => 'Unit Kerja',
-                    $isLecturer => 'NIP',
-                    default => 'NIM',
-                },
-                'identifierValue' => match (true) {
-                    $user->isLab() => 'Laboratorium',
-                    $user->isSekfak() => 'Fakultas',
-                    default => $user->nim_nip ?: $user->nomor_induk,
-                },
+                'identifierLabel' => $isLecturer ? 'NIP' : 'NIM',
+                'identifierValue' => $user->nim_nip ?: $user->nomor_induk,
             ],
             'endpoints' => [
                 'submission'    => route($this->submissionRouteName(), absolute: false),
@@ -158,24 +149,15 @@ class DashboardController extends Controller
         $user->loadMissing('role');
 
         $roleId = $user->role?->id;
-        $assignedOnly = $this->restrictJenisSuratToAssignedRole($user);
 
         return JenisSurat::query()
             ->where('is_active', true)
             ->where('alur_pengajuan', 'submission')
             ->whereHas('template')
-            ->when($assignedOnly, fn (Builder $query) => $query->where('allowed_role_id', $roleId))
-            ->when(! $assignedOnly && $roleId !== null, fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
+            ->when($roleId !== null, fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
                 ->whereNull('allowed_role_id')
                 ->orWhere('allowed_role_id', $roleId)
             ));
-    }
-
-    protected function restrictJenisSuratToAssignedRole($user): bool
-    {
-        return method_exists($user, 'isLab') && method_exists($user, 'isSekfak')
-            ? ($user->isLab() || $user->isSekfak())
-            : false;
     }
 
     /**

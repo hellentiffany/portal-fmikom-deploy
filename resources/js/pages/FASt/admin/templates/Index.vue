@@ -437,8 +437,8 @@ function createKomponenDefaults(type: SuratKomponen['type']): SuratKomponen {
                 nomor: '{{nomor_surat}}',
                 lampiran: '-',
                 perihal: '{{perihal}}',
-                kota: '{{kota_surat}}, {{tanggal_surat_panjang}}',
-                tanggal: '',
+                kota: '{{kota_surat}}',
+                tanggal: '{{tanggal_surat_panjang}}',
                 margin_left: 0,
                 font_size: '12pt',
             };

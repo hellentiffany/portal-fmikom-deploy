@@ -59,8 +59,6 @@ const defaultPresets = [
     'Dekan FMIKOM',
     'Ketua Program Studi Informatika',
     'Ketua Program Studi Sistem Informasi',
-    'Kepala Laboratorium',
-    'Sekretaris Fakultas',
     'Wakil Dekan Bidang Akademik',
 ];
 // ── Form ───────────────────────────────────────────────────────────────────

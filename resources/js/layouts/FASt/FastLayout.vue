@@ -69,8 +69,6 @@ const userRole = computed(() => user.value?.role?.nama ?? 'Mahasiswa');
 const userSlug = computed(() => user.value?.role?.slug ?? 'mahasiswa');
 const routePrefix = computed(() => {
     const slug = userSlug.value;
-    if (slug.includes('lab')) return 'lab';
-    if (slug.includes('sekfak') || slug.includes('sekretaris')) return 'sekfak';
     if (slug.includes('dosen') || slug === 'lecturer') return 'dosen';
     return 'mahasiswa';
 });
@@ -159,12 +157,6 @@ type NavItem = { key: string; label: string; href: string; icon: unknown };
 
 const navItems = computed<NavItem[]>(() => {
     const prefix = `/${routePrefix.value}`;
-    const submitLabel =
-        routePrefix.value === 'lab'
-            ? 'Buat Surat Lab'
-            : routePrefix.value === 'sekfak'
-              ? 'Buat Surat Fakultas'
-              : 'Ajukan Surat';
     return [
         {
             key: 'dashboard',
@@ -174,7 +166,8 @@ const navItems = computed<NavItem[]>(() => {
         },
         {
             key: 'submit',
-            label: submitLabel,
+            label:
+                routePrefix.value === 'dosen' ? 'Ajukan Surat Dosen' : 'Ajukan Surat',
             href: `${prefix}/ajukan`,
             icon: FilePlus2,
         },
@@ -414,16 +407,6 @@ function batteryIcon() {
 
             <!-- Bottom -->
             <div class="shrink-0 border-t border-slate-100 px-2 py-2">
-                <Link
-                    href="/settings/profile"
-                    :prefetch="false"
-                    class="mb-0.5 flex items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-                    :class="!sidebarExpanded ? 'justify-center' : ''"
-                    :title="!sidebarExpanded ? 'Pengaturan' : undefined"
-                >
-                    <Settings class="size-4 shrink-0 text-slate-400" />
-                    <span v-if="sidebarExpanded">Pengaturan</span>
-                </Link>
                 <button
                     type="button"
                     class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium text-red-500 transition-colors hover:bg-red-50"
@@ -645,14 +628,6 @@ function batteryIcon() {
                     <component :is="item.icon" class="size-5" />
                     <span>{{ item.label }}</span>
                 </Link>
-                <button
-                    type="button"
-                    class="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-medium text-red-500 transition-colors"
-                    @click="logout"
-                >
-                    <LogOut class="size-5" />
-                    <span>Keluar</span>
-                </button>
             </div>
         </div>
     </div>

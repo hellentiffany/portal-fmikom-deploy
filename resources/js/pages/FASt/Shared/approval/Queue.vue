@@ -155,7 +155,7 @@ function initials(name?: string | null) {
 function statusLabel(status: string) {
     const labels: Record<string, string> = {
         pending: 'Pending',
-        validated_admin: 'Pending',
+        validated_admin: 'Diteruskan ke Approver',
         revision_requested: 'Revisi',
         rejected_admin: 'Ditolak Admin',
         rejected_approver: 'Ditolak Pimpinan',
@@ -165,31 +165,30 @@ function statusLabel(status: string) {
     return labels[status] ?? status;
 }
 function statusClass(status: string) {
-    if (status === 'pending' || status === 'validated_admin')
-        return 'bg-amber-100 text-amber-700';
-    if (status === 'revision_requested')
-        return 'bg-red-100 text-red-700';
+    if (status === 'pending') return 'bg-amber-50 text-amber-700';
+    if (status === 'validated_admin') return 'bg-slate-100 text-slate-700';
+    if (status === 'revision_requested') return 'bg-amber-50 text-amber-700';
     if (status === 'rejected_admin' || status === 'rejected_approver')
-        return 'bg-red-100 text-red-700';
-    if (status.startsWith('approved')) return 'bg-blue-100 text-blue-700';
+        return 'bg-red-50 text-red-700';
+    if (status.startsWith('approved')) return 'bg-emerald-50 text-emerald-700';
     return 'bg-slate-100 text-slate-600';
 }
 function cardBorderClass(status: string) {
-    if (status === 'pending' || status === 'validated_admin')
-        return 'hover:border-amber-300';
-    if (status === 'revision_requested') return 'hover:border-red-300';
+    if (status === 'pending') return 'hover:border-amber-300';
+    if (status === 'validated_admin') return 'hover:border-slate-300';
+    if (status === 'revision_requested') return 'hover:border-amber-300';
     if (status === 'rejected_admin' || status === 'rejected_approver')
         return 'hover:border-red-300';
-    if (status.startsWith('approved')) return 'hover:border-blue-300';
+    if (status.startsWith('approved')) return 'hover:border-emerald-300';
     return 'hover:border-slate-300';
 }
 function stripeClass(status: string) {
-    if (status === 'pending' || status === 'validated_admin')
-        return 'bg-amber-400';
-    if (status === 'revision_requested') return 'bg-red-400';
+    if (status === 'pending') return 'bg-amber-400';
+    if (status === 'validated_admin') return 'bg-slate-400';
+    if (status === 'revision_requested') return 'bg-amber-400';
     if (status === 'rejected_admin' || status === 'rejected_approver')
         return 'bg-red-400';
-    if (status.startsWith('approved')) return 'bg-blue-400';
+    if (status.startsWith('approved')) return 'bg-emerald-400';
     return 'bg-slate-300';
 }
 function submitApprove(item: SuratItem) {

@@ -35,10 +35,6 @@ class LetterTypeController extends Controller
 
         $roleId = $user->role?->id;
 
-        if (method_exists($user, 'isLab') && method_exists($user, 'isSekfak') && ($user->isLab() || $user->isSekfak())) {
-            return (int) $jenisSurat->allowed_role_id === (int) $roleId;
-        }
-
         if ($roleId === null) {
             return false;
         }

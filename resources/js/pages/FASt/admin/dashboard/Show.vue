@@ -99,10 +99,10 @@ const statusLabel: Record<string, string> = {
 const statusColor: Record<string, string> = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
     revision_requested: 'bg-amber-50 text-amber-700 border-amber-200',
-    validated_admin: 'bg-blue-50 text-blue-700 border-blue-200',
-    approved_kaprodi: 'bg-blue-50 text-blue-700 border-blue-200',
-    approved_dekan: 'bg-blue-50 text-blue-700 border-blue-200',
-    finished: 'bg-blue-100 text-blue-800 border-blue-300',
+    validated_admin: 'bg-slate-100 text-slate-700 border-slate-200',
+    approved_kaprodi: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    approved_dekan: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    finished: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected_admin: 'bg-red-50 text-red-700 border-red-200',
     rejected_approver: 'bg-red-50 text-red-700 border-red-200',
 };
@@ -179,11 +179,11 @@ function timelineBadgeClass(status?: string | null, action?: string | null): str
     }
 
     if (status === 'approved' || action === 'approved' || action === 'validated') {
-        return 'border-blue-200 bg-blue-50 text-blue-700';
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
     }
 
     if (status === 'note') {
-        return 'border-indigo-200 bg-indigo-50 text-indigo-700';
+        return 'border-slate-200 bg-slate-50 text-slate-700';
     }
 
     return 'border-slate-200 bg-slate-50 text-slate-700';
@@ -270,7 +270,7 @@ function toggleTimelineNote(id: number) {
             <section class="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)]">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                     <div class="mb-4 flex items-center gap-3">
-                        <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                        <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                             <FileText class="size-5" />
                         </div>
                         <div>
@@ -346,7 +346,7 @@ function toggleTimelineNote(id: number) {
 
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                     <div class="mb-4 flex items-center gap-3">
-                        <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                        <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                             <Download class="size-5" />
                         </div>
                         <div>
@@ -363,7 +363,7 @@ function toggleTimelineNote(id: number) {
                         class="rounded-2xl border px-4 py-4"
                         :class="
                                 isFinished
-                                    ? 'border-blue-200 bg-blue-50'
+                                    ? 'border-emerald-200 bg-emerald-50'
                                 : 'border-amber-200 bg-amber-50'
                         "
                     >
@@ -412,7 +412,7 @@ function toggleTimelineNote(id: number) {
                     <div v-if="can_edit" class="mt-4">
                         <Link
                             :href="`/admin/surat/${id}/edit?return_to=/admin/dashboard`"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
                         >
                             <FileEdit class="size-4" />
                             {{ status === 'pending' ? 'Lengkapi Data' : 'Edit & Teruskan' }}
@@ -433,7 +433,7 @@ function toggleTimelineNote(id: number) {
                         <button
                             v-if="isFinished"
                             type="button"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
                             @click="openDownloadPdf"
                         >
                             <Download class="size-4" />
@@ -453,7 +453,7 @@ function toggleTimelineNote(id: number) {
 
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                 <div class="mb-5 flex items-center gap-3">
-                    <div class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                    <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                         <ShieldCheck class="size-5" />
                     </div>
                     <div>
@@ -478,7 +478,7 @@ function toggleTimelineNote(id: number) {
                                 class="absolute top-7 h-full w-px bg-blue-200"
                             />
                             <span
-                                class="relative z-10 mt-1 grid size-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"
+                                class="relative z-10 mt-1 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm"
                             >
                                 <CheckCircle class="size-3.5" />
                             </span>

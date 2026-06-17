@@ -196,11 +196,11 @@ function statusLabel(status: string) {
 }
 function statusBadgeClass(status: string) {
     const s = ns(status);
-    if (s === 'validated_admin') return 'bg-amber-100 text-amber-700';
+    if (s === 'validated_admin') return 'bg-slate-100 text-slate-700';
     if (s === 'approved_kaprodi' || s === 'approved_dekan')
-        return 'bg-emerald-100 text-emerald-700';
-    if (s === 'revision_requested') return 'bg-amber-100 text-amber-700';
-    if (s === 'rejected_approver') return 'bg-slate-200 text-slate-700';
+        return 'bg-emerald-50 text-emerald-700';
+    if (s === 'revision_requested') return 'bg-amber-50 text-amber-700';
+    if (s === 'rejected_approver') return 'bg-red-50 text-red-700';
     return 'bg-slate-100 text-slate-600';
 }
 function formatDate(date?: string | null) {

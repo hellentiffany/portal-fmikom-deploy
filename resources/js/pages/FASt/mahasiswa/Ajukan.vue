@@ -2,7 +2,7 @@
 // resources/js/pages/FASt/mahasiswa/Ajukan.vue
 import FastLayout from '@/layouts/FASt/FastLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, nextTick, ref } from 'vue';
 import {
     FileText,
     UploadCloud,
@@ -84,6 +84,7 @@ const form = useForm<{
 });
 const searchQuery = ref('');
 const activeCategory = ref<number | null>(null);
+const applicantFieldRefs = ref<Record<string, HTMLElement | null>>({});
 const filteredJenis = computed(() => {
     let list = props.jenisSurats;
     if (activeCategory.value !== null) {
@@ -212,6 +213,77 @@ function isApplicantFieldDisabled(field: FieldConfig) {
 function applicantFieldHelp(field: FieldConfig) {
     return field.help ?? '';
 }
+
+function setApplicantFieldRef(name: string, el: any) {
+    applicantFieldRefs.value[name] = el instanceof HTMLElement ? el : null;
+}
+
+function isFieldMissing(field: FieldConfig, value: FieldValue): boolean {
+    if (field.type === 'checkbox') {
+        return value !== true;
+    }
+
+    if (['checkbox-group', 'multiselect'].includes(field.type)) {
+        return !Array.isArray(value) || value.length === 0;
+    }
+
+    if (Array.isArray(value)) {
+        return value.length === 0;
+    }
+
+    return value === null || value === undefined || String(value).trim() === '';
+}
+
+function scrollToApplicantField(fieldKey: string) {
+    nextTick(() => {
+        const selector = `[data-field-key="${fieldKey}"]`;
+        const wrapper =
+            applicantFieldRefs.value[fieldKey] ??
+            (document.querySelector(selector) as HTMLElement | null);
+
+        if (!wrapper) return;
+
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const focusable = wrapper.querySelector(
+            'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])',
+        ) as HTMLElement | null;
+
+        focusable?.focus();
+    });
+}
+
+function validateRequiredFields(): string | null {
+    form.clearErrors();
+
+    if (!String(form.keperluan).trim()) {
+        form.setError('keperluan', 'Wajib diisi.');
+        return 'keperluan';
+    }
+
+    if (!String(form.tanggal_kebutuhan).trim()) {
+        form.setError('tanggal_kebutuhan', 'Wajib diisi.');
+        return 'tanggal_kebutuhan';
+    }
+
+    for (const field of selectedJenis.value?.fieldConfig ?? []) {
+        if (
+            !isApplicantFieldVisible(field) ||
+            isApplicantFieldReadonly(field) ||
+            !field.required
+        ) {
+            continue;
+        }
+
+        const value = form.field_data[field.name] as FieldValue;
+        if (isFieldMissing(field, value)) {
+            form.setError(`field_data.${field.name}`, 'Wajib diisi.');
+            return `field_data.${field.name}`;
+        }
+    }
+
+    return null;
+}
 onMounted(() => {
     if (props.selectedJenisId) {
         form.jenis_surat_id = String(props.selectedJenisId);
@@ -242,6 +314,12 @@ function todayString() {
     return new Date().toISOString().slice(0, 10);
 }
 function submit() {
+    const firstInvalid = validateRequiredFields();
+    if (firstInvalid) {
+        scrollToApplicantField(firstInvalid);
+        return;
+    }
+
     form.post(`${basePath.value}/submissions`, {
         forceFormData: true,
         preserveScroll: true,
@@ -459,7 +537,7 @@ function fieldError(name: string): string | undefined {
                                 </div>
 
                                 <div class="mt-4 space-y-4">
-                                    <div>
+                                    <div data-field-key="keperluan">
                                         <label class="mb-1 block text-xs font-medium text-slate-700">
                                             Keperluan <span class="text-red-500">*</span>
                                         </label>
@@ -474,7 +552,7 @@ function fieldError(name: string): string | undefined {
                                         </p>
                                     </div>
 
-                                    <div>
+                                    <div data-field-key="tanggal_kebutuhan">
                                         <label class="mb-1 block text-xs font-medium text-slate-700">
                                             Tanggal Dibutuhkan <span class="text-red-500">*</span>
                                         </label>
@@ -490,7 +568,11 @@ function fieldError(name: string): string | undefined {
                                     </div>
 
                                     <template v-for="field in selectedJenis.fieldConfig ?? []" :key="field.name">
-                                        <div v-if="isApplicantFieldVisible(field)">
+                                        <div
+                                            v-if="isApplicantFieldVisible(field)"
+                                            :data-field-key="`field_data.${field.name}`"
+                                            :ref="(el) => setApplicantFieldRef(`field_data.${field.name}`, el)"
+                                        >
                                         <label class="mb-1 block text-xs font-medium text-slate-700">
                                             {{ field.label }}
                                             <span v-if="field.required" class="text-red-500">*</span>

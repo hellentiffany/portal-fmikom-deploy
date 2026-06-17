@@ -57,15 +57,15 @@ function statusPillClass(status: string) {
         lowered === 'approved_dekan' ||
         lowered === 'finished'
     ) {
-        return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200';
+        return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
     }
     if (lowered === 'revision_requested') {
-        return 'bg-amber-100 text-amber-700 ring-1 ring-amber-200';
+        return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
     }
     if (lowered === 'rejected_approver' || lowered === 'rejected_final') {
-        return 'bg-red-100 text-red-700 ring-1 ring-red-200';
+        return 'bg-red-50 text-red-700 ring-1 ring-red-200';
     }
-    return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
+    return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200';
 }
 </script>
 
@@ -76,7 +76,7 @@ function statusPillClass(status: string) {
         >
             <div class="mb-4 flex items-center gap-3">
                 <div
-                    class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100"
+                    class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100"
                 >
                     <FileText class="size-5" />
                 </div>
@@ -171,7 +171,7 @@ function statusPillClass(status: string) {
         >
             <div class="mb-4 flex items-center gap-3">
                 <div
-                    class="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100"
+                    class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100"
                 >
                     <ShieldCheck class="size-5" />
                 </div>
@@ -201,15 +201,15 @@ function statusPillClass(status: string) {
                 </span>
             </div>
 
-            <button
-                v-if="detailData.draft_preview_url && onOpenDraftPreview"
-                type="button"
-                class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                @click="onOpenDraftPreview"
-            >
-                <ExternalLink class="size-4" />
-                Preview Dokumen
-            </button>
+                <button
+                    v-if="detailData.draft_preview_url && onOpenDraftPreview"
+                    type="button"
+                    class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                    @click="onOpenDraftPreview"
+                >
+                    <ExternalLink class="size-4" />
+                    Preview Dokumen
+                </button>
 
             <div
                 v-if="detailData.lampiran && detailData.lampiran.length > 0"
@@ -223,7 +223,7 @@ function statusPillClass(status: string) {
                         v-for="file in detailData.lampiran"
                         :key="file.id"
                         type="button"
-                        class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+                        class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:border-slate-300 hover:bg-slate-100"
                         @click="onOpenAttachmentPreview?.(file)"
                     >
                         <div class="min-w-0">

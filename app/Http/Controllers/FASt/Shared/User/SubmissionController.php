@@ -242,14 +242,12 @@ class SubmissionController extends Controller
         $user->loadMissing('role');
 
         $roleId = $user->role?->id;
-        $assignedOnly = $this->restrictJenisSuratToAssignedRole($user);
 
         return JenisSurat::query()
             ->where('is_active', true)
             ->where('alur_pengajuan', 'submission')
             ->whereHas('template')
-            ->when($assignedOnly, fn (Builder $query) => $query->where('allowed_role_id', $roleId))
-            ->when(! $assignedOnly && $roleId !== null, fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
+            ->when($roleId !== null, fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
                 ->whereNull('allowed_role_id')
                 ->orWhere('allowed_role_id', $roleId)
             ));
@@ -260,7 +258,6 @@ class SubmissionController extends Controller
         $user->loadMissing('role');
 
         $roleId = $user->role?->id;
-        $assignedOnly = $this->restrictJenisSuratToAssignedRole($user);
 
         $query->where('is_active', true)
             ->where('alur_pengajuan', 'submission')
@@ -274,18 +271,10 @@ class SubmissionController extends Controller
                         ->where('surat_templates.is_active', true);
                 })
             )
-            ->when($assignedOnly, fn ($q) => $q->where('allowed_role_id', $roleId))
-            ->when(! $assignedOnly && $roleId !== null, fn ($q) => $q->where(function ($roleQuery) use ($roleId) {
+            ->when($roleId !== null, fn ($q) => $q->where(function ($roleQuery) use ($roleId) {
                 $roleQuery->whereNull('allowed_role_id')
                     ->orWhere('allowed_role_id', $roleId);
             }));
-    }
-
-    protected function restrictJenisSuratToAssignedRole($user): bool
-    {
-        return method_exists($user, 'isLab') && method_exists($user, 'isSekfak')
-            ? ($user->isLab() || $user->isSekfak())
-            : false;
     }
 
     /**

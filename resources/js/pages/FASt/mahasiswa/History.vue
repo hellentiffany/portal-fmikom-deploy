@@ -102,7 +102,7 @@ function closeViewer() {
 function statusLabel(status: string) {
     const map: Record<string, string> = {
         pending: 'Menunggu Validasi',
-        validated_admin: 'Divalidasi Admin',
+        validated_admin: 'Diteruskan ke Approver',
         revision_requested: 'Sedang Direvisi Admin',
         approved_kaprodi: 'Disetujui Kaprodi',
         approved_dekan: 'Disetujui Dekan',
@@ -121,14 +121,14 @@ function submissionStatusLabel(item: Surat) {
 }
 function statusBadgeClass(status: string) {
     const map: Record<string, string> = {
-        pending: 'bg-amber-100 text-amber-700',
-        validated_admin: 'bg-indigo-100 text-indigo-700',
-        revision_requested: 'bg-amber-100 text-amber-700',
-        approved_kaprodi: 'bg-sky-100 text-sky-700',
-        approved_dekan: 'bg-sky-100 text-sky-700',
-        finished: 'bg-blue-100 text-blue-700',
-        rejected_admin: 'bg-red-100 text-red-700',
-        rejected_approver: 'bg-red-100 text-red-700',
+        pending: 'bg-amber-50 text-amber-700',
+        validated_admin: 'bg-slate-100 text-slate-700',
+        revision_requested: 'bg-amber-50 text-amber-700',
+        approved_kaprodi: 'bg-emerald-50 text-emerald-700',
+        approved_dekan: 'bg-emerald-50 text-emerald-700',
+        finished: 'bg-emerald-50 text-emerald-700',
+        rejected_admin: 'bg-red-50 text-red-700',
+        rejected_approver: 'bg-red-50 text-red-700',
         cancelled: 'bg-slate-100 text-slate-600',
     };
     return map[status] ?? 'bg-slate-100 text-slate-600';
@@ -148,10 +148,10 @@ function statusIcon(s: string) {
 function statusColor(s: string) {
     if (s === 'finished')
         return {
-            bg: 'bg-blue-50',
-            border: 'border-blue-200',
-            text: 'text-blue-600',
-            line: 'bg-blue-300',
+            bg: 'bg-emerald-50',
+            border: 'border-emerald-200',
+            text: 'text-emerald-600',
+            line: 'bg-emerald-300',
         };
     if (
         s === 'rejected_admin' ||
@@ -166,17 +166,17 @@ function statusColor(s: string) {
         };
     if (s.startsWith('approved'))
         return {
-            bg: 'bg-sky-50',
-            border: 'border-sky-200',
-            text: 'text-sky-600',
-            line: 'bg-sky-300',
+            bg: 'bg-emerald-50',
+            border: 'border-emerald-200',
+            text: 'text-emerald-600',
+            line: 'bg-emerald-300',
         };
     if (s === 'validated_admin')
         return {
-            bg: 'bg-indigo-50',
-            border: 'border-indigo-200',
-            text: 'text-indigo-600',
-            line: 'bg-indigo-300',
+            bg: 'bg-slate-100',
+            border: 'border-slate-200',
+            text: 'text-slate-600',
+            line: 'bg-slate-300',
         };
     return {
         bg: 'bg-amber-50',
@@ -186,16 +186,16 @@ function statusColor(s: string) {
     };
 }
 function statusClass(s: string) {
-    if (s === 'finished') return 'bg-blue-100 text-blue-700';
+    if (s === 'finished') return 'bg-emerald-50 text-emerald-700';
     if (
         s === 'rejected_admin' ||
         s === 'rejected_approver' ||
         s === 'cancelled'
     )
-        return 'bg-red-100 text-red-700';
-    if (s.startsWith('approved')) return 'bg-sky-100 text-sky-700';
-    if (s === 'validated_admin') return 'bg-indigo-100 text-indigo-700';
-    return 'bg-amber-100 text-amber-700';
+        return 'bg-red-50 text-red-700';
+    if (s.startsWith('approved')) return 'bg-emerald-50 text-emerald-700';
+    if (s === 'validated_admin') return 'bg-slate-100 text-slate-700';
+    return 'bg-amber-50 text-amber-700';
 }
 function formatDate(date?: string | null) {
     if (!date) return '-';

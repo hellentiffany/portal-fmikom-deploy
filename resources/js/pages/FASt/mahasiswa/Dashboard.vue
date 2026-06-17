@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // resources/js/pages/FASt/mahasiswa/Dashboard.vue
 import FastLayout from '@/layouts/FASt/FastLayout.vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
 
 const PdfViewer = defineAsyncComponent(
@@ -15,7 +15,6 @@ import {
     Download,
     Eye,
     AlertCircle,
-    GraduationCap,
     X,
     ZoomIn,
     ZoomOut,
@@ -25,7 +24,6 @@ import {
     Info,
     FilePlus2,
     History,
-    Ban,
     UploadCloud,
     Paperclip,
     Search,
@@ -142,26 +140,10 @@ const toastMessage = ref('');
 const expandedReasonId = ref<number | null>(null);
 const expandedNotesId = ref<number | null>(null);
 let toastTimeoutId: number | null = null;
+const applicantFieldRefs = ref<Record<string, HTMLElement | null>>({});
 
-const searchQuery = ref('');
-const activeCategory = ref<number | null>(null);
-
-const filteredJenis = computed(() => {
-    let list = props.jenisSurats;
-    if (activeCategory.value !== null) {
-        list = list.filter((j) => j.categoryId === activeCategory.value);
-    }
-    const q = searchQuery.value.trim().toLowerCase();
-    if (q) {
-        list = list.filter(
-            (j) =>
-                j.nama.toLowerCase().includes(q) ||
-                (j.deskripsi ?? '').toLowerCase().includes(q),
-        );
-    }
-    return list;
-});
-
+const visibleJenis = computed(() => props.jenisSurats.slice(0, 5));
+const hasMoreJenis = computed(() => props.jenisSurats.length > visibleJenis.value.length);
 const latestVisible = computed(() => props.latest.slice(0, 5));
 
 type FieldValue = string | boolean | string[] | number | null;
@@ -201,6 +183,77 @@ function isApplicantFieldReadonly(field: FieldConfig) {
     return (field.mode_form_pemohon ?? 'editable') === 'readonly';
 }
 
+function setApplicantFieldRef(name: string, el: any) {
+    applicantFieldRefs.value[name] = el instanceof HTMLElement ? el : null;
+}
+
+function isFieldMissing(field: FieldConfig, value: FieldValue): boolean {
+    if (field.type === 'checkbox') {
+        return value !== true;
+    }
+
+    if (['checkbox-group', 'multiselect'].includes(field.type)) {
+        return !Array.isArray(value) || value.length === 0;
+    }
+
+    if (Array.isArray(value)) {
+        return value.length === 0;
+    }
+
+    return value === null || value === undefined || String(value).trim() === '';
+}
+
+function scrollToApplicantField(fieldKey: string) {
+    nextTick(() => {
+        const selector = `[data-field-key="${fieldKey}"]`;
+        const wrapper =
+            applicantFieldRefs.value[fieldKey] ??
+            (document.querySelector(selector) as HTMLElement | null);
+
+        if (!wrapper) return;
+
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const focusable = wrapper.querySelector(
+            'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])',
+        ) as HTMLElement | null;
+
+        focusable?.focus();
+    });
+}
+
+function validateRequiredFields(): string | null {
+    submitForm.clearErrors();
+
+    if (!String(submitForm.keperluan).trim()) {
+        submitForm.setError('keperluan', 'Wajib diisi.');
+        return 'keperluan';
+    }
+
+    if (!String(submitForm.tanggal_kebutuhan).trim()) {
+        submitForm.setError('tanggal_kebutuhan', 'Wajib diisi.');
+        return 'tanggal_kebutuhan';
+    }
+
+    for (const field of selectedJenis.value?.fieldConfig ?? []) {
+        if (
+            !isApplicantFieldVisible(field) ||
+            isApplicantFieldReadonly(field) ||
+            !field.required
+        ) {
+            continue;
+        }
+
+        const value = submitForm.field_data[field.name] as FieldValue;
+        if (isFieldMissing(field, value)) {
+            submitForm.setError(`field_data.${field.name}`, 'Wajib diisi.');
+            return `field_data.${field.name}`;
+        }
+    }
+
+    return null;
+}
+
 function fieldDisplayValue(field: FieldConfig): string {
     const val = submitForm.field_data[field.name];
     if (val === null || val === undefined || val === '') return '-';
@@ -218,6 +271,13 @@ function fieldDisplayValue(field: FieldConfig): string {
 }
 
 function goToPreview() {
+    const firstInvalid = validateRequiredFields();
+    if (firstInvalid) {
+        formStep.value = 'form';
+        scrollToApplicantField(firstInvalid);
+        return;
+    }
+
     formStep.value = 'preview';
 }
 function backToForm() {
@@ -250,6 +310,13 @@ function fileSize(bytes: number): string {
 // -- End Lampiran -------------------------------------------------------------
 
 function doSubmit() {
+    const firstInvalid = validateRequiredFields();
+    if (firstInvalid) {
+        formStep.value = 'form';
+        scrollToApplicantField(firstInvalid);
+        return;
+    }
+
     submitForm.post(props.endpoints.submission, {
         forceFormData: true,
         onSuccess: () => closeForm(),
@@ -302,17 +369,9 @@ const roleSlug = computed(() =>
     String(props.userRole.slug ?? '').toLowerCase(),
 );
 const dashboardGreeting = computed(() => {
-    if (roleSlug.value === 'lab') return 'Kepala Lab';
-    if (roleSlug.value === 'sekfak') return 'Sekretaris Fakultas';
     return firstName.value;
 });
 const dashboardIntro = computed(() => {
-    if (roleSlug.value === 'lab') {
-        return 'Pantau pengajuan surat laboratorium dan aktivitas layanan Anda dalam satu platform terintegrasi.';
-    }
-    if (roleSlug.value === 'sekfak') {
-        return 'Pantau pengajuan surat fakultas dan aktivitas layanan Anda dalam satu platform terintegrasi.';
-    }
     return 'Pantau pengajuan surat dan aktivitas akademik Anda dengan mudah dalam satu platform terintegrasi.';
 });
 
@@ -329,9 +388,9 @@ function statusLabel(status: string) {
     const map: Record<string, string> = {
         pending: 'Menunggu Validasi',
         revision_requested: 'Sedang Direvisi Admin',
-        validated_admin: 'Sudah Divalidasi',
-        approved_kaprodi: 'Sudah Divalidasi',
-        approved_dekan: 'Sudah Divalidasi',
+        validated_admin: 'Diteruskan ke Approver',
+        approved_kaprodi: 'Disetujui',
+        approved_dekan: 'Disetujui',
         finished: 'Selesai',
         rejected_admin: 'Ditolak Admin',
         rejected_approver: 'Ditolak Pimpinan',
@@ -363,12 +422,13 @@ function submissionStatusLabel(item: LatestSubmission) {
 }
 
 function statusBadgeClass(status: string) {
-    if (status === 'revision_requested') return 'bg-amber-100 text-amber-700';
+    if (status === 'revision_requested') return 'bg-amber-50 text-amber-700';
     if (status === 'rejected_admin' || status === 'rejected_approver')
-        return 'bg-red-100 text-red-700';
-    if (status === 'pending') return 'bg-sky-100 text-sky-700';
+        return 'bg-red-50 text-red-700';
+    if (status === 'pending') return 'bg-amber-50 text-amber-700';
+    if (status === 'validated_admin') return 'bg-slate-100 text-slate-700';
     if (status === 'cancelled') return 'bg-slate-100 text-slate-600';
-    return 'bg-blue-100 text-blue-700';
+    return 'bg-emerald-50 text-emerald-700';
 }
 
 function statusTone(status: string) {
@@ -376,53 +436,53 @@ function statusTone(status: string) {
         return {
             card: 'border-emerald-200',
             iconWrap: 'bg-emerald-50 text-emerald-600',
-            accent: 'bg-emerald-500',
+            accent: 'bg-emerald-400',
             text: 'text-emerald-600',
-            progress: 'bg-emerald-500',
+            progress: 'bg-emerald-400',
         };
     }
     if (status === 'rejected_admin' || status === 'rejected_approver') {
         return {
             card: 'border-red-200',
             iconWrap: 'bg-red-50 text-red-600',
-            accent: 'bg-red-500',
+            accent: 'bg-red-400',
             text: 'text-red-600',
-            progress: 'bg-red-500',
+            progress: 'bg-red-400',
         };
     }
     if (status === 'revision_requested') {
         return {
             card: 'border-amber-200',
             iconWrap: 'bg-amber-50 text-amber-600',
-            accent: 'bg-amber-500',
+            accent: 'bg-amber-400',
             text: 'text-amber-600',
-            progress: 'bg-amber-500',
+            progress: 'bg-amber-400',
         };
     }
     if (status === 'validated_admin') {
         return {
-            card: 'border-indigo-200',
-            iconWrap: 'bg-indigo-50 text-indigo-600',
-            accent: 'bg-indigo-500',
-            text: 'text-indigo-600',
-            progress: 'bg-indigo-500',
+            card: 'border-slate-200',
+            iconWrap: 'bg-slate-100 text-slate-600',
+            accent: 'bg-slate-400',
+            text: 'text-slate-600',
+            progress: 'bg-slate-400',
         };
     }
     if (status.startsWith('approved')) {
         return {
-            card: 'border-sky-200',
-            iconWrap: 'bg-sky-50 text-sky-600',
-            accent: 'bg-sky-500',
-            text: 'text-sky-600',
-            progress: 'bg-sky-500',
+            card: 'border-emerald-200',
+            iconWrap: 'bg-emerald-50 text-emerald-600',
+            accent: 'bg-emerald-400',
+            text: 'text-emerald-600',
+            progress: 'bg-emerald-400',
         };
     }
     return {
-        card: 'border-blue-200',
-        iconWrap: 'bg-blue-50 text-blue-600',
-        accent: 'bg-blue-500',
-        text: 'text-blue-600',
-        progress: 'bg-blue-500',
+        card: 'border-amber-200',
+        iconWrap: 'bg-amber-50 text-amber-600',
+        accent: 'bg-amber-400',
+        text: 'text-amber-600',
+        progress: 'bg-amber-400',
     };
 }
 
@@ -483,10 +543,11 @@ watch(
 );
 
 function openForm(jenis: JenisSuratOption) {
-    selectedJenis.value = jenis;
-    formStep.value = 'form';
-    initFormData(jenis);
-    showFormModal.value = true;
+    router.get(
+        `${props.endpoints.basePath}/ajukan`,
+        { jenis: jenis.id },
+        { preserveScroll: true },
+    );
 }
 
 function rejectionHeadline(item: LatestSubmission) {
@@ -529,19 +590,13 @@ function fieldError(name: string): string | undefined {
 
         <!-- Greeting -->
         <div
-            class="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+            class="mb-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
         >
             <div
                 class="border-b border-slate-100 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.10),_transparent_45%),linear-gradient(135deg,_rgba(248,250,252,0.96),_#ffffff)] px-5 py-5 sm:px-6 sm:py-6"
             >
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-3xl">
-                        <div
-                            class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/90 px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-700 uppercase shadow-sm"
-                        >
-                            <GraduationCap class="size-3.5" />
-                            {{ props.userRole.name ?? 'Portal FAST' }}
-                        </div>
                         <p class="mt-4 text-sm text-slate-500">
                             Selamat datang,
                             <span class="font-semibold text-slate-900">{{ dashboardGreeting }}</span>
@@ -556,9 +611,7 @@ function fieldError(name: string): string | undefined {
             </div>
 
             <!-- 5 statistik -->
-            <div
-                class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3 lg:grid-cols-5 sm:p-6"
-            >
+            <div class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3 sm:p-6 lg:grid-cols-4">
                 <div
                     v-for="stat in [
                         {
@@ -589,16 +642,9 @@ function fieldError(name: string): string | undefined {
                             icon: XCircle,
                             iconColor: 'text-red-400',
                         },
-                        {
-                            label: 'Dibatalkan',
-                            value: summary.dibatalkan,
-                            border: 'border-slate-200',
-                            icon: Ban,
-                            iconColor: 'text-slate-400',
-                        },
                     ]"
                     :key="stat.label"
-                    class="flex min-h-[110px] flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white"
+                    class="flex min-h-[110px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-transform duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_6px_18px_rgba(15,23,42,0.04)]"
                 >
                     <div class="flex items-start justify-between gap-3">
                         <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
@@ -624,9 +670,7 @@ function fieldError(name: string): string | undefined {
                                           ? 'bg-sky-500'
                                           : stat.label === 'Selesai'
                                             ? 'bg-emerald-500'
-                                            : stat.label === 'Ditolak'
-                                              ? 'bg-red-500'
-                                              : 'bg-slate-500',
+                                        : 'bg-red-500',
                                 ]"
                             />
                         </div>
@@ -638,10 +682,10 @@ function fieldError(name: string): string | undefined {
         <!-- Main grid -->
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
             <!-- Kiri: Pengajuan Terbaru -->
-            <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
                 <!-- Toolbar -->
                 <div
-                    class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                     <div>
                         <p class="text-[11px] font-semibold tracking-[0.18em] text-blue-600 uppercase">
@@ -656,7 +700,7 @@ function fieldError(name: string): string | undefined {
                     </div>
                     <Link
                         :href="`${props.endpoints.basePath}/history`"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-200 transition-colors hover:bg-blue-700"
+                        class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                     >
                         <History class="size-3.5" />
                         Lihat Semua
@@ -666,7 +710,7 @@ function fieldError(name: string): string | undefined {
                 <!-- Perlu Revisi banner -->
                 <div
                     v-if="latestVisible.some((i) => i.needsRevision)"
-                    class="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+                    class="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3"
                 >
                     <div class="flex items-start gap-2">
                         <AlertCircle class="mt-0.5 size-4 shrink-0 text-amber-600" />
@@ -703,7 +747,7 @@ function fieldError(name: string): string | undefined {
                     <article
                         v-for="(item, i) in latestVisible"
                         :key="item.id"
-                        class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
                         :class="statusTone(item.status).card"
                     >
                         <div class="flex flex-col gap-4 p-4 sm:p-5">
@@ -759,7 +803,7 @@ function fieldError(name: string): string | undefined {
                             </div>
 
                             <div
-                                class="overflow-hidden rounded-3xl border bg-white shadow-sm"
+                                class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                                 :class="statusTone(item.status).card"
                             >
                                 <div
@@ -958,66 +1002,9 @@ function fieldError(name: string): string | undefined {
                         <FilePlus2 class="size-4 text-blue-500" /> Ajukan Surat
                     </h3>
 
-                    <!-- Search -->
-                    <div class="relative mb-3">
-                        <Search
-                            class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                            v-model="searchQuery"
-                            type="text"
-                            placeholder="Cari jenis surat..."
-                        class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 py-0 pr-7 pl-8 text-xs text-slate-700 transition outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                        />
-                        <button
-                            v-if="searchQuery"
-                            type="button"
-                            class="absolute top-1/2 right-2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                            @click="searchQuery = ''"
-                        >
-                            <X class="size-3" />
-                        </button>
-                    </div>
-
-                    <!-- Category tabs -->
-                    <div
-                        v-if="categories.length > 0"
-                        class="scrollbar-hide mb-3 flex gap-2 overflow-x-auto pb-1"
-                    >
-                        <button
-                            type="button"
-                            class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-medium transition-colors"
-                            :class="
-                                activeCategory === null
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            "
-                            @click="activeCategory = null"
-                        >
-                            Semua
-                        </button>
-                        <button
-                            v-for="cat in categories"
-                            :key="cat.id"
-                            type="button"
-                            class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-medium transition-colors"
-                            :class="
-                                activeCategory === cat.id
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            "
-                            @click="
-                                activeCategory =
-                                    activeCategory === cat.id ? null : cat.id
-                            "
-                        >
-                            {{ cat.nama }}
-                        </button>
-                    </div>
-
                     <!-- Card grid -->
                     <div
-                        v-if="filteredJenis.length === 0"
+                        v-if="visibleJenis.length === 0"
                         class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center"
                     >
                         <FileText class="mx-auto mb-2 size-6 text-slate-300" />
@@ -1027,7 +1014,7 @@ function fieldError(name: string): string | undefined {
                     </div>
                     <div v-else class="grid gap-2">
                         <button
-                            v-for="jenis in filteredJenis"
+                        v-for="jenis in visibleJenis"
                             :key="jenis.id"
                             type="button"
                             class="group relative rounded-2xl border border-slate-200 bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
@@ -1054,6 +1041,15 @@ function fieldError(name: string): string | undefined {
                             </div>
                         </button>
                     </div>
+
+                    <Link
+                        v-if="hasMoreJenis"
+                        href="/mahasiswa/ajukan"
+                        class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                    >
+                        Selengkapnya
+                        <ExternalLink class="size-3.5" />
+                    </Link>
                 </div>
 
             </div>
@@ -1101,7 +1097,7 @@ function fieldError(name: string): string | undefined {
                         class="max-h-[70vh] space-y-4 overflow-y-auto p-5"
                     >
                         <!-- Keperluan -->
-                        <div>
+                        <div data-field-key="keperluan">
                             <label
                                 class="mb-1 block text-xs font-medium text-slate-700"
                             >
@@ -1122,7 +1118,7 @@ function fieldError(name: string): string | undefined {
                         </div>
 
                         <!-- Tanggal kebutuhan -->
-                        <div>
+                        <div data-field-key="tanggal_kebutuhan">
                             <label
                                 class="mb-1 block text-xs font-medium text-slate-700"
                             >
@@ -1148,7 +1144,11 @@ function fieldError(name: string): string | undefined {
                             v-for="field in selectedJenis?.fieldConfig ?? []"
                             :key="field.name"
                         >
-                            <div v-if="isApplicantFieldVisible(field)">
+                            <div
+                                v-if="isApplicantFieldVisible(field)"
+                                :data-field-key="`field_data.${field.name}`"
+                                :ref="(el) => setApplicantFieldRef(`field_data.${field.name}`, el)"
+                            >
                                 <label
                                     class="mb-1 block text-xs font-medium text-slate-700"
                                 >
@@ -1504,10 +1504,6 @@ function fieldError(name: string): string | undefined {
                             v-if="formStep === 'form'"
                             type="button"
                             class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                            :disabled="
-                                !submitForm.keperluan ||
-                                !submitForm.tanggal_kebutuhan
-                            "
                             @click="goToPreview"
                         >
                             Tinjau Pengajuan ?

@@ -80,9 +80,7 @@ class User extends Authenticatable
     public function hasFastUserRole(): bool
     {
         return $this->isMahasiswa()
-            || $this->isDosen()
-            || $this->isLab()
-            || $this->isSekfak();
+            || $this->isDosen();
     }
 
     public function roleSlug(): string
@@ -170,8 +168,6 @@ class User extends Authenticatable
             $this->isKaprodi() => 'kaprodi.dashboard',
             $this->isDekan() => 'dekan.dashboard',
             $this->isDosen() => 'dosen.dashboard',
-            $this->isLab() => 'lab.dashboard',
-            $this->isSekfak() => 'sekfak.dashboard',
             $this->isMahasiswa() => 'mahasiswa.dashboard',
             default => abort(403),
         };

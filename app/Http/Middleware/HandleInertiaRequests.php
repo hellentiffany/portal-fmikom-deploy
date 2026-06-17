@@ -50,10 +50,7 @@ class HandleInertiaRequests extends Middleware
             if ($roleSlug === 'admin') {
                 $navCounts['admin_queue'] = \App\Models\Surat::query()
                     ->where('type', 'pengajuan')
-                    ->whereIn('status', [
-                        \App\Models\Surat::STATUS_PENDING,
-                        \App\Models\Surat::STATUS_REVISION_REQUESTED,
-                    ])
+                    ->where('status', \App\Models\Surat::STATUS_PENDING)
                     ->count();
             }
 

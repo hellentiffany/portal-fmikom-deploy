@@ -3,6 +3,7 @@
 namespace App\Services\FASt;
 
 use App\Models\FastNotification;
+use App\Models\SuratApprovalFlow;
 use App\Models\Surat;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
@@ -53,9 +54,12 @@ class NotificationFeedService
             ->limit(6)
             ->get();
 
+        $notificationKeys = array_column($items, 'notification_key');
+
         return [
             'count' => FastNotification::query()
                 ->where('user_id', $user->id)
+                ->whereIn('notification_key', $notificationKeys)
                 ->whereNull('read_at')
                 ->count(),
             'items' => $this->sortNewestFirst($records->map(fn (FastNotification $notification): array => [
@@ -178,32 +182,55 @@ class NotificationFeedService
     protected function adminItems(User $user): array
     {
         return Surat::query()
-            ->with(['jenisSurat:id,nama', 'pemohon:id,name'])
-            ->where(function ($q): void {
-                $q->where('status', Surat::STATUS_PENDING)
-                    ->orWhere(function ($nested): void {
-                        $nested->where('type', 'surat_keluar')
-                            ->where('status', Surat::STATUS_REVISION_REQUESTED);
-                    });
+            ->with([
+                'jenisSurat:id,nama',
+                'approvalFlows' => function ($query): void {
+                    $query
+                        ->with('approver:id,name')
+                        ->where('status', SuratApprovalFlow::STATUS_APPROVED)
+                        ->whereIn('role', ['kaprodi', 'dekan'])
+                        ->latest('tanggal_aksi')
+                        ->latest('id');
+                },
+            ])
+            ->where('type', 'surat_keluar')
+            ->whereIn('status', [
+                Surat::STATUS_APPROVED_KAPRODI,
+                Surat::STATUS_APPROVED_DEKAN,
+                Surat::STATUS_FINISHED,
+            ])
+            ->whereHas('approvalFlows', function ($query): void {
+                $query
+                    ->where('status', SuratApprovalFlow::STATUS_APPROVED)
+                    ->whereIn('role', ['kaprodi', 'dekan']);
             })
             ->latest('updated_at')
             ->latest('id')
             ->limit(6)
             ->get()
             ->map(function (Surat $surat): array {
-                [$message, $tone] = $this->adminToneAndMessage($surat);
+                $approvalFlow = $surat->approvalFlows->first();
+                $approvalRole = $approvalFlow?->role === 'kaprodi' ? 'Kaprodi' : 'Dekan';
+                $actedAt = $approvalFlow?->tanggal_aksi ?? $approvalFlow?->created_at ?? $surat->updated_at;
 
                 return [
                     'scope' => 'admin',
-                    'notification_key' => sprintf('admin:%d:%s', $surat->id, $surat->status),
+                    'notification_key' => sprintf(
+                        'admin:approval:%d:%s',
+                        $surat->id,
+                        (string) ($approvalFlow?->id ?? $surat->updated_at?->timestamp ?? $surat->id),
+                    ),
                     'title' => $surat->jenisSurat?->nama ?? 'Surat Akademik',
-                    'message' => $message,
-                    'tone' => $tone,
+                    'message' => "Surat telah disetujui {$approvalRole}",
+                    'tone' => 'green',
                     'href' => sprintf('/admin/surat/%d', $surat->id),
                     'meta' => [
                         'surat_id' => $surat->id,
                         'status' => $surat->status,
+                        'approval_role' => $approvalFlow?->role,
+                        'approval_flow_id' => $approvalFlow?->id,
                     ],
+                    'time' => $actedAt?->toISOString(),
                 ];
             })
             ->values()
@@ -237,14 +264,6 @@ class NotificationFeedService
     {
         if ($roleSlug === 'dosen') {
             return '/dosen';
-        }
-
-        if ($roleSlug === 'lab') {
-            return '/lab';
-        }
-
-        if ($roleSlug === 'sekfak' || Str::contains($roleSlug, 'sekretaris')) {
-            return '/sekfak';
         }
 
         return '/mahasiswa';

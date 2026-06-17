@@ -131,7 +131,7 @@ function formatDate(d?: string | null) {
 function statusLabel(item: SuratItem) {
     const map: Record<string, string> = {
         pending: 'Pending',
-        validated_admin: 'Validasi Admin',
+        validated_admin: 'Diteruskan ke Approver',
         approved_kaprodi: 'Disetujui Kaprodi',
         approved_dekan: 'Disetujui Dekan',
         revision_requested: 'Ditolak',
@@ -142,13 +142,13 @@ function statusLabel(item: SuratItem) {
     return map[item.status] ?? item.status;
 }
 function statusClass(s: string) {
-    if (s === 'finished') return 'bg-blue-100 text-blue-700';
-    if (s === 'revision_requested') return 'bg-amber-100 text-amber-700';
+    if (s === 'finished') return 'bg-emerald-50 text-emerald-700';
+    if (s === 'revision_requested') return 'bg-amber-50 text-amber-700';
     if (s === 'rejected_admin' || s === 'rejected_approver')
-        return 'bg-red-100 text-red-700';
-    if (s.startsWith('approved')) return 'bg-sky-100 text-sky-700';
-    if (s === 'validated_admin') return 'bg-indigo-100 text-indigo-700';
-    return 'bg-slate-100 text-slate-600';
+        return 'bg-red-50 text-red-700';
+    if (s.startsWith('approved')) return 'bg-emerald-50 text-emerald-700';
+    if (s === 'validated_admin') return 'bg-slate-100 text-slate-700';
+    return 'bg-amber-50 text-amber-700';
 }
 function initials(name?: string | null) {
     if (!name) return '?';

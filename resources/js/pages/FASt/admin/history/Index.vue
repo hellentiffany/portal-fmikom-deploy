@@ -78,14 +78,14 @@ function formatDate(d?: string | null) {
 function statusLabel(s: string) {
     const map: Record<string, string> = {
         pending: 'Pending',
-        validated_admin: 'Pending',
+        validated_admin: 'Diteruskan ke Approver',
         approved_kaprodi: 'Disetujui Kaprodi',
         approved_dekan: 'Disetujui Dekan',
         revision_requested: 'Revisi',
         finished: 'Selesai',
         rejected: 'Revisi',
-        rejected_admin: 'Revisi',
-        rejected_approver: 'Revisi',
+        rejected_admin: 'Ditolak',
+        rejected_approver: 'Ditolak',
     };
     return map[s] ?? s;
 }
@@ -104,10 +104,10 @@ function statusIcon(s: string) {
 function statusColor(s: string) {
     if (s === 'finished')
         return {
-            bg: 'bg-blue-50',
-            border: 'border-blue-200',
-            text: 'text-blue-600',
-            line: 'bg-blue-300',
+            bg: 'bg-emerald-50',
+            border: 'border-emerald-200',
+            text: 'text-emerald-600',
+            line: 'bg-emerald-300',
         };
     if (
         s === 'revision_requested' ||
@@ -122,17 +122,17 @@ function statusColor(s: string) {
         };
     if (s.startsWith('approved'))
         return {
-            bg: 'bg-sky-50',
-            border: 'border-sky-200',
-            text: 'text-sky-600',
-            line: 'bg-sky-300',
+            bg: 'bg-emerald-50',
+            border: 'border-emerald-200',
+            text: 'text-emerald-600',
+            line: 'bg-emerald-300',
         };
     if (s === 'validated_admin')
         return {
-            bg: 'bg-indigo-50',
-            border: 'border-indigo-200',
-            text: 'text-indigo-600',
-            line: 'bg-indigo-300',
+            bg: 'bg-slate-100',
+            border: 'border-slate-200',
+            text: 'text-slate-600',
+            line: 'bg-slate-300',
         };
     return {
         bg: 'bg-amber-50',
@@ -142,16 +142,16 @@ function statusColor(s: string) {
     };
 }
 function statusClass(s: string) {
-    if (s === 'finished') return 'bg-blue-100 text-blue-700';
+    if (s === 'finished') return 'bg-emerald-50 text-emerald-700';
     if (
         s === 'revision_requested' ||
         s === 'rejected' ||
         s.startsWith('rejected_')
     )
-        return 'bg-red-100 text-red-700';
-    if (s.startsWith('approved')) return 'bg-sky-100 text-sky-700';
-    if (s === 'validated_admin') return 'bg-indigo-100 text-indigo-700';
-    return 'bg-amber-100 text-amber-700';
+        return 'bg-red-50 text-red-700';
+    if (s.startsWith('approved')) return 'bg-emerald-50 text-emerald-700';
+    if (s === 'validated_admin') return 'bg-slate-100 text-slate-700';
+    return 'bg-amber-50 text-amber-700';
 }
 </script>
 <template>

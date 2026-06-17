@@ -21,6 +21,8 @@ class LetterIndexController extends Controller
         $categoryId   = $request->integer('category_id');
         $baseStatuses = [
             Surat::STATUS_PENDING,
+            Surat::STATUS_VALIDATED_ADMIN,
+            Surat::STATUS_REVISION_REQUESTED,
             Surat::STATUS_REJECTED_ADMIN,
         ];
 

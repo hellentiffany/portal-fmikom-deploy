@@ -13,8 +13,6 @@ function resolveFastPageName(name: string): string {
     if (name.startsWith('dekan/approval/')) return `FASt/${name}`;
     if (name.startsWith('mahasiswa/')) return `FASt/${name}`;
     if (name.startsWith('dosen/')) return `FASt/${name}`;
-    if (name.startsWith('lab/')) return `FASt/${name}`;
-    if (name.startsWith('sekfak/')) return `FASt/${name}`;
     if (name.startsWith('admin/')) return `FASt/${name}`;
     if (name.startsWith('fast/user/')) {
         return `FASt/mahasiswa/${name.slice('fast/user/'.length)}`;

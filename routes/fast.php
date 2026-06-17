@@ -22,12 +22,6 @@ use App\Http\Controllers\FASt\Dosen\DashboardController as DosenDashboardControl
 use App\Http\Controllers\FASt\Dosen\HistoryController as DosenHistoryController;
 use App\Http\Controllers\FASt\Dosen\LetterTypeController as DosenLetterTypeController;
 use App\Http\Controllers\FASt\Dosen\SubmissionController as DosenSubmissionController;
-use App\Http\Controllers\FASt\Lab\DashboardController as LabDashboardController;
-use App\Http\Controllers\FASt\Lab\HistoryController as LabHistoryController;
-use App\Http\Controllers\FASt\Lab\SubmissionController as LabSubmissionController;
-use App\Http\Controllers\FASt\Sekfak\DashboardController as SekfakDashboardController;
-use App\Http\Controllers\FASt\Sekfak\HistoryController as SekfakHistoryController;
-use App\Http\Controllers\FASt\Sekfak\SubmissionController as SekfakSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -150,28 +144,6 @@ Route::middleware(['auth', 'verified', 'fast.user'])->group(function () use ($us
                 DosenDashboardController::class,
                 DosenSubmissionController::class,
                 DosenHistoryController::class,
-            );
-        });
-
-    Route::prefix('lab')
-        ->name('lab.')
-        ->group(function () use ($userRoutes): void {
-            $userRoutes(
-                'lab',
-                LabDashboardController::class,
-                LabSubmissionController::class,
-                LabHistoryController::class,
-            );
-        });
-
-    Route::prefix('sekfak')
-        ->name('sekfak.')
-        ->group(function () use ($userRoutes): void {
-            $userRoutes(
-                'sekfak',
-                SekfakDashboardController::class,
-                SekfakSubmissionController::class,
-                SekfakHistoryController::class,
             );
         });
 

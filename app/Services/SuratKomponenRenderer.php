@@ -437,13 +437,20 @@ HTML;
             : ($komp['perihal'] ?? '');
         $lampiran = static::fill($lampiranTemplate, $data);
         $perihal  = static::fill($perihalTemplate, $data);
-        $kota     = static::fill($komp['kota'] ?? '{{kota_surat}}', $data);
-        $tanggal  = static::fill($komp['tanggal'] ?? '{{tanggal_surat_panjang}}', $data);
+        $kotaTemplate = (string) ($komp['kota'] ?? '{{kota_surat}}');
+        $tanggalTemplate = (string) ($komp['tanggal'] ?? '{{tanggal_surat_panjang}}');
+        $kota     = static::fill($kotaTemplate, $data);
+        $tanggal  = static::fill($tanggalTemplate, $data);
+        $kotaMewakiliTanggal = preg_match('/{{\s*tanggal_surat(?:_panjang)?\s*}}/i', $kotaTemplate) === 1;
+        $tanggalKosong = trim(strip_tags((string) $tanggal)) === '';
         $size     = $komp['font_size'] ?? '12pt';
         $lineHeight = trim((string) ($data['line_height_header'] ?? '1.65')) ?: '1.65';
         $renderMode = (string) ($data['__render_mode'] ?? 'preview');
         $tableTopMargin = $renderMode === 'pdf' ? '-2px' : '0px';
         $tableBottomMargin = $renderMode === 'pdf' ? '0px' : '4px';
+        $rightHeader = $kotaMewakiliTanggal || $tanggalKosong
+            ? $kota
+            : "{$kota}, {$tanggal}";
 
         return <<<HTML
 <table style="width: 100%; border-collapse: collapse; margin-top: {$tableTopMargin}; margin-bottom: {$tableBottomMargin}; font-size: {$size}; line-height: {$lineHeight};">
@@ -469,7 +476,7 @@ HTML;
                 </table>
             </td>
             <td style="width: 45%; vertical-align: top; text-align: right; padding: 0; font-size: {$size}; line-height: {$lineHeight};">
-                {$kota}, {$tanggal}
+                {$rightHeader}
             </td>
         </tr>
     </tbody>
