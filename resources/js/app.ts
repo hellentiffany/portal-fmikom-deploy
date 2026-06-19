@@ -8,17 +8,17 @@ import { initializeTheme } from '@/composables/useAppearance';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 function resolveFastPageName(name: string): string {
-    if (name.startsWith('approval/')) return `FASt/Shared/${name}`;
-    if (name.startsWith('kaprodi/approval/')) return `FASt/${name}`;
-    if (name.startsWith('dekan/approval/')) return `FASt/${name}`;
-    if (name.startsWith('mahasiswa/')) return `FASt/${name}`;
-    if (name.startsWith('dosen/')) return `FASt/${name}`;
-    if (name.startsWith('admin/')) return `FASt/${name}`;
+    if (name.startsWith('approval/')) return `Modules/Fast/Shared/${name}`;
+    if (name.startsWith('kaprodi/approval/')) return `Modules/Fast/Kaprodi/${name.slice('kaprodi/'.length)}`;
+    if (name.startsWith('dekan/approval/')) return `Modules/Fast/Dekan/${name.slice('dekan/'.length)}`;
+    if (name.startsWith('mahasiswa/')) return `Modules/Fast/Mahasiswa/${name.slice('mahasiswa/'.length)}`;
+    if (name.startsWith('dosen/')) return `Modules/Fast/Dosen/${name.slice('dosen/'.length)}`;
+    if (name.startsWith('admin/')) return `Modules/Fast/Admin/${name.slice('admin/'.length)}`;
     if (name.startsWith('fast/user/')) {
-        return `FASt/mahasiswa/${name.slice('fast/user/'.length)}`;
+        return `Modules/Fast/Mahasiswa/${name.slice('fast/user/'.length)}`;
     }
     if (name.startsWith('fast/mahasiswa/')) {
-        return `FASt/mahasiswa/${name.slice('fast/mahasiswa/'.length)}`;
+        return `Modules/Fast/Mahasiswa/${name.slice('fast/mahasiswa/'.length)}`;
     }
 
     return name;
