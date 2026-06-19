@@ -1,7 +1,7 @@
 <?php
 // app/Http/Controllers/Admin/CategoryController.php
 
-namespace App\Http\Controllers\FASt\Admin;
+namespace App\Modules\Fast\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SuratCategory;

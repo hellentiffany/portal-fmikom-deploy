@@ -1,15 +1,15 @@
 ﻿<?php
 
 use App\Http\Controllers\FASt\Shared\Approval\ApprovalController as ApprovalDashboardController;
-use App\Http\Controllers\FASt\Admin\ArchiveController;
-use App\Http\Controllers\FASt\Admin\CategoryController;
-use App\Http\Controllers\FASt\Admin\DashboardController;
-use App\Http\Controllers\FASt\Admin\GlobalSettingsController;
-use App\Http\Controllers\FASt\Admin\HistoryController;
-use App\Http\Controllers\FASt\Admin\LetterController;
-use App\Http\Controllers\FASt\Admin\LetterIndexController;
-use App\Http\Controllers\FASt\Admin\QrManageController;
-use App\Http\Controllers\FASt\Admin\TemplateController;
+use App\Modules\Fast\Controllers\Admin\ArchiveController;
+use App\Modules\Fast\Controllers\Admin\CategoryController;
+use App\Modules\Fast\Controllers\Admin\DashboardController;
+use App\Modules\Fast\Controllers\Admin\GlobalSettingsController;
+use App\Modules\Fast\Controllers\Admin\HistoryController;
+use App\Modules\Fast\Controllers\Admin\LetterController;
+use App\Modules\Fast\Controllers\Admin\LetterIndexController;
+use App\Modules\Fast\Controllers\Admin\QrManageController;
+use App\Modules\Fast\Controllers\Admin\TemplateController;
 use App\Http\Controllers\FASt\NotificationController;
 use App\Http\Controllers\Api\SuratController as ApiSuratController;
 use App\Http\Controllers\FASt\Dekan\ApprovalController as DekanApprovalController;

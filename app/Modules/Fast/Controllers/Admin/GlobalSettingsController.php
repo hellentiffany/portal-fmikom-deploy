@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\FASt\Admin;
+namespace App\Modules\Fast\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TemplateGlobalSetting;
