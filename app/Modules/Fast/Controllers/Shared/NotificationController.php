@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\FASt;
+namespace App\Modules\Fast\Controllers\Shared;
 
 use App\Http\Controllers\Controller;
 use App\Models\FastNotification;

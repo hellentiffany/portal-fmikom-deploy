@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\FASt\Kaprodi;
+namespace App\Modules\Fast\Controllers\Kaprodi;
 
 use App\Modules\Fast\Controllers\Shared\Approval\ApprovalController as BaseApprovalController;
 

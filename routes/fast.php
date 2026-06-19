@@ -1,6 +1,6 @@
 ﻿<?php
 
-use App\Http\Controllers\FASt\Shared\Approval\ApprovalController as ApprovalDashboardController;
+use App\Modules\Fast\Controllers\Shared\Approval\ApprovalController as ApprovalDashboardController;
 use App\Modules\Fast\Controllers\Admin\ArchiveController;
 use App\Modules\Fast\Controllers\Admin\CategoryController;
 use App\Modules\Fast\Controllers\Admin\DashboardController;
@@ -10,18 +10,18 @@ use App\Modules\Fast\Controllers\Admin\LetterController;
 use App\Modules\Fast\Controllers\Admin\LetterIndexController;
 use App\Modules\Fast\Controllers\Admin\QrManageController;
 use App\Modules\Fast\Controllers\Admin\TemplateController;
-use App\Http\Controllers\FASt\NotificationController;
+use App\Modules\Fast\Controllers\Shared\NotificationController;
 use App\Http\Controllers\Api\SuratController as ApiSuratController;
-use App\Http\Controllers\FASt\Dekan\ApprovalController as DekanApprovalController;
-use App\Http\Controllers\FASt\Mahasiswa\DashboardController as MahasiswaDashboardController;
-use App\Http\Controllers\FASt\Mahasiswa\HistoryController as MahasiswaHistoryController;
-use App\Http\Controllers\FASt\Mahasiswa\LetterTypeController as MahasiswaLetterTypeController;
-use App\Http\Controllers\FASt\Mahasiswa\SubmissionController as MahasiswaSubmissionController;
-use App\Http\Controllers\FASt\Kaprodi\ApprovalController as KaprodiApprovalController;
-use App\Http\Controllers\FASt\Dosen\DashboardController as DosenDashboardController;
-use App\Http\Controllers\FASt\Dosen\HistoryController as DosenHistoryController;
-use App\Http\Controllers\FASt\Dosen\LetterTypeController as DosenLetterTypeController;
-use App\Http\Controllers\FASt\Dosen\SubmissionController as DosenSubmissionController;
+use App\Modules\Fast\Controllers\Dekan\ApprovalController as DekanApprovalController;
+use App\Modules\Fast\Controllers\Mahasiswa\DashboardController as MahasiswaDashboardController;
+use App\Modules\Fast\Controllers\Mahasiswa\HistoryController as MahasiswaHistoryController;
+use App\Modules\Fast\Controllers\Mahasiswa\LetterTypeController as MahasiswaLetterTypeController;
+use App\Modules\Fast\Controllers\Mahasiswa\SubmissionController as MahasiswaSubmissionController;
+use App\Modules\Fast\Controllers\Kaprodi\ApprovalController as KaprodiApprovalController;
+use App\Modules\Fast\Controllers\Dosen\DashboardController as DosenDashboardController;
+use App\Modules\Fast\Controllers\Dosen\HistoryController as DosenHistoryController;
+use App\Modules\Fast\Controllers\Dosen\LetterTypeController as DosenLetterTypeController;
+use App\Modules\Fast\Controllers\Dosen\SubmissionController as DosenSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 /*

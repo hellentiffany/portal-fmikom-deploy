@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\FASt\Dekan;
+namespace App\Modules\Fast\Controllers\Dekan;
 
 use App\Modules\Fast\Controllers\Shared\Approval\ApprovalController as BaseApprovalController;
 
