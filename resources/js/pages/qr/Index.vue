@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // resources/js/pages/admin/qr/Index.vue
-import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
+import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
