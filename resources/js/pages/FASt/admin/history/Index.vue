@@ -41,6 +41,9 @@ const props = defineProps<{
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'pending');
 const categoryId = ref(props.filters.category_id ?? '');
+const isFilterActive = computed(
+    () => search.value !== '' || categoryId.value !== '' || status.value !== 'pending',
+);
 const revisionNotifCount = computed(() => props.notif_count_revision_admin ?? 0);
 
 const statusFilters = computed(() => [
@@ -183,24 +186,25 @@ function statusClass(s: string) {
             </div>
         </div>
         <!-- Filter bar -->
-        <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4">
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="relative max-w-sm min-w-[200px] flex-1">
+        <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div class="relative flex-1">
                     <Search
-                        class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
+                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
                     />
                     <input
                         v-model="search"
                         type="text"
                         placeholder="Cari nomor surat, pemohon, atau keperluan..."
-                        class="h-10 w-full rounded-xl border border-slate-200 bg-white pr-3 pl-9 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                         @keyup.enter="applyFilter"
                     />
                 </div>
-                <div class="relative min-w-[200px]">
+                <div class="relative w-full lg:w-56">
                     <select
                         v-model="categoryId"
-                        class="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pr-8 pl-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        class="h-11 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pr-8 pl-4 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @change="applyFilter"
                     >
                         <option value="">Semua Kategori</option>
                         <option
@@ -212,24 +216,17 @@ function statusClass(s: string) {
                         </option>
                     </select>
                     <ChevronDown
-                        class="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-slate-400"
+                        class="pointer-events-none absolute top-1/2 right-3.5 size-3.5 -translate-y-1/2 text-slate-400"
                     />
                 </div>
                 <button
                     type="button"
-                    class="h-10 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                    @click="applyFilter"
-                >
-                    Terapkan
-                </button>
-                <button
-                    type="button"
-                    class="h-10 rounded-xl border border-slate-200 px-5 text-sm text-slate-500 transition-colors hover:bg-slate-50"
+                    class="h-11 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 sm:w-auto"
                     @click="resetFilter"
                 >
-                    Reset
+                    Reset Filter
                 </button>
-                <p class="ml-auto text-xs text-slate-400">
+                <p class="text-xs text-slate-400 lg:ml-auto">
                     {{ surats.from ?? 0 }}-{{ surats.to ?? 0 }} dari
                     {{ surats.total }} surat
                 </p>

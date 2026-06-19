@@ -345,6 +345,90 @@ class SuratDataContract
     }
 
     /**
+     * @param  array<int, mixed>  $fieldConfig
+     * @param  array<string, mixed>  $payload
+     * @return array<string, string> field_name => label
+     */
+    public static function missingRequiredCampusFields(array $fieldConfig, array $payload): array
+    {
+        $missing = [];
+
+        foreach (static::normalizeDynamicFieldConfig($fieldConfig) as $field) {
+            if ((string) ($field['sumber_data'] ?? 'data_pemohon') !== 'data_kampus') {
+                continue;
+            }
+
+            if (! (bool) ($field['required'] ?? false)) {
+                continue;
+            }
+
+            $fieldName = (string) ($field['name'] ?? '');
+            if ($fieldName === '') {
+                continue;
+            }
+
+            $value = Arr::get($payload, $fieldName);
+
+            if (! static::isFieldValueFilledForValidation($value, (string) ($field['type'] ?? 'text'))) {
+                $missing[$fieldName] = (string) ($field['label'] ?? $fieldName);
+            }
+        }
+
+        return $missing;
+    }
+
+    protected static function isFieldValueFilledForValidation(mixed $value, string $type): bool
+    {
+        $type = strtolower(trim($type));
+
+        if ($value === null) {
+            return false;
+        }
+
+        if ($type === 'checkbox') {
+            if (is_bool($value)) {
+                return $value;
+            }
+
+            if (is_numeric($value)) {
+                return (int) $value === 1;
+            }
+
+            $normalized = strtolower(trim((string) $value));
+
+            return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+        }
+
+        if (in_array($type, ['repeatable', 'checkbox-group', 'multiselect'], true)) {
+            if (is_array($value)) {
+                return collect($value)
+                    ->flatten()
+                    ->contains(fn ($item): bool => filled($item));
+            }
+
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+
+                if (is_array($decoded)) {
+                    return collect($decoded)
+                        ->flatten()
+                        ->contains(fn ($item): bool => filled($item));
+                }
+            }
+
+            return filled($value);
+        }
+
+        if (is_array($value)) {
+            return collect($value)
+                ->flatten()
+                ->contains(fn ($item): bool => filled($item));
+        }
+
+        return filled($value);
+    }
+
+    /**
      * @param  array<string, mixed>|null  $field
      * @return array{label: string, source_type: string, source_key: string, is_required: bool, default_value: mixed, description: string}
      */

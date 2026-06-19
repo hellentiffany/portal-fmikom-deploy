@@ -27,7 +27,7 @@ class LetterIndexController extends Controller
         ];
 
         $baseQuery = Surat::query()
-            ->with(['pemohon', 'jenisSurat.category'])
+            ->with(['pemohon', 'jenisSurat.category', 'dataEntries'])
             ->where('type', 'pengajuan')
             ->whereIn('status', $baseStatuses)
             ->latest();
@@ -64,6 +64,7 @@ class LetterIndexController extends Controller
                 'id'               => $surat->id,
                 'nomor_surat'      => $surat->nomor_surat,
                 'status'           => $surat->status,
+                'can_approve'      => $surat->canBeValidatedByAdmin(),
                 'revision_label'   => $surat->status === Surat::STATUS_REVISION_REQUESTED
                     ? match ($surat->finalApprovalRoleSlug()) {
                         'kaprodi' => 'Dikembalikan Kaprodi',

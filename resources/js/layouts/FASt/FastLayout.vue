@@ -10,7 +10,6 @@ import {
     LogOut,
     ChevronRight,
     Menu,
-    X,
     Settings,
     Battery,
     BatteryCharging,
@@ -84,57 +83,6 @@ const notifCount = computed(
     () => page.props.notifications?.count ?? page.props.notif_count ?? 0,
 );
 const notifItems = computed(() => page.props.notifications?.items ?? []);
-const flashSuccess = ref('');
-const flashError = ref('');
-const flashWarning = ref('');
-
-let flashSuccessTimer: ReturnType<typeof window.setTimeout> | null = null;
-let flashErrorTimer: ReturnType<typeof window.setTimeout> | null = null;
-let flashWarningTimer: ReturnType<typeof window.setTimeout> | null = null;
-
-function syncFlash(
-    target: typeof flashSuccess,
-    timerRef: { current: ReturnType<typeof window.setTimeout> | null },
-    message?: string | null,
-    timeout = 3000,
-) {
-    if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-    }
-
-    target.value = typeof message === 'string' && message.trim().length > 0 ? message : '';
-
-    if (target.value) {
-        timerRef.current = window.setTimeout(() => {
-            target.value = '';
-            timerRef.current = null;
-        }, timeout);
-    }
-}
-
-watch(
-    () => page.props.flash?.success,
-    (message) => syncFlash(flashSuccess, { get current() { return flashSuccessTimer; }, set current(value) { flashSuccessTimer = value; } }, message),
-    { immediate: true },
-);
-watch(
-    () => page.props.flash?.error,
-    (message) => syncFlash(flashError, { get current() { return flashErrorTimer; }, set current(value) { flashErrorTimer = value; } }, message),
-    { immediate: true },
-);
-watch(
-    () => page.props.flash?.warning,
-    (message) => syncFlash(flashWarning, { get current() { return flashWarningTimer; }, set current(value) { flashWarningTimer = value; } }, message),
-    { immediate: true },
-);
-
-onUnmounted(() => {
-    if (flashSuccessTimer !== null) window.clearTimeout(flashSuccessTimer);
-    if (flashErrorTimer !== null) window.clearTimeout(flashErrorTimer);
-    if (flashWarningTimer !== null) window.clearTimeout(flashWarningTimer);
-});
-
 function checkMobile() {
     isMobile.value = window.innerWidth < 1024;
     if (isMobile.value) sidebarOpen.value = false;
@@ -524,62 +472,6 @@ function batteryIcon() {
                     />
                 </div>
             </header>
-
-            <!-- Flash messages -->
-            <div class="shrink-0">
-                <Transition name="flash">
-                    <div
-                        v-if="flashSuccess"
-                        class="mx-4 mt-3 flex items-center gap-2.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5"
-                    >
-                        <div
-                            class="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-500"
-                        >
-                            <svg
-                                class="size-3 text-white"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M5 13l4 4L19 7"
-                                />
-                            </svg>
-                        </div>
-                        <p class="text-sm font-medium text-blue-800">
-                            {{ flashSuccess }}
-                        </p>
-                    </div>
-                </Transition>
-                <Transition name="flash">
-                    <div
-                        v-if="flashError"
-                        class="mx-4 mt-3 flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5"
-                    >
-                        <div
-                            class="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500"
-                        >
-                            <X class="size-3 text-white" />
-                        </div>
-                        <p class="text-sm font-medium text-red-800">
-                            {{ flashError }}
-                        </p>
-                    </div>
-                </Transition>
-                <Transition name="flash">
-                    <div
-                        v-if="flashWarning"
-                        class="mx-4 mt-3 flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5"
-                    >
-                        <p class="text-sm font-medium text-amber-800">
-                            ⚠ {{ flashWarning }}
-                        </p>
-                    </div>
-                </Transition>
-            </div>
 
             <!-- Page header -->
             <div

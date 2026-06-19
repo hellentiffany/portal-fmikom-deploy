@@ -1,24 +1,26 @@
 <script setup lang="ts">
 // File: resources/js/pages/admin/dashboard/Index.vue
 import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import {
     Eye,
     CheckCircle2,
+    AlertCircle,
     XCircle,
     Clock3,
     FileText,
     AlertTriangle,
     X,
     RefreshCw,
-    Ban,
     ArrowRight,
 } from 'lucide-vue-next';
 
 type SuratItem = {
     id: number;
     status: string;
+    can_approve?: boolean;
+    can_edit?: boolean;
     nomor_surat?: string | null;
     tanggal_pengajuan?: string | null;
     created_at?: string | null;
@@ -32,7 +34,6 @@ type Summary = {
     validated: number;
     finished: number;
     rejected: number;
-    cancelled: number;
 };
 type PaginatedSurats = {
     data: SuratItem[];
@@ -55,6 +56,13 @@ type AdminActivitySummary = {
     recent: AdminActivityItem[];
 };
 
+type PageProps = {
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+};
+
 const props = defineProps<{
     auth?: { user?: { name?: string | null } | null };
     surats: PaginatedSurats;
@@ -64,8 +72,34 @@ const props = defineProps<{
     };
 }>();
 
+const page = usePage<PageProps>();
+const toastMessage = ref('');
+const toastVariant = ref<'success' | 'error'>('success');
+
 // -- Aksi validasi admin (centang / silang / komen) --------------------------
 const approvingId = ref<number | null>(null);
+function showToast(message: string, variant: 'success' | 'error' = 'success') {
+    toastMessage.value = message;
+    toastVariant.value = variant;
+    window.setTimeout(() => {
+        if (toastMessage.value === message) {
+            toastMessage.value = '';
+        }
+    }, 2800);
+}
+watch(
+    () => [page.props.flash?.success, page.props.flash?.error],
+    ([success, error]) => {
+        if (typeof success === 'string' && success.length > 0) {
+            showToast(success, 'success');
+            return;
+        }
+        if (typeof error === 'string' && error.length > 0) {
+            showToast(error, 'error');
+        }
+    },
+    { immediate: true },
+);
 function approveSurat(id: number) {
     if (approvingId.value) return;
     approvingId.value = id;
@@ -74,6 +108,9 @@ function approveSurat(id: number) {
         {},
         {
             preserveScroll: true,
+            onError: () => {
+                showToast('Gagal memvalidasi pengajuan.', 'error');
+            },
             onFinish: () => {
                 approvingId.value = null;
             },
@@ -97,6 +134,9 @@ function submitReject() {
     if (rejectTargetId.value === null) return;
     rejectForm.post(`/admin/surat/${rejectTargetId.value}/reject`, {
         preserveScroll: true,
+        onError: () => {
+            showToast('Gagal menolak pengajuan.', 'error');
+        },
         onSuccess: () => closeRejectModal(),
     });
 }
@@ -130,13 +170,6 @@ const statCards = computed(() => [
         icon: XCircle,
         border: 'border-red-200',
         iconColor: 'text-red-400',
-    },
-    {
-        label: 'Dibatalkan',
-        value: props.summary.cancelled,
-        icon: Ban,
-        border: 'border-slate-200',
-        iconColor: 'text-slate-400',
     },
 ]);
 
@@ -215,7 +248,7 @@ function activityBadgeClass(action?: string | null) {
     >
         <Head title="Dashboard Admin" />
 
-        <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div
                 v-for="stat in statCards"
                 :key="stat.label"
@@ -333,7 +366,7 @@ function activityBadgeClass(action?: string | null) {
                                             <Eye class="size-3.5" />
                                         </Link>
                                         <button
-                                            v-if="item.status === 'pending'"
+                                            v-if="item.can_approve"
                                             type="button"
                                             title="Validasi & teruskan"
                                             :disabled="approvingId === item.id"
@@ -342,6 +375,14 @@ function activityBadgeClass(action?: string | null) {
                                         >
                                             <CheckCircle2 class="size-3.5" />
                                         </button>
+                                        <Link
+                                            v-else-if="item.can_edit"
+                                            :href="`/admin/surat/${item.id}/edit?return_to=/admin/dashboard`"
+                                            title="Lengkapi data"
+                                            class="grid size-7 place-items-center rounded-lg bg-amber-50 text-amber-600 transition-colors hover:bg-amber-100"
+                                        >
+                                            <FileEdit class="size-3.5" />
+                                        </Link>
                                         <button
                                             v-if="item.status === 'pending'"
                                             type="button"
@@ -497,6 +538,37 @@ function activityBadgeClass(action?: string | null) {
                             }}
                         </button>
                     </div>
+                </div>
+            </div>
+        </Transition>
+
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="translate-y-3 opacity-0"
+            enter-to-class="translate-y-0 opacity-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="translate-y-0 opacity-100"
+            leave-to-class="translate-y-3 opacity-0"
+        >
+            <div
+                v-if="toastMessage"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border px-4 py-3 shadow-lg"
+                :class="
+                    toastVariant === 'success'
+                        ? 'border-blue-200 bg-blue-50 text-blue-800'
+                        : 'border-red-200 bg-red-50 text-red-800'
+                "
+            >
+                <div class="flex items-center gap-2.5">
+                    <CheckCircle2
+                        v-if="toastVariant === 'success'"
+                        class="size-5 shrink-0 text-blue-500"
+                    />
+                    <AlertCircle
+                        v-else
+                        class="size-5 shrink-0 text-red-500"
+                    />
+                    <p class="text-sm font-medium">{{ toastMessage }}</p>
                 </div>
             </div>
         </Transition>

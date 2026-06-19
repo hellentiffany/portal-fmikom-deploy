@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // resources/js/pages/admin/qr/Index.vue
 import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import PdfViewer from '@/components/PdfViewer.vue';
 import { ref, computed } from 'vue';
 import { Search, QrCode, ShieldOff, Eye, XCircle, X, ExternalLink, ZoomIn, ZoomOut, RotateCcw, FileText } from 'lucide-vue-next';
 
@@ -275,116 +275,41 @@ const showQrWarning = computed(() =>
             </div>
         </Transition>
 
-        <!-- ── Document Viewer Modal ── -->
-        <Transition name="fade">
-            <div v-if="viewerOpen"
-                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
-                @click.self="closeViewer">
-
-                <!-- ── Mode HTML: header + iframe ── -->
-                <template v-if="viewerMode === 'html'">
-                    <div class="flex h-14 shrink-0 items-center justify-between bg-slate-900 px-4">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-600">
-                                <FileText class="size-4 text-white" />
-                            </div>
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-white">{{ viewerTitle }}</p>
-                                <p v-if="viewerNomor" class="font-mono text-[10px] text-slate-400">{{ viewerNomor }}</p>
-                            </div>
-                        </div>
-                        <div class="flex shrink-0 items-center gap-1">
-                            <div class="hidden items-center gap-1 sm:flex">
-                                <button type="button"
-                                    class="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                                    @click="iframeZoom = Math.max(50, iframeZoom - 10)">
-                                    <ZoomOut class="size-4" />
-                                </button>
-                                <span class="w-12 text-center text-xs text-slate-300">{{ iframeZoom }}%</span>
-                                <button type="button"
-                                    class="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                                    @click="iframeZoom = Math.min(200, iframeZoom + 10)">
-                                    <ZoomIn class="size-4" />
-                                </button>
-                                <button type="button"
-                                    class="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                                    @click="iframeZoom = 100">
-                                    <RotateCcw class="size-3.5" />
-                                </button>
-                            </div>
-                            <button type="button"
-                                class="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                                @click="openInNewTab"><ExternalLink class="size-4" /></button>
-                            <button type="button"
-                                class="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-red-600 hover:text-white transition-colors"
-                                @click="closeViewer"><X class="size-4" /></button>
-                        </div>
-                    </div>
-                    <div class="relative flex-1 overflow-hidden bg-slate-800">
-                        <div v-if="iframeLoad"
-                            class="absolute inset-0 flex items-center justify-center bg-slate-800 z-10">
-                            <div class="flex flex-col items-center gap-3">
-                                <div class="size-10 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-500" />
-                                <p class="text-sm text-slate-400">Memuat template...</p>
-                            </div>
-                        </div>
-                        <div v-if="iframeError && !iframeLoad"
-                            class="absolute inset-0 flex items-center justify-center bg-slate-800 z-10">
-                            <div class="flex flex-col items-center gap-3 text-center">
-                                <X class="size-10 text-red-400" />
-                                <p class="text-sm font-medium text-slate-300">Dokumen tidak dapat dimuat</p>
-                                <button type="button"
-                                    class="rounded-lg border border-slate-600 px-4 py-2 text-xs text-slate-400 hover:text-white"
-                                    @click="openInNewTab">Buka di tab baru</button>
-                            </div>
-                        </div>
-                        <div class="h-full overflow-auto flex items-start justify-center p-4">
-                            <div class="min-h-full w-full max-w-4xl rounded-lg overflow-hidden shadow-2xl"
-                                :style="{ transform: `scale(${iframeZoom / 100})`, transformOrigin: 'top center' }">
-                                <iframe v-if="viewerUrl" :src="viewerUrl"
-                                    class="w-full border-0 bg-white transition-opacity"
-                                    style="min-height: 80vh;"
-                                    :class="{ 'opacity-0': iframeLoad }"
-                                    sandbox="allow-same-origin allow-scripts allow-popups"
-                                    @load="iframeLoad = false"
-                                    @error="iframeLoad = false; iframeError = true" />
-                            </div>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- ── Mode PDF: PdfViewer ── -->
-                <template v-else-if="viewerMode === 'pdf' && viewerUrl">
-                    <!-- Subbar tipis di atas PdfViewer -->
-                    <div class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4">
-                        <p class="truncate text-xs font-medium text-slate-400 min-w-0">{{ viewerTitle }}</p>
-                        <button type="button"
-                            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-                            @click="closeViewer">
-                            <X class="size-3.5" /> Tutup
-                        </button>
-                    </div>
-                    <!-- Banner QR belum aktif -->
-                    <div v-if="showQrWarning"
-                        class="shrink-0 flex items-center gap-2 bg-amber-500/90 px-4 py-2 text-xs font-medium text-white">
-                        <svg class="size-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        QR Code belum aktif — surat belum divalidasi.
-                    </div>
-                    <!-- PdfViewer mengisi sisa ruang -->
-                    <div class="flex-1 overflow-hidden">
-                        <PdfViewer
-                            :src="viewerUrl"
-                            :filename="viewerTitle"
-                            :show-thumbnails="true"
-                            :initial-zoom="100"
+        <DocumentPreviewModal
+            :open="viewerOpen"
+            :mode="viewerMode"
+            :title="viewerTitle"
+            :subtitle="viewerNomor"
+            :url="viewerUrl"
+            :show-open-in-new-tab="true"
+            :show-thumbnails="true"
+            :initial-zoom="100"
+            :show-html-zoom-controls="true"
+            @close="closeViewer"
+            @open-new-tab="openInNewTab"
+        >
+            <template #banner>
+                <div
+                    v-if="showQrWarning"
+                    class="shrink-0 flex items-center gap-2 bg-amber-500/90 px-4 py-2 text-xs font-medium text-white"
+                >
+                    <svg
+                        class="size-4 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
-                    </div>
-                </template>
-            </div>
-        </Transition>
+                    </svg>
+                    QR Code belum aktif — surat belum divalidasi.
+                </div>
+            </template>
+        </DocumentPreviewModal>
     </AdminLayout>
 </template>
 

@@ -119,6 +119,7 @@ const currentPage = ref<number>(props.initialPage)
 const totalPages = ref<number>(0)
 const zoomLevel = ref<number>(props.initialZoom)
 const isFullscreen = ref(false)
+const isCompactViewport = ref(false)
 // shallowRef: pdfjs uses private class fields (#pagesNumber, etc) that break
 // when Vue wraps the object in a deep reactive Proxy via ref()
 const pdfDoc = shallowRef(null)
@@ -129,10 +130,10 @@ const pdfBodyRef = ref(null)
 const canvasWrapRef = ref(null)
 const thumbnailRefs = ref({})
 
-const minZoom = 50
+const minZoom = 25
 const maxZoom = 300
 const zoomStep = 25
-const zoomOptions = [50, 75, 100, 125, 150, 175, 200, 300]
+const zoomOptions = [25, 33, 50, 75, 100, 125, 150, 175, 200, 300]
 
 function setThumbnailRef(el: HTMLCanvasElement | null, page: number) {
   if (el) thumbnailRefs.value[page] = el
@@ -151,6 +152,9 @@ async function loadPdf() {
     totalPages.value = pdfDoc.value.numPages
     currentPage.value = Math.min(props.initialPage, totalPages.value)
     await renderPage(currentPage.value)
+    if (isCompactViewport.value) {
+      await fitToWidth()
+    }
     emit('load', { totalPages: totalPages.value })
     if (props.showThumbnails) {
       await nextTick()
@@ -231,8 +235,9 @@ async function fitToWidth() {
   if (!pdfDoc.value || !pdfBodyRef.value) return
   const page = await pdfDoc.value.getPage(currentPage.value)
   const viewport = page.getViewport({ scale: 1 })
-  const containerWidth = pdfBodyRef.value.clientWidth - 48
-  zoomLevel.value = Math.round((containerWidth / viewport.width) * 100)
+  const containerWidth = pdfBodyRef.value.clientWidth - (isCompactViewport.value ? 24 : 48)
+  const nextZoom = Math.round((containerWidth / viewport.width) * 100)
+  zoomLevel.value = Math.max(minZoom, Math.min(maxZoom, nextZoom))
 }
 
 function toggleFullscreen() { isFullscreen.value = !isFullscreen.value }
@@ -246,12 +251,26 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && isFullscreen.value) isFullscreen.value = false
 }
 
+function updateViewportMode() {
+  if (typeof window === 'undefined') return
+  isCompactViewport.value = window.matchMedia('(max-width: 640px)').matches
+}
+
 watch(currentPage, async (val) => { await renderPage(val); emit('page-change', val) })
 watch(zoomLevel, async () => { await renderPage(currentPage.value) })
 watch(() => props.src, () => { loadPdf() })
 
-onMounted(() => { loadPdf(); window.addEventListener('keydown', onKeydown) })
-onUnmounted(() => { window.removeEventListener('keydown', onKeydown); if (renderTask.value) renderTask.value.cancel() })
+onMounted(() => {
+  updateViewportMode()
+  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('resize', updateViewportMode)
+  loadPdf()
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('resize', updateViewportMode)
+  if (renderTask.value) renderTask.value.cancel()
+})
 </script>
 
 <style scoped>
@@ -262,7 +281,8 @@ onUnmounted(() => { window.removeEventListener('keydown', onKeydown); if (render
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #d4d0c8;
-  height: 700px;
+  height: 100%;
+  min-height: 700px;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 13px;
 }
@@ -446,9 +466,12 @@ onUnmounted(() => { window.removeEventListener('keydown', onKeydown); if (render
   display: inline-block;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   line-height: 0;
+  max-width: 100%;
 }
 .pdf-canvas {
   display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 /* ── States ── */
@@ -507,5 +530,86 @@ onUnmounted(() => { window.removeEventListener('keydown', onKeydown); if (render
 .pdf-thumbnail span {
   font-size: 11px;
   color: #888;
+}
+
+@media (max-width: 640px) {
+  .pdf-viewer {
+    min-height: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .pdf-toolbar {
+    height: auto;
+    min-height: 44px;
+    padding: 8px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .pdf-toolbar__left,
+  .pdf-toolbar__center,
+  .pdf-toolbar__right {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .pdf-toolbar__left {
+    order: 1;
+  }
+
+  .pdf-toolbar__right {
+    order: 2;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pdf-toolbar__center {
+    order: 3;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pdf-toolbar__filename-text {
+    max-width: calc(100vw - 104px);
+  }
+
+  .pdf-toolbar__divider {
+    display: none;
+  }
+
+  .pdf-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .pdf-page-input input {
+    width: 44px;
+  }
+
+  .pdf-zoom-select {
+    min-width: 68px;
+  }
+
+  .pdf-layout {
+    flex-direction: column;
+  }
+
+  .pdf-body {
+    padding: 12px;
+  }
+
+  .pdf-thumbnails {
+    display: none;
+  }
+
+  .pdf-canvas-wrap {
+    width: 100%;
+  }
 }
 </style>

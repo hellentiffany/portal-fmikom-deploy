@@ -7,8 +7,10 @@ use App\Models\SuratApprovalFlow;
 use App\Models\User;
 use App\Services\SuratDocumentGeneratorService;
 use App\Services\SuratHistoryService;
+use App\Support\SuratDataContract;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Illuminate\Validation\ValidationException;
 
 class FastApprovalWorkflowService
 {
@@ -217,6 +219,29 @@ class FastApprovalWorkflowService
 
     protected function guardApproval(Surat $surat, string $role): void
     {
+        if ($role === self::ROLE_ADMIN && $surat->status === Surat::STATUS_PENDING) {
+            $surat->loadMissing('jenisSurat', 'dataEntries');
+
+            $payload = $surat->dataEntries
+                ->mapWithKeys(fn ($entry): array => [
+                    $entry->field_name => $entry->field_value,
+                ])
+                ->all();
+
+            $missingCampusFields = SuratDataContract::missingRequiredCampusFields(
+                $surat->jenisSurat?->field_config ?? [],
+                $payload,
+            );
+
+            if ($missingCampusFields !== []) {
+                throw ValidationException::withMessages([
+                    'data_kampus' => 'Masih ada data kampus yang wajib dilengkapi sebelum validasi admin: '
+                        .implode(', ', array_values($missingCampusFields))
+                        .'.',
+                ]);
+            }
+        }
+
         if (! $surat->canBeApprovedByRole($role)) {
             abort(403, 'Status surat tidak sesuai untuk approval ini.');
         }

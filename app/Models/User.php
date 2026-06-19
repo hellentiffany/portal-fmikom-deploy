@@ -113,7 +113,7 @@ class User extends Authenticatable
 
     public function isApprover(): bool
     {
-        return $this->hasRole('kaprodi', 'dekan');
+        return $this->isKaprodi() || $this->isDekan();
     }
 
     public function isKaprodi(): bool

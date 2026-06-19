@@ -39,7 +39,15 @@ class QrManageController extends Controller
         }
 
         if ($status !== '') {
-            $query->where('status', $status);
+            $query->where(function ($q) use ($status) {
+                if ($status === SuratQrCode::STATUS_ACTIVE) {
+                    $q->whereDoesntHave('qrCode')
+                        ->orWhereHas('qrCode', fn ($qr) => $qr->where('status', SuratQrCode::STATUS_ACTIVE));
+                    return;
+                }
+
+                $q->whereHas('qrCode', fn ($qr) => $qr->where('status', $status));
+            });
         }
 
         $surats = $query->paginate(15)

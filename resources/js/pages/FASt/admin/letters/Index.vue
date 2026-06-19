@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // resources/js/pages/FASt/admin/letters/Index.vue
 import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import {
     Eye,
     CheckCircle2,
+    AlertCircle,
     Search,
     XCircle,
     AlertTriangle,
@@ -17,6 +18,7 @@ import {
 type SuratItem = {
     id: number;
     status: string;
+    can_approve?: boolean;
     revision_label?: string | null;
     can_edit?: boolean;
     nomor_surat?: string | null;
@@ -38,6 +40,12 @@ type Paginated = {
     total: number;
     links: Array<{ url: string | null; label: string; active: boolean }>;
 };
+type PageProps = {
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+};
 type Summary = {
     total: number;
     pending: number;
@@ -50,10 +58,43 @@ const props = defineProps<{
     filters: { status?: string; search?: string; jenis_surat_id?: string };
     categories: Array<{ id: number; nama: string }>;
 }>();
+const page = usePage<PageProps>();
 const summary = props.summary;
+const defaultStatus = 'pending';
 const search = ref(props.filters.search ?? '');
-const status = ref(props.filters.status ?? '');
+const status = ref(props.filters.status ?? defaultStatus);
 const jenisSuratId = ref(props.filters.jenis_surat_id ?? '');
+const isFilterActive = computed(
+    () =>
+        search.value !== '' ||
+        status.value !== defaultStatus ||
+        jenisSuratId.value !== '',
+);
+const toastMessage = ref('');
+const toastVariant = ref<'success' | 'error'>('success');
+
+function showToast(message: string, variant: 'success' | 'error' = 'success') {
+    toastMessage.value = message;
+    toastVariant.value = variant;
+    window.setTimeout(() => {
+        if (toastMessage.value === message) {
+            toastMessage.value = '';
+        }
+    }, 2800);
+}
+watch(
+    () => [page.props.flash?.success, page.props.flash?.error],
+    ([success, error]) => {
+        if (typeof success === 'string' && success.length > 0) {
+            showToast(success, 'success');
+            return;
+        }
+        if (typeof error === 'string' && error.length > 0) {
+            showToast(error, 'error');
+        }
+    },
+    { immediate: true },
+);
 
 const statusFilters = computed(() => [
     {
@@ -82,7 +123,7 @@ function applyFilter() {
 }
 function resetFilter() {
     search.value = '';
-    status.value = '';
+    status.value = defaultStatus;
     jenisSuratId.value = '';
     applyFilter();
 }
@@ -103,6 +144,9 @@ function submitReject() {
     if (rejectTargetId.value === null) return;
     rejectForm.post(`/admin/surat/${rejectTargetId.value}/reject`, {
         preserveScroll: true,
+        onError: () => {
+            showToast('Gagal menolak pengajuan.', 'error');
+        },
         onSuccess: () => closeRejectModal(),
     });
 }
@@ -114,6 +158,9 @@ function approveSurat(id: number) {
         {},
         {
             preserveScroll: true,
+            onError: () => {
+                showToast('Gagal memvalidasi pengajuan.', 'error');
+            },
             onFinish: () => {
                 approvingId.value = null;
             },
@@ -169,24 +216,25 @@ function initials(name?: string | null) {
     >
         <Head title="Pengajuan Masuk" />
         <!-- Top bar: search + tombol -->
-        <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="relative min-w-[240px] flex-1">
-                <Search
-                    class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Cari nama atau NIM pemohon..."
-                    class="h-10 w-full rounded-xl border border-slate-200 bg-white pr-3 pl-10 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    @keyup.enter="applyFilter"
-                />
+        <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div class="relative flex-1">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Cari nama atau NIM pemohon..."
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @keyup.enter="applyFilter"
+                    />
                 </div>
-                <div class="relative min-w-[200px]">
+                <div class="relative w-full lg:w-56">
                     <select
                         v-model="jenisSuratId"
-                        class="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pr-8 pl-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        class="h-11 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pr-8 pl-4 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @change="applyFilter"
                     >
                         <option value="">Semua Kategori</option>
                         <option
@@ -198,22 +246,15 @@ function initials(name?: string | null) {
                         </option>
                     </select>
                     <ChevronDown
-                        class="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-slate-400"
+                        class="pointer-events-none absolute top-1/2 right-3.5 size-3.5 -translate-y-1/2 text-slate-400"
                     />
                 </div>
                 <button
                     type="button"
-                    class="h-10 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                    @click="applyFilter"
-                >
-                    Terapkan
-                </button>
-                <button
-                    type="button"
-                    class="h-10 rounded-xl border border-slate-200 px-5 text-sm text-slate-500 transition-colors hover:bg-slate-50"
+                    class="h-11 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 sm:w-auto"
                     @click="resetFilter"
                 >
-                    Reset
+                    Reset Filter
                 </button>
             </div>
             <div class="mt-4 flex flex-wrap items-center gap-2">
@@ -350,7 +391,7 @@ function initials(name?: string | null) {
                                 <Eye class="size-3" /> Detail
                             </Link>
                             <button
-                                v-if="item.status === 'pending'"
+                                v-if="item.can_approve"
                                 type="button"
                                 :disabled="approvingId === item.id"
                                 class="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
@@ -477,6 +518,37 @@ function initials(name?: string | null) {
                             }}
                         </button>
                     </div>
+                </div>
+            </div>
+        </Transition>
+
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="translate-y-3 opacity-0"
+            enter-to-class="translate-y-0 opacity-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="translate-y-0 opacity-100"
+            leave-to-class="translate-y-3 opacity-0"
+        >
+            <div
+                v-if="toastMessage"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border px-4 py-3 shadow-lg"
+                :class="
+                    toastVariant === 'success'
+                        ? 'border-blue-200 bg-blue-50 text-blue-800'
+                        : 'border-red-200 bg-red-50 text-red-800'
+                "
+            >
+                <div class="flex items-center gap-2.5">
+                    <CheckCircle2
+                        v-if="toastVariant === 'success'"
+                        class="size-5 shrink-0 text-blue-500"
+                    />
+                    <AlertCircle
+                        v-else
+                        class="size-5 shrink-0 text-red-500"
+                    />
+                    <p class="text-sm font-medium">{{ toastMessage }}</p>
                 </div>
             </div>
         </Transition>

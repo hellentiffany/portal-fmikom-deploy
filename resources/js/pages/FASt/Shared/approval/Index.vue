@@ -150,16 +150,6 @@ const summaryCards = computed(() => [
     },
 ]);
 
-function selectSummaryStatus(status: string) {
-    if (filters.status === status) {
-        filters.status = '';
-        applyFilters();
-        return;
-    }
-
-    filters.status = status;
-    applyFilters();
-}
 watch(
     () => page.props.flash?.success,
     (message) => {
@@ -300,19 +290,11 @@ function isPdfAttachment(f?: DetailLampiran | null) {
         <Head :title="`Dashboard ${role.name || 'Approval'}`" />
         <!-- Statistik -->
         <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <button
-                type="button"
+            <div
                 v-for="stat in summaryCards"
                 :key="stat.label"
                 class="rounded-xl border bg-white p-3 text-left transition hover:shadow-sm"
-                :class="[
-                    stat.border,
-                    filters.status === stat.status
-                        ? 'ring-2 ring-offset-1 ring-blue-500'
-                        : '',
-                ]"
-                :aria-pressed="filters.status === stat.status"
-                @click="selectSummaryStatus(stat.status)"
+                :class="stat.border"
             >
                 <div class="flex items-center justify-between">
                     <p class="text-[11px] text-slate-500">
@@ -327,7 +309,7 @@ function isPdfAttachment(f?: DetailLampiran | null) {
                 <p class="mt-1 text-2xl font-bold text-slate-900">
                     {{ String(stat.value).padStart(2, '0') }}
                 </p>
-            </button>
+            </div>
         </div>
         <!-- Main grid: Tabel + Sidebar -->
         <div class="grid gap-6 xl:grid-cols-[1fr_300px]">
@@ -808,10 +790,10 @@ function isPdfAttachment(f?: DetailLampiran | null) {
         >
             <div
                 v-if="toastMessage"
-                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-emerald-200 bg-emerald-600 px-4 py-3 text-white shadow-lg"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 shadow-lg"
             >
                 <div class="flex items-center gap-2.5">
-                    <BadgeCheck class="size-5 shrink-0" />
+                    <BadgeCheck class="size-5 shrink-0 text-blue-500" />
                     <p class="text-sm font-medium">{{ toastMessage }}</p>
                 </div>
             </div>

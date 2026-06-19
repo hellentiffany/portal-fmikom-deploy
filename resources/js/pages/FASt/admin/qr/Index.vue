@@ -2,7 +2,7 @@
 // resources/js/pages/FASt/admin/qr/Index.vue
 import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
     Search,
     QrCode,
@@ -37,6 +37,9 @@ const props = defineProps<{
 }>();
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
+const isFilterActive = computed(
+    () => search.value !== '' || status.value !== '',
+);
 // Modal revoke
 const showRevokeModal = ref(false);
 const targetId = ref<number | null>(null);
@@ -140,54 +143,50 @@ function qrStatusLabel(s?: string) {
             </div>
         </div>
         <!-- Filter -->
-        <div class="mb-5 flex flex-wrap items-center gap-3">
-            <div class="relative max-w-sm flex-1">
-                <Search
-                    class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Cari nomor surat, nama..."
-                    class="h-10 w-full rounded-xl border border-slate-200 bg-white pr-3 pl-10 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    @keyup.enter="applyFilter"
-                />
+        <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div class="relative flex-1">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Cari nomor surat, pemohon, atau jenis surat..."
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @keyup.enter="applyFilter"
+                    />
+                </div>
+                <div class="relative w-full lg:w-56">
+                    <select
+                        v-model="status"
+                        class="h-11 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pr-8 pl-4 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @change="applyFilter"
+                    >
+                        <option value="">Semua Status QR</option>
+                        <option value="active">Aktif</option>
+                        <option value="revoked">Dicabut</option>
+                    </select>
+                    <ChevronDown
+                        class="pointer-events-none absolute top-1/2 right-3.5 size-3.5 -translate-y-1/2 text-slate-400"
+                    />
+                </div>
+                <button
+                    type="button"
+                    class="h-11 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 sm:w-auto"
+                    @click="
+                        search = '';
+                        status = '';
+                        applyFilter();
+                    "
+                >
+                    Reset Filter
+                </button>
+                <p class="text-xs text-slate-400 lg:ml-auto">
+                    {{ surats.from ?? 0 }}-{{ surats.to ?? 0 }} dari
+                    {{ surats.total }} surat
+                </p>
             </div>
-            <select
-                v-model="status"
-                class="h-10 appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                style="
-                    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m6 9 6 6 6-6%22/%3E%3C/svg%3E');
-                    background-repeat: no-repeat;
-                    background-position: right 10px center;
-                "
-            >
-                <option value="">Semua Status QR</option>
-                <option value="active">Aktif</option>
-                <option value="revoked">Dicabut</option>
-            </select>
-            <button
-                type="button"
-                class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-                @click="applyFilter"
-            >
-                Terapkan
-            </button>
-            <button
-                type="button"
-                class="h-10 rounded-xl border border-slate-200 px-4 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
-                @click="
-                    search = '';
-                    status = '';
-                    applyFilter();
-                "
-            >
-                Reset
-            </button>
-            <p class="ml-auto flex items-center text-xs text-slate-400">
-                {{ surats.from ?? 0 }}–{{ surats.to ?? 0 }} dari
-                {{ surats.total }} surat
-            </p>
         </div>
         <!-- Card rows -->
         <div class="space-y-3">

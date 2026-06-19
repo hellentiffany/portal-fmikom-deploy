@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
 use App\Models\SuratQrCode;
+use App\Support\SuratDataContract;
 
 class Surat extends Model
 {
@@ -174,7 +175,8 @@ class Surat extends Model
 
     public function canBeValidatedByAdmin(): bool
     {
-        return $this->status === self::STATUS_PENDING;
+        return $this->status === self::STATUS_PENDING
+            && ! $this->hasIncompleteCampusData();
     }
 
     public function canBeRejectedByAdmin(): bool
@@ -187,7 +189,7 @@ class Surat extends Model
         $finalApprovalRole = $this->finalApprovalRoleSlug();
 
         return match ($role) {
-            'admin' => $this->status === self::STATUS_PENDING,
+            'admin' => $this->canBeValidatedByAdmin(),
             'kaprodi' => $this->status === self::STATUS_VALIDATED_ADMIN && $finalApprovalRole === 'kaprodi',
             'dekan' => $this->status === self::STATUS_VALIDATED_ADMIN && $finalApprovalRole === 'dekan',
             default => throw new InvalidArgumentException('Role approval tidak dikenali.'),
@@ -386,5 +388,40 @@ class Surat extends Model
 
         return $this->validated_by_admin_id !== null
             || $this->approvalFlows()->where('role', 'admin')->where('status', 'approved')->exists();
+    }
+
+    public function hasIncompleteCampusData(): bool
+    {
+        $this->loadMissing('jenisSurat', 'dataEntries');
+
+        $payload = $this->dataEntries
+            ->mapWithKeys(fn (SuratData $entry): array => [
+                $entry->field_name => $entry->field_value,
+            ])
+            ->all();
+
+        return SuratDataContract::missingRequiredCampusFields(
+            $this->jenisSurat?->field_config ?? [],
+            $payload,
+        ) !== [];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function missingCampusDataFields(): array
+    {
+        $this->loadMissing('jenisSurat', 'dataEntries');
+
+        $payload = $this->dataEntries
+            ->mapWithKeys(fn (SuratData $entry): array => [
+                $entry->field_name => $entry->field_value,
+            ])
+            ->all();
+
+        return SuratDataContract::missingRequiredCampusFields(
+            $this->jenisSurat?->field_config ?? [],
+            $payload,
+        );
     }
 }

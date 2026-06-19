@@ -460,8 +460,8 @@ class ApprovalController extends Controller
                     'label' => match (true) {
                         $flow->status === Surat::STATUS_REVISION_REQUESTED && $flow->role === 'kaprodi' => 'Catatan Revisi Kaprodi',
                         $flow->status === Surat::STATUS_REVISION_REQUESTED && $flow->role === 'dekan' => 'Catatan Revisi Dekan',
-                        $flow->status === Surat::STATUS_REJECTED_FINAL && $flow->role === 'kaprodi' => 'Catatan Penolakan Kaprodi',
-                        $flow->status === Surat::STATUS_REJECTED_FINAL && $flow->role === 'dekan' => 'Catatan Penolakan Dekan',
+                        $flow->status === SuratApprovalFlow::STATUS_REJECTED_FINAL && $flow->role === 'kaprodi' => 'Catatan Penolakan Kaprodi',
+                        $flow->status === SuratApprovalFlow::STATUS_REJECTED_FINAL && $flow->role === 'dekan' => 'Catatan Penolakan Dekan',
                         $flow->status === Surat::STATUS_NOTE => 'Catatan Approval',
                         default => 'Catatan Approval',
                     },
@@ -520,8 +520,8 @@ class ApprovalController extends Controller
                     'label' => match (true) {
                         $flow->status === Surat::STATUS_REVISION_REQUESTED && $flow->role === 'kaprodi' => 'Catatan Revisi Kaprodi',
                         $flow->status === Surat::STATUS_REVISION_REQUESTED && $flow->role === 'dekan' => 'Catatan Revisi Dekan',
-                        $flow->status === Surat::STATUS_REJECTED_FINAL && $flow->role === 'kaprodi' => 'Catatan Penolakan Kaprodi',
-                        $flow->status === Surat::STATUS_REJECTED_FINAL && $flow->role === 'dekan' => 'Catatan Penolakan Dekan',
+                        $flow->status === SuratApprovalFlow::STATUS_REJECTED_FINAL && $flow->role === 'kaprodi' => 'Catatan Penolakan Kaprodi',
+                        $flow->status === SuratApprovalFlow::STATUS_REJECTED_FINAL && $flow->role === 'dekan' => 'Catatan Penolakan Dekan',
                         $flow->status === Surat::STATUS_NOTE => 'Catatan Approval',
                         default => 'Catatan Approval',
                     },
@@ -617,12 +617,7 @@ class ApprovalController extends Controller
 
         $normalizedRole = $this->normalizeRole($user->role?->slug, $user->role?->nama);
 
-        return back()->with(
-            'success',
-            $normalizedRole === FastApprovalWorkflowService::ROLE_KAPRODI
-                ? 'Surat dikembalikan oleh Kaprodi untuk revisi admin.'
-                : 'Surat dikembalikan oleh Dekan untuk revisi admin.'
-        );
+        return back()->with('success', 'Pengajuan berhasil dikembalikan untuk revisi.');
     }
 
     public function finalReject(Request $request, int $id): RedirectResponse
@@ -646,12 +641,7 @@ class ApprovalController extends Controller
             $request->string('reason')->toString(),
         );
 
-        return back()->with(
-            'success',
-            $normalizedRole === FastApprovalWorkflowService::ROLE_KAPRODI
-                ? 'Surat ditolak final oleh Kaprodi.'
-                : 'Surat ditolak final oleh Dekan.'
-        );
+        return back()->with('success', 'Pengajuan berhasil ditolak.');
     }
 
     private function normalizeRole(?string $slug, ?string $name): string

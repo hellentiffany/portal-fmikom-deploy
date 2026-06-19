@@ -420,10 +420,10 @@ async function openDetail(id: number) {
         >
             <div
                 v-if="toastMessage"
-                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-600 px-4 py-3 text-white shadow-lg"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 shadow-lg"
             >
                 <div class="flex items-center gap-2.5">
-                    <BadgeCheck class="size-5 shrink-0" />
+                    <BadgeCheck class="size-5 shrink-0 text-blue-500" />
                     <p class="text-sm font-medium">{{ toastMessage }}</p>
                 </div>
             </div>

@@ -253,6 +253,21 @@ function scrollToApplicantField(fieldKey: string) {
     });
 }
 
+function scrollToFirstFieldError(errors: Record<string, string>) {
+    const keys = Object.keys(errors);
+    if (keys.length === 0) return;
+
+    const preferredOrder = ['keperluan', 'tanggal_kebutuhan', 'lampiran'];
+    const firstMatch =
+        preferredOrder.find((key) => keys.includes(key)) ??
+        keys.find((key) => key.startsWith('field_data.')) ??
+        keys[0];
+
+    if (firstMatch) {
+        scrollToApplicantField(firstMatch);
+    }
+}
+
 function validateRequiredFields(): string | null {
     form.clearErrors();
 
@@ -325,6 +340,9 @@ function submit() {
         preserveScroll: true,
         onSuccess: () => {
             closeForm();
+        },
+        onError: (errors) => {
+            scrollToFirstFieldError(errors as Record<string, string>);
         },
     });
 }
@@ -693,7 +711,10 @@ function fieldError(name: string): string | undefined {
                                 </div>
                             </section>
 
-                            <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <section
+                                data-field-key="lampiran"
+                                class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                            >
                                 <div class="mb-3 flex items-center gap-3">
                                     <div class="grid size-8 place-items-center rounded-xl bg-blue-600 text-white shadow-sm">
                                         <Paperclip class="size-4" />

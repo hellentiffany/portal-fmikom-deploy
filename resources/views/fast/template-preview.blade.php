@@ -34,6 +34,48 @@
             line-height: 1.7;
             margin: 0 0 12px;
         }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 8px 6px;
+            }
+
+            .page {
+                box-shadow: none;
+                max-width: 100%;
+                min-height: auto;
+                padding: 16px 14px;
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            h1 {
+                font-size: 16px;
+                line-height: 1.2;
+            }
+
+            p {
+                font-size: 12px;
+                line-height: 1.45;
+                margin: 0 0 8px;
+            }
+
+            .page table {
+                font-size: 12px;
+            }
+
+            .page td,
+            .page th {
+                padding: 0 3px;
+            }
+
+            .page img,
+            .page video,
+            .page svg {
+                max-width: 100%;
+                height: auto;
+            }
+        }
     </style>
 </head>
 <body>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FastLayout from '@/layouts/FASt/FastLayout.vue';
-import PdfViewer from '@/components/PdfViewer.vue';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import {
@@ -179,6 +179,44 @@ const nomorSuratStatusClass = computed(() => {
 function toggleTimelineNote(id: number) {
     expandedTimelineNoteId.value =
         expandedTimelineNoteId.value === id ? null : id;
+}
+
+function timelineStepState(index: number, timestamp?: string | null): 'done' | 'current' | 'pending' {
+    const lastIndex = timeline.value.length - 1;
+
+    if (index === lastIndex && surat.value.status !== 'finished') {
+        return 'current';
+    }
+
+    if (!timestamp) {
+        return index === lastIndex ? 'current' : 'pending';
+    }
+
+    return 'done';
+}
+
+function timelineDotClasses(state: 'done' | 'current' | 'pending'): string {
+    if (state === 'current') {
+        return 'bg-amber-500 text-white shadow-sm ring-4 ring-amber-100';
+    }
+
+    if (state === 'pending') {
+        return 'bg-slate-100 text-slate-400 ring-1 ring-slate-200';
+    }
+
+    return 'bg-blue-600 text-white shadow-sm ring-4 ring-blue-100';
+}
+
+function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
+    if (state === 'current') {
+        return 'border-amber-200 bg-amber-50/80';
+    }
+
+    if (state === 'pending') {
+        return 'border-slate-200 bg-slate-50/80 opacity-80';
+    }
+
+    return 'border-slate-200 bg-slate-50';
 }
 
 function isTimelineNoteVisible(status?: string | null, action?: string | null): boolean {
@@ -658,7 +696,7 @@ async function copyNomor() {
                 </aside>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-6">
                 <div class="flex items-center gap-3">
                     <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                         <CheckCircle2 class="size-5" />
@@ -673,27 +711,58 @@ async function copyNomor() {
                     </div>
                 </div>
 
-                <div v-if="timeline.length" class="mt-6 space-y-4">
+                <div v-if="timeline.length" class="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
                     <div
                         v-for="(step, index) in timeline"
                         :key="step.id"
-                        class="grid gap-4 md:grid-cols-[24px_minmax(0,1fr)_190px] md:items-start"
+                        class="grid grid-cols-[24px_minmax(0,1fr)] gap-3 md:grid-cols-[24px_minmax(0,1fr)_190px] md:items-start md:gap-4"
                     >
-                        <div class="relative flex justify-center">
+                        <div class="relative flex items-start justify-center">
                             <span
                                 v-if="index !== timeline.length - 1"
-                                class="absolute top-7 h-full w-px bg-blue-200"
+                                class="absolute left-1/2 top-6 h-full w-px -translate-x-1/2 bg-blue-200"
                             />
-                            <span class="relative z-10 mt-1 grid size-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm">
-                                <CheckCircle2 class="size-3.5" />
+                            <span
+                                class="relative z-10 mt-0.5 grid size-6 place-items-center rounded-full"
+                                :class="timelineDotClasses(timelineStepState(index, step.timestamp))"
+                            >
+                                <CheckCircle2
+                                    v-if="timelineStepState(index, step.timestamp) === 'done'"
+                                    class="size-3.5"
+                                />
+                                <Clock3
+                                    v-else-if="timelineStepState(index, step.timestamp) === 'current'"
+                                    class="size-3.5"
+                                />
+                                <span
+                                    v-else
+                                    class="size-2.5 rounded-full bg-current"
+                                />
                             </span>
                         </div>
 
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div
+                            class="min-w-0 rounded-2xl border p-4"
+                            :class="timelineCardClasses(timelineStepState(index, step.timestamp))"
+                        >
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-sm font-semibold text-slate-900">
-                                    {{ step.label }}
-                                </p>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-slate-900">
+                                        {{ step.label }}
+                                    </p>
+                                    <p
+                                        v-if="step.role"
+                                        class="mt-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400"
+                                    >
+                                        {{ step.role }}
+                                    </p>
+                                    <p
+                                        v-if="step.actor"
+                                        class="mt-1 text-xs font-medium text-slate-500"
+                                    >
+                                        {{ step.actor }}
+                                    </p>
+                                </div>
                                 <button
                                     v-if="step.note"
                                     type="button"
@@ -713,15 +782,16 @@ async function copyNomor() {
                             >
                                 {{ step.note }}
                             </div>
-                            <p
-                                v-else-if="step.role"
-                                class="mt-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-400"
-                            >
-                                {{ step.role }}
+                            <p class="mt-3 text-xs font-medium text-slate-500 md:hidden">
+                                {{
+                                    timelineStepState(index, step.timestamp) === 'pending'
+                                        ? 'Menunggu'
+                                        : formatDateTime(step.timestamp)
+                                }}
                             </p>
                         </div>
 
-                        <div class="pt-1 text-xs text-slate-500 md:text-right">
+                        <div class="hidden pt-1 text-xs text-slate-500 md:block md:text-right">
                             {{ formatDateTime(step.timestamp) }}
                             <div v-if="step.actor" class="mt-1 font-medium text-slate-400">
                                 {{ step.actor }}
@@ -736,58 +806,16 @@ async function copyNomor() {
 
         </div>
 
-        <Transition name="fade">
-            <div
-                v-if="viewerOpen"
-                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
-                @click.self="closeViewer"
-            >
-                <template v-if="viewerType === 'html'">
-                    <div class="flex h-12 shrink-0 items-center justify-between bg-slate-900 px-4">
-                        <p class="min-w-0 truncate text-sm font-medium text-white">
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-4" />
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-auto bg-slate-800 p-4">
-                        <iframe
-                            v-if="viewerUrl"
-                            :src="viewerUrl"
-                            class="w-full rounded-lg border-0 bg-white shadow-2xl"
-                            style="min-height: 80vh"
-                        />
-                    </div>
-                </template>
-                <template v-else-if="viewerType === 'pdf' && viewerUrl">
-                    <div class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4">
-                        <p class="min-w-0 truncate text-xs font-medium text-slate-400">
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-3.5" /> Tutup
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <PdfViewer
-                            :src="viewerUrl"
-                            :filename="viewerTitle"
-                            :show-thumbnails="false"
-                            :initial-zoom="100"
-                        />
-                    </div>
-                </template>
-            </div>
-        </Transition>
+        <DocumentPreviewModal
+            :open="viewerOpen"
+            :mode="viewerType"
+            :title="viewerTitle"
+            :url="viewerUrl"
+            :show-html-zoom-controls="true"
+            :show-thumbnails="false"
+            :initial-zoom="100"
+            @close="closeViewer"
+        />
     </FastLayout>
 </template>
 

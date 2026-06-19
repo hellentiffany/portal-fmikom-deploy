@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -189,10 +190,40 @@ class TemplateController extends Controller
         }
     }
 
+    /**
+     * @return array<int, int>
+     */
+    protected function templateApprovalRoleIds(): array
+    {
+        return Role::query()
+            ->whereIn('slug', ['admin', 'dekan', 'kaprodi'])
+            ->orderBy('nama')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function templateAllowedCreatorRoleIds(): array
+    {
+        return Role::query()
+            ->whereIn('slug', ['admin', 'dosen', 'mahasiswa'])
+            ->orderBy('nama')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
     // ── Index ─────────────────────────────────────────────────────────────────
     public function index(Request $request): Response
     {
         $this->ensureGlobalSettingsExist();
+        $approvalRoleSlugs = ['admin', 'dekan', 'kaprodi'];
+        $creatorRoleSlugs  = ['mahasiswa', 'dosen', 'admin'];
 
         $jenisSurats = JenisSurat::query()
             ->with(['category', 'template'])
@@ -226,7 +257,14 @@ class TemplateController extends Controller
             'selectedJenisSurat'   => $selectedJenisSurat ? $this->serializeJenisSurat($selectedJenisSurat) : null,
             'selectedJenisSuratId' => $selectedJenisSurat?->id,
             'categories'           => SuratCategory::orderBy('urutan')->get(['id', 'nama']),
-            'roles'                => Role::orderBy('nama')->get(['id', 'nama', 'slug']),
+            'approvalRoles'        => Role::query()
+                ->whereIn('slug', $approvalRoleSlugs)
+                ->orderBy('nama')
+                ->get(['id', 'nama', 'slug']),
+            'creatorRoles'         => Role::query()
+                ->whereIn('slug', $creatorRoleSlugs)
+                ->orderBy('nama')
+                ->get(['id', 'nama', 'slug']),
             'globalSettings'       => TemplateGlobalSetting::orderBy('id')
                                         ->get(['key', 'label', 'value', 'tipe'])
                                         ->toArray(),
@@ -242,8 +280,8 @@ class TemplateController extends Controller
             'kode_klasifikasi' => ['nullable', 'string', 'max:50'],
             'category_id'      => ['nullable', 'exists:surat_categories,id'],
             'deskripsi'        => ['nullable', 'string'],
-            'allowed_role_id'  => ['nullable', 'exists:roles,id'],
-            'approval_role_id' => ['nullable', 'exists:roles,id'],
+            'allowed_role_id'  => ['nullable', 'integer', Rule::in($this->templateAllowedCreatorRoleIds())],
+            'approval_role_id' => ['nullable', 'integer', Rule::in($this->templateApprovalRoleIds())],
             'perlu_approval'   => ['nullable', 'boolean'],
             'is_active'        => ['nullable', 'boolean'],
         ]);
@@ -289,6 +327,8 @@ class TemplateController extends Controller
             'field_config.*.sumber_data' => ['nullable', 'in:data_pemohon,data_kampus,data_sistem'],
             'field_config.*.editable_role' => ['nullable', 'in:mahasiswa,admin,sistem'],
             'field_config.*.mode_form_pemohon' => ['nullable', 'in:editable,readonly,hidden'],
+            'allowed_role_id'         => ['nullable', 'integer', Rule::in($this->templateAllowedCreatorRoleIds())],
+            'approval_role_id'        => ['nullable', 'integer', Rule::in($this->templateApprovalRoleIds())],
             'layout'                  => ['nullable', 'array'],
         ]);
 

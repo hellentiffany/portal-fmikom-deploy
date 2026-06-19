@@ -1,12 +1,9 @@
 <script setup lang="ts">
 // resources/js/pages/FASt/mahasiswa/Dashboard.vue
 import FastLayout from '@/layouts/FASt/FastLayout.vue';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
-
-const PdfViewer = defineAsyncComponent(
-    () => import('@/components/PdfViewer.vue'),
-);
+import { computed, nextTick, ref, watch } from 'vue';
 import {
     FileText,
     CheckCircle2,
@@ -222,6 +219,21 @@ function scrollToApplicantField(fieldKey: string) {
     });
 }
 
+function scrollToFirstFieldError(errors: Record<string, string>) {
+    const keys = Object.keys(errors);
+    if (keys.length === 0) return;
+
+    const preferredOrder = ['keperluan', 'tanggal_kebutuhan', 'lampiran'];
+    const firstMatch =
+        preferredOrder.find((key) => keys.includes(key)) ??
+        keys.find((key) => key.startsWith('field_data.')) ??
+        keys[0];
+
+    if (firstMatch) {
+        scrollToApplicantField(firstMatch);
+    }
+}
+
 function validateRequiredFields(): string | null {
     submitForm.clearErrors();
 
@@ -320,6 +332,9 @@ function doSubmit() {
     submitForm.post(props.endpoints.submission, {
         forceFormData: true,
         onSuccess: () => closeForm(),
+        onError: (errors) => {
+            scrollToFirstFieldError(errors as Record<string, string>);
+        },
     });
 }
 
@@ -714,7 +729,7 @@ function fieldError(name: string): string | undefined {
                 >
                     <div class="flex items-start gap-2">
                         <AlertCircle class="mt-0.5 size-4 shrink-0 text-amber-600" />
-                        <div>
+                        <div data-field-key="lampiran">
                             <p class="text-sm font-semibold text-amber-800">
                                 Ada pengajuan yang perlu direvisi
                             </p>
@@ -1529,168 +1544,25 @@ function fieldError(name: string): string | undefined {
         <Transition name="toast">
             <div
                 v-if="toastMessage"
-                class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-medium text-blue-800 shadow-lg"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 shadow-lg"
             >
                 {{ toastMessage }}
             </div>
         </Transition>
 
-        <!-- Document Viewer Modal -->
-        <Transition name="fade">
-            <div
-                v-if="viewerOpen"
-                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
-                @click.self="closeViewer"
-            >
-                <!-- Mode HTML: header + iframe -->
-                <template v-if="viewerMode === 'html'">
-                    <div
-                        class="flex h-14 shrink-0 items-center justify-between bg-slate-900 px-4"
-                    >
-                        <div class="flex min-w-0 items-center gap-3">
-                            <div
-                                class="grid size-8 shrink-0 place-items-center rounded-lg bg-blue-600"
-                            >
-                                <FileText class="size-4 text-white" />
-                            </div>
-                            <div class="min-w-0">
-                                <p
-                                    class="truncate text-sm font-semibold text-white"
-                                >
-                                    {{ viewerTitle }}
-                                </p>
-                                <p
-                                    v-if="viewerNomor"
-                                    class="font-mono text-[10px] text-slate-400"
-                                >
-                                    {{ viewerNomor }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex shrink-0 items-center gap-1">
-                            <div class="hidden items-center gap-1 sm:flex">
-                                <button
-                                    type="button"
-                                    class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-                                    @click="
-                                        iframeZoom = Math.max(
-                                            50,
-                                            iframeZoom - 10,
-                                        )
-                                    "
-                                >
-                                    <ZoomOut class="size-4" />
-                                </button>
-                                <span
-                                    class="w-12 text-center text-xs text-slate-300"
-                                    >{{ iframeZoom }}%</span
-                                >
-                                <button
-                                    type="button"
-                                    class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-                                    @click="
-                                        iframeZoom = Math.min(
-                                            200,
-                                            iframeZoom + 10,
-                                        )
-                                    "
-                                >
-                                    <ZoomIn class="size-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-                                    @click="iframeZoom = 100"
-                                >
-                                    <ResetZoom class="size-3.5" />
-                                </button>
-                            </div>
-                            <button
-                                type="button"
-                                class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-                                @click="openInNewTab"
-                            >
-                                <ExternalLink class="size-4" />
-                            </button>
-                            <button
-                                type="button"
-                                class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
-                                @click="closeViewer"
-                            >
-                                <X class="size-4" />
-                            </button>
-                        </div>
-                    </div>
-                    <div class="relative flex-1 overflow-hidden bg-slate-800">
-                        <div
-                            v-if="iframeLoad"
-                            class="absolute inset-0 z-10 flex items-center justify-center bg-slate-800"
-                        >
-                            <div class="flex flex-col items-center gap-3">
-                                <div
-                                    class="size-10 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-500"
-                                />
-                                <p class="text-sm text-slate-400">
-                                    Memuat dokumen...
-                                </p>
-                            </div>
-                        </div>
-                        <div
-                            class="flex h-full items-start justify-center overflow-auto p-4"
-                        >
-                            <div
-                                class="min-h-full w-full max-w-4xl overflow-hidden rounded-lg shadow-2xl"
-                                :style="{
-                                    transform: `scale(${iframeZoom / 100})`,
-                                    transformOrigin: 'top center',
-                                }"
-                            >
-                                <iframe
-                                    v-if="viewerUrl"
-                                    :src="viewerUrl"
-                                    class="w-full border-0 bg-white transition-opacity"
-                                    style="min-height: 80vh"
-                                    :class="{ 'opacity-0': iframeLoad }"
-                                    @load="iframeLoad = false"
-                                    @error="
-                                        iframeLoad = false;
-                                        iframeError = true;
-                                    "
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- Mode PDF: PdfViewer -->
-                <template v-else-if="viewerMode === 'pdf' && viewerUrl">
-                    <div
-                        class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4"
-                    >
-                        <p
-                            class="min-w-0 truncate text-xs font-medium text-slate-400"
-                        >
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-3.5" /> Tutup
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <PdfViewer
-                            :src="viewerUrl"
-                            :filename="viewerTitle"
-                            :show-thumbnails="false"
-                            :initial-zoom="100"
-                        />
-                    </div>
-                </template>
-            </div>
-        </Transition>
+        <DocumentPreviewModal
+            :open="viewerOpen"
+            :mode="viewerMode"
+            :title="viewerTitle"
+            :subtitle="viewerNomor"
+            :url="viewerUrl"
+            :show-open-in-new-tab="true"
+            :show-thumbnails="false"
+            :initial-zoom="100"
+            :show-html-zoom-controls="true"
+            @close="closeViewer"
+            @open-new-tab="openInNewTab"
+        />
     </FastLayout>
 </template>
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
-import PdfViewer from '@/components/PdfViewer.vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import {
     AlertCircle,
     AlertTriangle,
@@ -71,15 +71,21 @@ type Surat = {
     generatedDocumentUrl: string | null;
 };
 
+type PageProps = {
+    flash?: { success?: string };
+};
+
 const props = defineProps<
     { role: { name?: string | null; slug?: string | null }; back_href?: string; back_label?: string } & Surat
 >();
 
+const page = usePage<PageProps>();
 const viewerOpen = ref(false);
 const viewerUrl = ref<string | null>(null);
 const viewerTitle = ref('');
 const viewerType = ref<'html' | 'pdf'>('html');
 const copiedNumber = ref(false);
+const toastMessage = ref('');
 
 const revisionModalOpen = ref(false);
 const finalRejectModalOpen = ref(false);
@@ -111,6 +117,19 @@ const documentTitle = computed(() =>
     props.nomor_surat
         ? `${props.jenis_surat} - ${props.nomor_surat}`
         : props.jenis_surat,
+);
+
+watch(
+    () => page.props.flash?.success,
+    (message) => {
+        if (typeof message === 'string' && message.length > 0) {
+            toastMessage.value = message;
+            window.setTimeout(() => {
+                if (toastMessage.value === message) toastMessage.value = '';
+            }, 2800);
+        }
+    },
+    { immediate: true },
 );
 
 const completedAt = computed(() => {
@@ -167,7 +186,7 @@ const processTimeline = computed(() => {
 
 const statusLabel: Record<string, string> = {
     pending: 'Menunggu Validasi',
-    validated_admin: 'Sudah Divalidasi Admin',
+    validated_admin: 'Pending',
     revision_requested: 'Menunggu Revisi Admin',
     approved_kaprodi: 'Disetujui Kaprodi',
     approved_dekan: 'Disetujui Dekan',
@@ -178,7 +197,7 @@ const statusLabel: Record<string, string> = {
 
 const statusColor: Record<string, string> = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    validated_admin: 'bg-slate-100 text-slate-700 border-slate-200',
+    validated_admin: 'bg-amber-50 text-amber-700 border-amber-200',
     revision_requested: 'bg-amber-50 text-amber-700 border-amber-200',
     approved_kaprodi: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     approved_dekan: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -314,6 +333,44 @@ function toggleTimelineNote(id: number) {
     expandedTimelineNoteId.value =
         expandedTimelineNoteId.value === id ? null : id;
 }
+
+function timelineStepState(index: number, timestamp?: string | null): 'done' | 'current' | 'pending' {
+    const lastIndex = processTimeline.value.length - 1;
+
+    if (index === lastIndex && !isFinished.value) {
+        return 'current';
+    }
+
+    if (!timestamp) {
+        return index === lastIndex ? 'current' : 'pending';
+    }
+
+    return 'done';
+}
+
+function timelineDotClasses(state: 'done' | 'current' | 'pending'): string {
+    if (state === 'current') {
+        return 'bg-amber-500 text-white shadow-sm ring-4 ring-amber-100';
+    }
+
+    if (state === 'pending') {
+        return 'bg-slate-100 text-slate-400 ring-1 ring-slate-200';
+    }
+
+    return 'bg-blue-600 text-white shadow-sm ring-4 ring-blue-100';
+}
+
+function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
+    if (state === 'current') {
+        return 'border-amber-200 bg-amber-50/80';
+    }
+
+    if (state === 'pending') {
+        return 'border-slate-200 bg-slate-50/80 opacity-80';
+    }
+
+    return 'border-slate-200 bg-slate-50';
+}
 </script>
 
 <template>
@@ -447,7 +504,7 @@ function toggleTimelineNote(id: number) {
                         :class="
                             isApproved
                                 ? 'border-emerald-200 bg-emerald-50'
-                                : status === 'revision_requested'
+                                : status === 'revision_requested' || status === 'validated_admin' || status === 'pending'
                                     ? 'border-amber-200 bg-amber-50'
                                     : 'border-slate-200 bg-slate-50'
                         "
@@ -458,27 +515,29 @@ function toggleTimelineNote(id: number) {
                                 :class="
                                     isApproved
                                         ? 'text-blue-600'
-                                        : status === 'revision_requested'
+                                        : status === 'revision_requested' || status === 'validated_admin' || status === 'pending'
                                             ? 'text-amber-600'
                                             : 'text-slate-500'
                                 "
                             />
                             <div class="min-w-0">
                                 <p
-                                    class="text-sm font-semibold"
-                                    :class="
-                                        isApproved
-                                            ? 'text-blue-800'
-                                            : status === 'revision_requested'
-                                                ? 'text-amber-800'
-                                                : 'text-slate-700'
-                                    "
-                                >
+                                class="text-sm font-semibold"
+                                :class="
+                                    isApproved
+                                        ? 'text-blue-800'
+                                        : status === 'revision_requested' || status === 'validated_admin' || status === 'pending'
+                                            ? 'text-amber-800'
+                                            : 'text-slate-700'
+                                "
+                            >
                                     {{
                                         isApproved
                                             ? 'Status Disetujui'
                                             : status === 'revision_requested'
                                                 ? 'Status Revisi'
+                                                : status === 'validated_admin' || status === 'pending'
+                                                    ? 'Pending'
                                                 : 'Status Surat'
                                     }}
                                 </p>
@@ -487,7 +546,7 @@ function toggleTimelineNote(id: number) {
                                     :class="
                                         isApproved
                                             ? 'text-blue-700'
-                                            : status === 'revision_requested'
+                                            : status === 'revision_requested' || status === 'validated_admin' || status === 'pending'
                                                 ? 'text-amber-700'
                                                 : 'text-slate-600'
                                     "
@@ -497,6 +556,8 @@ function toggleTimelineNote(id: number) {
                                             ? 'Surat sudah diproses sesuai alur persetujuan.'
                                             : status === 'revision_requested'
                                                 ? 'Surat dikembalikan untuk diperbaiki sebelum diproses lagi.'
+                                                : status === 'validated_admin' || status === 'pending'
+                                                    ? 'Surat sudah divalidasi admin dan menunggu persetujuan approver.'
                                                 : 'Surat masih menunggu tindakan dari role terkait.'
                                     }}
                                 </p>
@@ -504,12 +565,6 @@ function toggleTimelineNote(id: number) {
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2">
-                            <span
-                                class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
-                                :class="statusColor[status] || 'border-slate-200 bg-white text-slate-700'"
-                            >
-                                {{ statusLabel[status] || status }}
-                            </span>
                             <span
                                 v-if="completedAt"
                                 class="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
@@ -582,7 +637,7 @@ function toggleTimelineNote(id: number) {
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-6">
                 <div class="mb-5 flex items-center gap-3">
                     <div class="grid size-10 place-items-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                         <ShieldCheck class="size-5" />
@@ -597,27 +652,42 @@ function toggleTimelineNote(id: number) {
                     </div>
                 </div>
 
-                <div v-if="processTimeline.length > 0" class="space-y-4">
+                <div v-if="processTimeline.length > 0" class="space-y-3 sm:space-y-4">
                     <div
                         v-for="(entry, index) in processTimeline"
                         :key="entry.id"
-                        class="grid gap-4 md:grid-cols-[24px_minmax(0,1fr)_190px] md:items-start"
+                        class="grid grid-cols-[24px_minmax(0,1fr)] gap-3 md:grid-cols-[24px_minmax(0,1fr)_190px] md:items-start md:gap-4"
                     >
-                        <div class="relative flex justify-center">
+                        <div class="relative flex items-start justify-center">
                             <span
                                 v-if="index !== processTimeline.length - 1"
-                                class="absolute top-7 h-full w-px bg-blue-200"
+                                class="absolute left-1/2 top-6 h-full w-px -translate-x-1/2 bg-blue-200"
                             />
                             <span
-                                class="relative z-10 mt-1 grid size-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"
+                                class="relative z-10 mt-0.5 grid size-6 place-items-center rounded-full"
+                                :class="timelineDotClasses(timelineStepState(index, entry.timestamp))"
                             >
-                                <CheckCircle class="size-3.5" />
+                                <CheckCircle
+                                    v-if="timelineStepState(index, entry.timestamp) === 'done'"
+                                    class="size-3.5"
+                                />
+                                <Clock
+                                    v-else-if="timelineStepState(index, entry.timestamp) === 'current'"
+                                    class="size-3.5"
+                                />
+                                <span
+                                    v-else
+                                    class="size-2.5 rounded-full bg-current"
+                                />
                             </span>
                         </div>
 
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div
+                            class="min-w-0 rounded-2xl border p-4"
+                            :class="timelineCardClasses(timelineStepState(index, entry.timestamp))"
+                        >
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-sm font-semibold text-slate-900">
+                                <p class="break-words text-sm font-semibold text-slate-900">
                                     {{ entry.label }}
                                 </p>
                                 <button
@@ -636,14 +706,21 @@ function toggleTimelineNote(id: number) {
                                 <div
                                     v-if="entry.note && expandedTimelineNoteId === entry.id"
                                     :id="`timeline-note-${entry.id}`"
-                                    class="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                                    class="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm leading-6 text-red-700"
                                 >
                                     {{ entry.note }}
                                 </div>
                             </Transition>
+                            <p class="mt-3 text-xs font-medium text-slate-500 md:hidden">
+                                {{
+                                    timelineStepState(index, entry.timestamp) === 'pending'
+                                        ? 'Menunggu'
+                                        : formatDate(entry.timestamp)
+                                }}
+                            </p>
                         </div>
 
-                        <div class="pt-1 text-xs text-slate-500 md:text-right">
+                        <div class="hidden pt-1 text-xs text-slate-500 md:block md:text-right">
                             {{ formatDate(entry.timestamp) }}
                         </div>
                     </div>
@@ -786,52 +863,33 @@ function toggleTimelineNote(id: number) {
             </div>
         </Transition>
 
-        <Transition name="fade">
-            <div
-                v-if="viewerOpen"
-                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
-                @click.self="closeViewer"
-            >
-                <template v-if="viewerType === 'html'">
-                    <div class="flex h-12 shrink-0 items-center justify-between bg-slate-900 px-4">
-                        <p class="min-w-0 truncate text-sm font-medium text-white">
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-4" />
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-auto bg-slate-800 p-4">
-                        <iframe
-                            v-if="viewerUrl"
-                            :src="viewerUrl"
-                            class="w-full rounded-lg border-0 bg-white shadow-2xl"
-                            style="min-height: 80vh"
-                        />
-                    </div>
-                </template>
+        <DocumentPreviewModal
+            :open="viewerOpen"
+            :mode="viewerType"
+            :title="viewerTitle"
+            :url="viewerUrl"
+            :show-html-zoom-controls="true"
+            :show-thumbnails="false"
+            :initial-zoom="100"
+            @close="closeViewer"
+        />
 
-                <template v-else-if="viewerType === 'pdf' && viewerUrl">
-                    <div class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4">
-                        <p class="min-w-0 truncate text-xs font-medium text-slate-400">
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="grid size-7 place-items-center rounded-md text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-4" />
-                        </button>
-                    </div>
-                    <div class="flex-1 bg-slate-900">
-                        <PdfViewer :src="viewerUrl" class="h-full w-full" />
-                    </div>
-                </template>
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="translate-y-3 opacity-0"
+            enter-to-class="translate-y-0 opacity-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="translate-y-0 opacity-100"
+            leave-to-class="translate-y-3 opacity-0"
+        >
+            <div
+                v-if="toastMessage"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 shadow-lg"
+            >
+                <div class="flex items-center gap-2.5">
+                    <CheckCircle class="size-5 shrink-0 text-blue-500" />
+                    <p class="text-sm font-medium">{{ toastMessage }}</p>
+                </div>
             </div>
         </Transition>
     </AdminLayout>

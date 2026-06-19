@@ -1,11 +1,8 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/mahasiswa/History.vue
 import FastLayout from '@/layouts/FASt/FastLayout.vue';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, defineAsyncComponent, ref } from 'vue';
-const PdfViewer = defineAsyncComponent(
-    () => import('@/components/PdfViewer.vue'),
-);
+import { computed, ref } from 'vue';
 import {
     FileText,
     Download,
@@ -603,69 +600,16 @@ function goToPage(page: number) {
                 <ChevronRight class="size-3.5" />
             </button>
         </div>
-        <!-- Document Viewer Modal -->
-        <Transition name="fade">
-            <div
-                v-if="viewerOpen"
-                class="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
-                @click.self="closeViewer"
-            >
-                <!-- Mode HTML: iframe -->
-                <template v-if="viewerType === 'html'">
-                    <div
-                        class="flex h-12 shrink-0 items-center justify-between bg-slate-900 px-4"
-                    >
-                        <p
-                            class="min-w-0 truncate text-sm font-medium text-white"
-                        >
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-600 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-4" />
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-auto bg-slate-800 p-4">
-                        <iframe
-                            v-if="viewerUrl"
-                            :src="viewerUrl"
-                            class="w-full rounded-lg border-0 bg-white shadow-2xl"
-                            style="min-height: 80vh"
-                        />
-                    </div>
-                </template>
-                <!-- Mode PDF: PdfViewer -->
-                <template v-else-if="viewerType === 'pdf' && viewerUrl">
-                    <div
-                        class="flex h-9 shrink-0 items-center justify-between bg-slate-950 px-4"
-                    >
-                        <p
-                            class="min-w-0 truncate text-xs font-medium text-slate-400"
-                        >
-                            {{ viewerTitle }}
-                        </p>
-                        <button
-                            type="button"
-                            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-                            @click="closeViewer"
-                        >
-                            <X class="size-3.5" /> Tutup
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <PdfViewer
-                            :src="viewerUrl"
-                            :filename="viewerTitle"
-                            :show-thumbnails="false"
-                            :initial-zoom="100"
-                        />
-                    </div>
-                </template>
-            </div>
-        </Transition>
+        <DocumentPreviewModal
+            :open="viewerOpen"
+            :mode="viewerType"
+            :title="viewerTitle"
+            :url="viewerUrl"
+            :show-html-zoom-controls="true"
+            :show-thumbnails="false"
+            :initial-zoom="100"
+            @close="closeViewer"
+        />
     </FastLayout>
 </template>
 <style scoped>

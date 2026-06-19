@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/FASt/AdminLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -66,12 +66,16 @@ type PaginatedSurats = {
     to?: number | null;
     total: number;
 };
+type PageProps = {
+    flash?: { success?: string };
+};
 const props = defineProps<{
     role: { name?: string | null; slug?: string | null };
     surats: PaginatedSurats;
     filters: { search?: string; category_id?: string };
     categories: Array<{ id: number; nama: string }>;
 }>();
+const page = usePage<PageProps>();
 const search = ref(props.filters.search ?? '');
 const categoryId = ref(props.filters.category_id ?? '');
 const toastMessage = ref('');
@@ -92,6 +96,18 @@ const normalizedRole = computed(() =>
 const basePath = computed(() => `/${normalizedRole.value}`);
 const firstName = computed(
     () => String(props.role.name ?? 'Approver').split(' ')[0],
+);
+watch(
+    () => page.props.flash?.success,
+    (message) => {
+        if (typeof message === 'string' && message.length > 0) {
+            toastMessage.value = message;
+            window.setTimeout(() => {
+                if (toastMessage.value === message) toastMessage.value = '';
+            }, 2800);
+        }
+    },
+    { immediate: true },
 );
 function applyFilter() {
     router.get(
@@ -155,7 +171,7 @@ function initials(name?: string | null) {
 function statusLabel(status: string) {
     const labels: Record<string, string> = {
         pending: 'Pending',
-        validated_admin: 'Diteruskan ke Approver',
+        validated_admin: 'Pending',
         revision_requested: 'Revisi',
         rejected_admin: 'Ditolak Admin',
         rejected_approver: 'Ditolak Pimpinan',
@@ -166,7 +182,7 @@ function statusLabel(status: string) {
 }
 function statusClass(status: string) {
     if (status === 'pending') return 'bg-amber-50 text-amber-700';
-    if (status === 'validated_admin') return 'bg-slate-100 text-slate-700';
+    if (status === 'validated_admin') return 'bg-amber-50 text-amber-700';
     if (status === 'revision_requested') return 'bg-amber-50 text-amber-700';
     if (status === 'rejected_admin' || status === 'rejected_approver')
         return 'bg-red-50 text-red-700';
@@ -175,7 +191,7 @@ function statusClass(status: string) {
 }
 function cardBorderClass(status: string) {
     if (status === 'pending') return 'hover:border-amber-300';
-    if (status === 'validated_admin') return 'hover:border-slate-300';
+    if (status === 'validated_admin') return 'hover:border-amber-300';
     if (status === 'revision_requested') return 'hover:border-amber-300';
     if (status === 'rejected_admin' || status === 'rejected_approver')
         return 'hover:border-red-300';
@@ -184,7 +200,7 @@ function cardBorderClass(status: string) {
 }
 function stripeClass(status: string) {
     if (status === 'pending') return 'bg-amber-400';
-    if (status === 'validated_admin') return 'bg-slate-400';
+    if (status === 'validated_admin') return 'bg-amber-400';
     if (status === 'revision_requested') return 'bg-amber-400';
     if (status === 'rejected_admin' || status === 'rejected_approver')
         return 'bg-red-400';
@@ -242,53 +258,56 @@ function submitFinalReject() {
             { label: 'Dashboard', href: `${basePath}/dashboard` },
             { label: 'Antrian Approval' },
         ]"
-    >
+        >
         <Head :title="`Antrian Approval ${role.name || 'Approval'}`" />
         <!-- Search & Filter -->
-        <div
-            class="mb-4 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4"
-        >
-            <div class="relative min-w-0 flex-1">
-                <Search
-                    class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Cari nama atau NIM..."
-                    class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-9 text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                    @keyup.enter="applyFilter"
-                />
-            </div>
-            <div class="relative min-w-[220px]">
-                <select
-                    v-model="categoryId"
-                    class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-10 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                >
-                    <option value="">Semua Kategori</option>
-                    <option
-                        v-for="category in categories"
-                        :key="category.id"
-                        :value="String(category.id)"
+        <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div class="relative flex-1">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Cari nama atau NIM pemohon..."
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        @keyup.enter="applyFilter"
+                    />
+                </div>
+                <div class="w-full lg:w-56">
+                    <select
+                        v-model="categoryId"
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                     >
-                        {{ category.nama }}
-                    </option>
-                </select>
+                        <option value="">Semua Kategori</option>
+                        <option
+                            v-for="category in categories"
+                            :key="category.id"
+                            :value="String(category.id)"
+                        >
+                            {{ category.nama }}
+                        </option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row lg:flex-row">
+                    <button
+                        type="button"
+                        class="h-11 w-full rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
+                        @click="applyFilter"
+                    >
+                        Terapkan
+                    </button>
+                    <button
+                        v-if="search || categoryId"
+                        type="button"
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 sm:w-auto"
+                        @click="resetFilter"
+                    >
+                        Reset
+                    </button>
+                </div>
             </div>
-            <button
-                type="button"
-                class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-                @click="applyFilter"
-            >
-                Terapkan
-            </button>
-            <button
-                type="button"
-                class="h-10 rounded-xl border border-slate-200 px-4 text-xs text-slate-500 transition-colors hover:bg-slate-50"
-                @click="resetFilter"
-            >
-                Reset
-            </button>
         </div>
         <!-- Card list -->
         <div class="space-y-3">
@@ -612,10 +631,10 @@ function submitFinalReject() {
         >
             <div
                 v-if="toastMessage"
-                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-600 px-4 py-3 text-white shadow-lg"
+                class="fixed top-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 shadow-lg"
             >
                 <div class="flex items-center gap-2.5">
-                    <BadgeCheck class="size-5 shrink-0" />
+                    <BadgeCheck class="size-5 shrink-0 text-blue-500" />
                     <p class="text-sm font-medium">{{ toastMessage }}</p>
                 </div>
             </div>

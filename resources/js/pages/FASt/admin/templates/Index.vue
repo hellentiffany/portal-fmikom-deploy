@@ -197,13 +197,15 @@ const props = withDefaults(
         selectedJenisSurat: JenisSurat | null;
         selectedJenisSuratId?: number | null;
         categories?: CategoryOption[];
-        roles?: RoleOption[];
+        approvalRoles?: RoleOption[];
+        creatorRoles?: RoleOption[];
         globalSettings?: GlobalSetting[];
     }>(),
     {
         jenisSurats: () => [],
         categories: () => [],
-        roles: () => [],
+        approvalRoles: () => [],
+        creatorRoles: () => [],
         globalSettings: () => [],
     },
 );
@@ -232,13 +234,15 @@ const filteredJenisSurats = computed(() => {
 
     if (categoryFilter.value !== 'all') {
         items = items.filter(
-            (j) => String(j.category?.id ?? '') === categoryFilter.value,
+            (j) => String(j.category?.id ?? '') === String(categoryFilter.value),
         );
     }
 
     if (statusFilter.value !== 'all') {
         items = items.filter((j) =>
-            statusFilter.value === 'active' ? j.is_active : !j.is_active,
+            statusFilter.value === 'active'
+                ? isTruthy(j.is_active)
+                : !isTruthy(j.is_active),
         );
     }
 
@@ -246,8 +250,10 @@ const filteredJenisSurats = computed(() => {
 
     return items.filter(
         (j) =>
-            j.nama.toLowerCase().includes(q) ||
-            (j.category?.nama ?? '').toLowerCase().includes(q),
+            normalizeSearchText(j.nama).includes(q) ||
+            normalizeSearchText(j.slug).includes(q) ||
+            normalizeSearchText(j.category?.nama).includes(q) ||
+            normalizeSearchText(j.template?.name).includes(q),
     );
 });
 // ── Form builder ───────────────────────────────────────────────────────────
@@ -262,6 +268,12 @@ function resetTemplateFilters() {
     sidebarSearch.value = '';
     categoryFilter.value = 'all';
     statusFilter.value = 'all';
+}
+function normalizeSearchText(value: unknown) {
+    return String(value ?? '').toLowerCase().trim();
+}
+function isTruthy(value: unknown) {
+    return value === true || value === 1 || value === '1' || value === 'true';
 }
 function cloneFieldConfig(fieldConfig?: FieldConfig[]) {
     return JSON.parse(JSON.stringify(fieldConfig ?? [])) as FieldConfig[];
@@ -860,42 +872,42 @@ function settingLabel(key: string): string {
             :breadcrumbs="[{ label: 'Template Surat' }]"
         >
         <Head title="Template Surat" />
-        <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
+        <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0 flex-1">
                     <p class="flex items-center gap-1.5 text-sm font-medium text-blue-600">
                         <Sparkles class="size-4" /> Kelola Template
                     </p>
-                    <h2 class="mt-1 text-xl font-bold text-slate-900">
+                    <h2 class="mt-1 text-lg font-bold text-slate-900 sm:text-xl">
                         Template Surat
                     </h2>
-                    <p class="mt-1 text-sm text-slate-500">
+                    <p class="mt-1 text-sm leading-relaxed text-slate-500">
                         Atur format, komponen, dan field dinamis untuk setiap jenis surat.
                     </p>
                 </div>
-                <div class="flex shrink-0 items-center gap-2">
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <button
                         type="button"
-                        class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        class="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:w-auto"
                         @click="openGlobalSettings"
                     >
-                        <Settings class="size-3.5 text-slate-500" /> Pengaturan Kop & Footer
+                        <Settings class="size-4 text-slate-500" /> Pengaturan Kop & Footer
                     </button>
                     <button
                         type="button"
-                        class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        class="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
                         @click="openAddDialog"
                     >
-                        <Plus class="size-3.5" /> Tambah Jenis Surat
+                        <Plus class="size-4" /> Tambah Jenis Surat
                     </button>
                 </div>
             </div>
         </div>
         <div
             v-if="!selectedJenisSurat"
-            class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+            class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
         >
-            <div class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_200px_200px_auto] lg:items-end">
+            <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_200px_auto] lg:items-end">
                 <label class="block">
                     <span class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                         Cari template
@@ -906,7 +918,7 @@ function settingLabel(key: string): string {
                             v-model="sidebarSearch"
                             type="text"
                             placeholder="Cari template surat..."
-                            class="h-11 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            class="h-11 w-full rounded-2xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                         />
                     </div>
                 </label>
@@ -917,7 +929,7 @@ function settingLabel(key: string): string {
                     </span>
                     <select
                         v-model="categoryFilter"
-                        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     >
                         <option
                             v-for="option in categoryFilterOptions"
@@ -935,7 +947,7 @@ function settingLabel(key: string): string {
                     </span>
                     <select
                         v-model="statusFilter"
-                        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     >
                         <option value="all">Semua status</option>
                         <option value="active">Aktif</option>
@@ -945,7 +957,7 @@ function settingLabel(key: string): string {
 
                 <button
                     type="button"
-                    class="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    class="h-11 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
                     @click="resetTemplateFilters"
                 >
                     Reset Filter
@@ -2285,7 +2297,7 @@ function settingLabel(key: string): string {
                                 Tidak ada (langsung selesai)
                             </option>
                             <option
-                                v-for="role in roles"
+                                v-for="role in approvalRoles"
                                 :key="role.id"
                                 :value="role.id"
                             >
@@ -2303,7 +2315,7 @@ function settingLabel(key: string): string {
                         >
                             <option value="">Semua role</option>
                             <option
-                                v-for="role in roles"
+                                v-for="role in creatorRoles"
                                 :key="role.id"
                                 :value="role.id"
                             >
@@ -2431,7 +2443,7 @@ function settingLabel(key: string): string {
                                 Tidak ada (langsung selesai)
                             </option>
                             <option
-                                v-for="role in roles"
+                                v-for="role in approvalRoles"
                                 :key="role.id"
                                 :value="role.id"
                             >

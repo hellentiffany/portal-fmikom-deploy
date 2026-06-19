@@ -28,7 +28,7 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $query = Surat::query()
-            ->with(['pemohon', 'jenisSurat'])
+            ->with(['pemohon', 'jenisSurat', 'dataEntries'])
             ->where('type', 'pengajuan')
             ->whereIn('status', [
                 Surat::STATUS_PENDING,
@@ -59,6 +59,8 @@ class DashboardController extends Controller
             ->through(fn(Surat $surat): array => [
                 'id' => $surat->id,
                 'status' => $surat->status,
+                'can_approve' => $surat->canBeValidatedByAdmin(),
+                'can_edit' => $surat->canBeEditedByAdmin(),
                 'tanggal_pengajuan' => optional($surat->tanggal_pengajuan ?? $surat->created_at)?->toISOString(),
                 'created_at' => optional($surat->created_at)?->toISOString(),
                 'pemohon' => [
@@ -406,7 +408,7 @@ class DashboardController extends Controller
 
         $this->workflow->approve($surat, FastApprovalWorkflowService::ROLE_ADMIN, request()->user());
 
-        return back()->with('success', 'Pengajuan diverifikasi, draft surat dibentuk, dan diteruskan ke approver.');
+        return back()->with('success', 'Pengajuan berhasil divalidasi.');
     }
 
     public function reject(Request $request, int $id): RedirectResponse
