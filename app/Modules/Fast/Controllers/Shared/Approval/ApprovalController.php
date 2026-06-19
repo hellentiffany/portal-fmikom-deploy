@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\FASt\Shared\Approval;
+namespace App\Modules\Fast\Controllers\Shared\Approval;
 
 use App\Modules\Fast\Controllers\Admin\ApprovalController as BaseApprovalController;
 
