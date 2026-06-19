@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Fast\User;
+namespace App\Modules\Fast\Requests\Shared\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 

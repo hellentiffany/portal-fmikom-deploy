@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Fast\Mahasiswa;
+namespace App\Modules\Fast\Requests\Mahasiswa;
 
 use Illuminate\Foundation\Http\FormRequest;
 
