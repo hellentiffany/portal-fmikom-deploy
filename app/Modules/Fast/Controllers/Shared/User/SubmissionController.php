@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\FASt\Shared\User;
+namespace App\Modules\Fast\Controllers\Shared\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\JenisSurat;

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\FASt\Mahasiswa;
 
-use App\Http\Controllers\FASt\Shared\User\DashboardController as BaseDashboardController;
+use App\Modules\Fast\Controllers\Shared\User\DashboardController as BaseDashboardController;
 
 class DashboardController extends BaseDashboardController
 {
