@@ -1,7 +1,7 @@
 <?php
 // app/Services/NomorSuratService.php
 
-namespace App\Services;
+namespace App\Modules\Fast\Services\Shared;
 
 use App\Models\NomorSuratSequence;
 use App\Models\TemplateGlobalSetting;

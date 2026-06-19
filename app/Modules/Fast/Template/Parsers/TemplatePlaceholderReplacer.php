@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Modules\Fast\Template\Parsers;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -26,7 +26,7 @@ class TemplatePlaceholderReplacer
             $isYth = Str::contains(Str::lower($key), 'yth');
 
             if ($isYth) {
-                // Untuk yth: e() akan escape <br> jadi &lt;br&gt; — restore kembali
+                // Untuk yth: e() akan escape <br> jadi &lt;br&gt; â€” restore kembali
                 $escapedValue = str_replace(['&lt;br&gt;', '&lt;br /&gt;'], '<br>', e($rawValue));
             } else {
                 $escapedValue = e($rawValue);

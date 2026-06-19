@@ -6,7 +6,7 @@ namespace App\Http\Controllers\FASt\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Surat;
 use App\Models\SuratQrCode;
-use App\Services\SuratHistoryService;
+use App\Modules\Fast\Services\Shared\SuratHistoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;

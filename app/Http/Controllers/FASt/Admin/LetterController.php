@@ -5,9 +5,9 @@ namespace App\Http\Controllers\FASt\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\JenisSurat;
 use App\Models\Surat;
-use App\Services\SuratTemplateRendererService;
-use App\Services\SuratWorkflowService;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\Template\Renderers\SuratTemplateRendererService;
+use App\Modules\Fast\Workflow\Actions\SuratWorkflowService;
+use App\Modules\Fast\DTOs\SuratDataContract;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -372,3 +372,5 @@ class LetterController extends Controller
         return $returnTo;
     }
 }
+
+

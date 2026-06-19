@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\JenisSurat;
 use App\Models\Surat;
 use App\Models\SuratCategory;
-use App\Services\SuratWorkflowService;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\Workflow\Actions\SuratWorkflowService;
+use App\Modules\Fast\DTOs\SuratDataContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Halaman "Ajukan Surat": pilih jenis surat → isi form → upload → submit.
+     * Halaman "Ajukan Surat": pilih jenis surat ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ isi form ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ upload ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ submit.
      */
     public function create(Request $request): Response
     {
@@ -290,3 +290,5 @@ class SubmissionController extends Controller
     }
 
 }
+
+

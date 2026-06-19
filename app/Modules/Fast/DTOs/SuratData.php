@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Modules\Fast\DTOs;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -514,4 +514,5 @@ class SuratDataContract
         ];
     }
 }
+
 

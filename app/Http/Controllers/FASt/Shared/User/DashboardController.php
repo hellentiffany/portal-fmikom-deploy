@@ -7,7 +7,7 @@ use App\Models\Surat;
 use App\Models\SuratApprovalFlow;
 use App\Models\SuratHistory;
 use App\Models\SuratCategory;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\DTOs\SuratDataContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -208,3 +208,5 @@ class DashboardController extends Controller
         ];
     }
 }
+
+

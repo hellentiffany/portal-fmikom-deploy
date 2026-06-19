@@ -8,7 +8,7 @@ use App\Http\Requests\Api\ApproveSuratRequest;
 use App\Http\Requests\Api\GenerateSuratDocumentRequest;
 use App\Http\Requests\Api\StoreSuratRequest;
 use App\Models\Surat;
-use App\Services\SuratWorkflowService;
+use App\Modules\Fast\Workflow\Actions\SuratWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

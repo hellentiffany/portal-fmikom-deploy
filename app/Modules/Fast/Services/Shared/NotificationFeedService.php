@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\FASt;
+namespace App\Modules\Fast\Services\Shared;
 
 use App\Models\FastNotification;
 use App\Models\SuratApprovalFlow;

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Services\FASt\Shared\Approval;
+namespace App\Modules\Fast\Workflow\Approvals;
 
 use App\Models\Surat;
 use App\Models\SuratApprovalFlow;
 use App\Models\User;
-use App\Services\SuratDocumentGeneratorService;
-use App\Services\SuratHistoryService;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\DTOs\SuratDataContract;
+use App\Modules\Fast\Services\Shared\SuratDocumentGeneratorService;
+use App\Modules\Fast\Services\Shared\SuratHistoryService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Illuminate\Validation\ValidationException;
@@ -293,3 +293,5 @@ class FastApprovalWorkflowService
         return $role === self::ROLE_ADMIN && $surat->requiresFinalApproval();
     }
 }
+
+

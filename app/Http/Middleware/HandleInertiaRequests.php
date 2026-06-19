@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Surat;
-use App\Services\FASt\NotificationFeedService;
+use App\Modules\Fast\Services\Shared\NotificationFeedService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 

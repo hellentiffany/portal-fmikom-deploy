@@ -4,7 +4,7 @@ namespace App\Http\Controllers\FASt\Shared\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\JenisSurat;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\DTOs\SuratDataContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -43,3 +43,5 @@ class LetterTypeController extends Controller
     }
 
 }
+
+

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Modules\Fast\Workflow\Actions;
 
 use App\Models\JenisSurat;
 use App\Models\Surat;
@@ -8,9 +8,10 @@ use App\Models\SuratData;
 use App\Models\SuratHistory;
 use App\Models\SuratLampiran;
 use App\Models\User;
-use App\Services\FASt\Shared\Approval\FastApprovalWorkflowService as ApprovalWorkflowService;
-use App\Services\SuratHistoryService;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\DTOs\SuratDataContract;
+use App\Modules\Fast\Services\Shared\SuratDocumentGeneratorService;
+use App\Modules\Fast\Workflow\Approvals\FastApprovalWorkflowService as ApprovalWorkflowService;
+use App\Modules\Fast\Services\Shared\SuratHistoryService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -616,3 +617,7 @@ class SuratWorkflowService
         ]);
     }
 }
+
+
+
+

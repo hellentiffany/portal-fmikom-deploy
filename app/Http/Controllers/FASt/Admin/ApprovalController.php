@@ -8,7 +8,7 @@ use App\Models\Surat;
 use App\Models\SuratApprovalFlow;
 use App\Models\SuratCategory;
 use App\Models\SuratLampiran;
-use App\Services\FASt\Shared\Approval\FastApprovalWorkflowService;
+use App\Modules\Fast\Workflow\Approvals\FastApprovalWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

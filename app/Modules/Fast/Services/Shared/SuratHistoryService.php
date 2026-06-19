@@ -1,7 +1,7 @@
 <?php
 // app/Services/SuratHistoryService.php
 
-namespace App\Services;
+namespace App\Modules\Fast\Services\Shared;
 
 use App\Models\SuratHistory;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +28,7 @@ class SuratHistoryService
         ]);
     }
 
-    // ── Shortcut methods ──────────────────────────────────────────
+    // â”€â”€ Shortcut methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public static function created(int $suratId, string $jenisSurat): SuratHistory
     {
@@ -85,7 +85,7 @@ class SuratHistoryService
     public static function generated(int $suratId, string $nomorSurat): SuratHistory
     {
         return static::record($suratId, SuratHistory::ACTION_GENERATED,
-            "Dokumen PDF digenerate — No: {$nomorSurat}");
+            "Dokumen PDF digenerate â€” No: {$nomorSurat}");
     }
 
     public static function printed(int $suratId): SuratHistory

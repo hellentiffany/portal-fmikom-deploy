@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Support;
+namespace App\Modules\Fast\Template\Resolvers;
 
 use App\Models\SuratTemplate;
-use App\Support\SuratDataContract;
+use App\Modules\Fast\DTOs\SuratDataContract;
 
 class TemplatePlaceholderSynchronizer
 {
@@ -97,3 +97,5 @@ class TemplatePlaceholderSynchronizer
         ];
     }
 }
+
+
