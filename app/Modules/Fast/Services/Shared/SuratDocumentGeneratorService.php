@@ -5,6 +5,7 @@ namespace App\Modules\Fast\Services\Shared;
 use App\Models\NomorSuratSequence;
 use App\Models\Surat;
 use App\Models\TemplateGlobalSetting;
+use App\Modules\Fast\Template\Renderers\SuratTemplateRendererService;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
