@@ -4,6 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// LEGACY-ONLY: tabel bridge lama untuk mapping role ke jenis surat.
+// Disimpan untuk histori migrasi, bukan jalur utama setelah cutover.
 return new class extends Migration
 {
     /**

@@ -31,7 +31,8 @@ type PageProps = {
         user?: {
             name?: string;
             email?: string;
-            role?: { nama?: string; slug?: string };
+            role_title?: string | null;
+            user_type?: string | null;
         };
     };
     flash?: { success?: string; error?: string; warning?: string };
@@ -76,8 +77,8 @@ const profileMenuOpen = ref(false);
 
 const user = computed(() => page.props.auth?.user);
 const userName = computed(() => user.value?.name ?? 'Admin');
-const userRole = computed(() => user.value?.role?.nama ?? 'Administrator');
-const userSlug = computed(() => user.value?.role?.slug ?? 'admin');
+const userRole = computed(() => user.value?.role_title ?? 'Administrator');
+const userSlug = computed(() => user.value?.user_type ?? 'admin');
 const userInitials = computed(() =>
     userName.value
         .split(' ')

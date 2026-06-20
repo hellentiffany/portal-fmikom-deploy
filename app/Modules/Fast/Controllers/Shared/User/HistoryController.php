@@ -36,14 +36,12 @@ class HistoryController extends Controller
             ->through(fn (Surat $surat): array => $this->transformSubmission($surat))
             ->withQueryString();
 
-        $user->loadMissing('role');
         return Inertia::render($this->pageName(), [
             'surats'  => $surats,
             'filters' => ['search' => $search, 'status' => $status],
-            'userRole' => [
-                'id'   => $user->role?->id,
-                'name' => $user->role?->nama,
-                'slug' => $user->role?->slug,
+            'userType' => [
+                'value' => $user->userTypeSlug(),
+                'label' => $user->roleDisplayName(),
             ],
             'endpoints' => [
                 'basePath' => $this->basePath(),
@@ -68,12 +66,10 @@ class HistoryController extends Controller
             ->where('pemohon_id', $user->id)
             ->findOrFail($id);
 
-        $user->loadMissing('role');
-
         return Inertia::render($this->detailPageName(), [
-            'role' => [
-                'name' => $user->role?->nama,
-                'slug' => $user->role?->slug,
+            'userType' => [
+                'value' => $user->userTypeSlug(),
+                'label' => $user->roleDisplayName(),
             ],
             'back_href' => $this->basePath().'/history',
             'back_label' => 'Riwayat Surat',
@@ -88,6 +84,7 @@ class HistoryController extends Controller
                 'nomor_surat_status_label' => $surat->nomorSuratStatusLabel(),
                 'reference' => $surat->nomor_surat ?: sprintf('REQ-%05d', $surat->id),
                 'jenis_surat' => $surat->jenisSurat?->nama ?? 'Surat Akademik',
+                'approval_role_slug' => $surat->jenisSurat?->approvalRole?->slug,
                 'keperluan' => $surat->keperluan,
                 'isi_surat' => $this->decodeJsonPayload($surat->isi_surat),
                 'detail_data' => $this->buildDetailData($surat),
@@ -206,6 +203,7 @@ class HistoryController extends Controller
                 'nama' => $surat->jenisSurat?->approvalRole?->nama,
                 'slug' => $surat->jenisSurat?->approvalRole?->slug,
             ],
+            'approval_role_slug' => $surat->jenisSurat?->approvalRole?->slug,
             'requiresFinalApproval' => $surat->requiresFinalApproval(),
             'status' => $surat->status,
             'keperluan' => $surat->keperluan,

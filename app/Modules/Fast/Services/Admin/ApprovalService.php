@@ -310,10 +310,9 @@ class ApprovalService
     {
         $user = $request->user();
         abort_if($user === null, 403);
-        $user->loadMissing('role');
 
-        $roleName = $user->role?->nama ?? 'Approval';
-        $roleSlug = $user->role?->slug ?? 'approval';
+        $roleName = $user->roleDisplayName() ?: 'Approval';
+        $roleSlug = $user->userTypeSlug() ?: 'approval';
         $normalizedRole = $this->normalizeRole($roleSlug, $roleName);
 
         return [$user, $roleName, $roleSlug, $normalizedRole];
@@ -459,9 +458,9 @@ class ApprovalService
                     'actor' => $flow->approver?->name,
                 ])
                 ->values(),
-            'can_approve' => $surat->canBeApprovedByRole($this->normalizeRole($request->user()?->role?->slug, $request->user()?->role?->nama)),
-            'can_request_revision' => $surat->canRequestRevisionByRole($this->normalizeRole($request->user()?->role?->slug, $request->user()?->role?->nama)),
-            'can_final_reject' => $surat->canBeFinalRejectedByRole($this->normalizeRole($request->user()?->role?->slug, $request->user()?->role?->nama)),
+            'can_approve' => $surat->canBeApprovedByRole($this->normalizeRole($request->user()?->userTypeSlug(), $request->user()?->roleDisplayName())),
+            'can_request_revision' => $surat->canRequestRevisionByRole($this->normalizeRole($request->user()?->userTypeSlug(), $request->user()?->roleDisplayName())),
+            'can_final_reject' => $surat->canBeFinalRejectedByRole($this->normalizeRole($request->user()?->userTypeSlug(), $request->user()?->roleDisplayName())),
             'previewTemplateUrl' => route('documents.surat.template-preview', $surat->id, absolute: false),
             'generatedDocumentUrl' => filled($surat->nomor_surat) || filled($surat->rendered_snapshot)
                 ? (

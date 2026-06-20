@@ -21,13 +21,11 @@ class ApprovalActionService
         $user = $request->user();
         abort_if($user === null, 403);
 
-        $user->loadMissing('role');
-
         $surat = Surat::query()->findOrFail($id);
 
         $this->workflow->approve(
             $surat,
-            $this->normalizeRole($user->role?->slug, $user->role?->nama),
+            $this->normalizeRole($user->userTypeSlug(), $user->roleDisplayName()),
             $user,
         );
 
@@ -52,14 +50,13 @@ class ApprovalActionService
 
         $user = $request->user();
         abort_if($user === null, 403);
-        $user->loadMissing('role');
 
         $surat = Surat::query()->findOrFail($id);
 
         $surat->approvalFlows()->create([
             'approver_id'  => $user->id,
             'urutan'       => 0,
-            'role'         => $this->normalizeRole($user->role?->slug, $user->role?->nama),
+            'role'         => $this->normalizeRole($user->userTypeSlug(), $user->roleDisplayName()),
             'status'       => SuratApprovalFlow::STATUS_NOTE,
             'keterangan'   => 'Catatan',
             'catatan'      => $request->string('catatan')->toString(),
@@ -78,13 +75,11 @@ class ApprovalActionService
         $user = $request->user();
         abort_if($user === null, 403);
 
-        $user->loadMissing('role');
-
         $surat = Surat::query()->findOrFail($id);
 
         $this->workflow->requestRevision(
             $surat,
-            $this->normalizeRole($user->role?->slug, $user->role?->nama),
+            $this->normalizeRole($user->userTypeSlug(), $user->roleDisplayName()),
             $user,
             $request->string('reason')->toString(),
         );
@@ -121,10 +116,8 @@ class ApprovalActionService
         $user = $request->user();
         abort_if($user === null, 403);
 
-        $user->loadMissing('role');
-
         $surat = Surat::query()->findOrFail($id);
-        $normalizedRole = $this->normalizeRole($user->role?->slug, $user->role?->nama);
+        $normalizedRole = $this->normalizeRole($user->userTypeSlug(), $user->roleDisplayName());
 
         $this->workflow->finalReject(
             $surat,

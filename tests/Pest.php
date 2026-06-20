@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Tests\TestCase;
 
 /*
@@ -46,4 +47,12 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function createUserWithType(string $userType, array $attributes = []): User
+{
+    return User::factory()->create(array_merge([
+        'user_type' => $userType,
+        'role_title' => $attributes['role_title'] ?? ucwords(str_replace(['-', '_'], ' ', $userType)),
+    ], $attributes));
 }

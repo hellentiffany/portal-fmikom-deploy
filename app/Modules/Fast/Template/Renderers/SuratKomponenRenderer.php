@@ -270,6 +270,7 @@ HTML;
             'header_surat'    => static::renderHeaderSurat($komp, $data),
             'kepada_yth'      => static::renderKepadaYth($komp, $data),
             'tabel_data'      => static::renderTabelData($komp, $data),
+            'tabel_biasa'     => static::renderTabelBiasa($komp, $data),
             'tabel_indent'    => static::renderTabelIndent($komp, $data),
             'tanda_tangan'    => static::renderTandaTangan($komp, $data),
             'tembusan'        => static::renderTembusan($komp, $data),
@@ -509,6 +510,54 @@ HTML;
                 <td style=\"padding: 1.5px 0; vertical-align: top; white-space: nowrap; line-height: {$lineHeight};\">{$nilai}</td>
             </tr>\n";
         }
+        $html .= "</tbody>\n</table>\n";
+        return $html;
+    }
+    protected static function renderTabelBiasa(array $komp, array $data): string
+    {
+        $headers = array_values(array_filter($komp['headers'] ?? [], static fn ($header): bool => trim((string) $header) !== ''));
+        $rows = $komp['rows'] ?? [];
+
+        if (empty($headers) && empty($rows)) {
+            return '';
+        }
+
+        $size = $komp['font_size'] ?? '12pt';
+        $lineHeight = trim((string) ($data['line_height_tabel'] ?? '1.4')) ?: '1.4';
+        $marginLeft = (int) ($komp['margin_left'] ?? 0);
+        $borderColor = '#111827';
+        $headerFill = '#F8FAFC';
+        $columnCount = max(count($headers), 1);
+        $headerWidth = round(100 / $columnCount, 2);
+
+        $html = "<table style=\"width: 100%; margin-left: {$marginLeft}px; border-collapse: collapse; table-layout: fixed; margin-bottom: 8px; font-size: {$size}; line-height: {$lineHeight}; border: 1px solid {$borderColor};\">\n<thead>\n<tr>\n";
+
+        foreach ($headers as $header) {
+            $label = htmlspecialchars((string) $header, ENT_QUOTES, 'UTF-8');
+            $html .= "<th style=\"width: {$headerWidth}%; border: 1px solid {$borderColor}; background: {$headerFill}; padding: 6px 8px; text-align: center; vertical-align: middle; font-weight: 700; line-height: {$lineHeight};\">{$label}</th>\n";
+        }
+
+        if (empty($headers)) {
+            $html .= "<th style=\"width: 100%; border: 1px solid {$borderColor}; background: {$headerFill}; padding: 6px 8px; text-align: center; vertical-align: middle; font-weight: 700; line-height: {$lineHeight};\">Kolom</th>\n";
+        }
+
+        $html .= "</tr>\n</thead>\n<tbody>\n";
+
+        foreach ($rows as $row) {
+            $cells = array_values($row['cells'] ?? []);
+            $html .= "<tr>\n";
+            for ($index = 0; $index < $columnCount; $index++) {
+                $value = static::fill((string) ($cells[$index] ?? ''), $data);
+                $align = (string) ($komp['align'] ?? 'left');
+                $html .= "<td style=\"border: 1px solid {$borderColor}; padding: 6px 8px; vertical-align: top; text-align: {$align}; line-height: {$lineHeight};\">{$value}</td>\n";
+            }
+            $html .= "</tr>\n";
+        }
+
+        if (empty($rows)) {
+            $html .= "<tr><td colspan=\"{$columnCount}\" style=\"border: 1px solid {$borderColor}; padding: 10px 8px; vertical-align: top; line-height: {$lineHeight}; color: #94A3B8;\">Belum ada isi tabel</td></tr>\n";
+        }
+
         $html .= "</tbody>\n</table>\n";
         return $html;
     }

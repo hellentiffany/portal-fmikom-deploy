@@ -1,8 +1,6 @@
 <?php
 
 use App\Models\JenisSurat;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -10,12 +8,7 @@ use Illuminate\Support\Facades\Storage;
 test('mahasiswa can submit a surat request with an attachment', function () {
     Storage::fake('public');
 
-    $role = Role::create([
-        'nama' => 'Mahasiswa',
-        'slug' => 'mahasiswa',
-    ]);
-    $user = User::factory()->create([
-        'role_id' => $role->id,
+    $user = createUserWithType('mahasiswa', [
         'email_verified_at' => now(),
     ]);
 

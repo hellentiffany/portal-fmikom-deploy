@@ -48,6 +48,7 @@ type SuratDetail = {
     nomor_surat_status_label?: string | null;
     reference?: string | null;
     jenis_surat: string;
+    approval_role_slug?: string | null;
     keperluan: string;
     isi_surat?: Record<string, unknown> | unknown[];
     detail_data?: Record<string, unknown>;
@@ -72,7 +73,10 @@ type SuratDetail = {
 };
 
 const props = defineProps<{
-    role?: { name?: string | null; slug?: string | null };
+    userType?: {
+        value?: string | null;
+        label?: string | null;
+    };
     back_href?: string;
     back_label?: string;
     surat: SuratDetail;

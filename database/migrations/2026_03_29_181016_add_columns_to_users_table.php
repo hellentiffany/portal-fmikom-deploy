@@ -4,6 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// LEGACY-ONLY: migrasi historis untuk fase awal users table.
+// Dipertahankan sebagai catatan skema lama, bukan target pengembangan baru.
 return new class extends Migration
 {
     public function up(): void

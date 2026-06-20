@@ -5,6 +5,8 @@ use App\Models\Role;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
+// LEGACY-ONLY: pembersihan data role spesifik fase awal yang sudah tidak dipakai.
+// Menjaga histori migrasi tetap jelas sebelum modul lain digabung.
 return new class extends Migration
 {
     public function up(): void

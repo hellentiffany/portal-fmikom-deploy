@@ -77,7 +77,6 @@ CSS;
     {
         $surat->loadMissing([
             'pemohon.programStudi',
-            'approvedBy.role',
             'approvedBy.programStudi',
             'jenisSurat.template.placeholders',
             'dataEntries',
@@ -879,15 +878,15 @@ HTML,
         $signer = null;
 
         if ($approvedBy !== null && $approvalRoleSlug !== null && $approvedBy->hasRole($approvalRoleSlug)) {
-            $signer = $approvedBy->loadMissing('role', 'programStudi');
+            $signer = $approvedBy->loadMissing('programStudi');
         }
 
         if ($signer === null && filled($approvalRoleSlug)) {
             $query = User::query()
-                ->with(['role', 'programStudi'])
+                ->with(['programStudi'])
                 ->where('is_active', true)
                 ->where('status_approval', 'approved')
-                ->whereHas('role', fn ($roleQuery) => $roleQuery->where('slug', $approvalRoleSlug));
+                ->where('user_type', $approvalRoleSlug);
 
             if ($approvalRoleSlug === 'kaprodi' && $preferredProgramStudiId !== null) {
                 $query->orderByRaw(

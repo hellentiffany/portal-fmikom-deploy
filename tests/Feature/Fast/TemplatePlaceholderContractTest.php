@@ -15,8 +15,7 @@ test('template update synchronizes placeholders using the surat data contract', 
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -91,8 +90,7 @@ test('template update enforces account bound placeholder sources for signer and 
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -172,8 +170,7 @@ test('template duplication rebuilds placeholders from the same contract source',
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -234,8 +231,7 @@ test('template update preserves repeatable field metadata for admin form renderi
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -296,8 +292,7 @@ test('template update strips reserved recipient field config from dynamic fields
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -374,8 +369,7 @@ test('template update strips account bound field config from dynamic fields', fu
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -429,8 +423,7 @@ test('template update rejects duplicate dynamic field keys', function () {
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -475,3 +468,5 @@ test('template update rejects duplicate dynamic field keys', function () {
 
     expect($jenisSurat->fresh()->field_config)->toBe([]);
 });
+
+

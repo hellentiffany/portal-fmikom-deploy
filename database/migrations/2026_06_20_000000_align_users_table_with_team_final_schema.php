@@ -71,22 +71,21 @@ return new class extends Migration
             }
         });
 
-        $rolesById = DB::table('roles')->select('id', 'slug', 'nama')->get()->keyBy('id');
-
         DB::table('users')
             ->orderBy('id')
-            ->chunkById(100, function ($users) use ($rolesById): void {
+            ->chunkById(100, function ($users): void {
                 foreach ($users as $user) {
-                    $role = $user->role_id !== null ? ($rolesById->get($user->role_id) ?? null) : null;
-                    $normalizedUserType = $role?->slug !== null
-                        ? self::normalizeUserType((string) $role->slug)
-                        : self::normalizeUserType((string) ($user->user_type ?? ''));
+                    $normalizedUserType = self::normalizeUserType((string) ($user->user_type ?? ''));
+
+                    if ($normalizedUserType === '') {
+                        $normalizedUserType = 'mahasiswa';
+                    }
 
                     DB::table('users')
                         ->where('id', $user->id)
                         ->update([
-                            'role_title' => $user->role_title ?? ($role?->nama ?? ($normalizedUserType !== '' ? self::displayRoleTitle($normalizedUserType) : null)),
-                            'user_type' => $user->user_type ?? ($role?->slug !== null ? self::legacyUserType((string) $role->slug) : 'mahasiswa'),
+                            'role_title' => $user->role_title ?? self::displayRoleTitle($normalizedUserType),
+                            'user_type' => $normalizedUserType,
                             'banner_path' => $user->banner_path ?? null,
                             'bio' => $user->bio ?? null,
                             'location' => $user->location ?? null,
@@ -140,13 +139,6 @@ return new class extends Migration
             'super_admin', 'super-admin' => 'admin',
             default => $slug,
         };
-    }
-
-    private static function legacyUserType(string $roleSlug): string
-    {
-        $normalized = self::normalizeUserType($roleSlug);
-
-        return $normalized === '' ? 'mahasiswa' : ($normalized === 'admin' ? 'super_admin' : $normalized);
     }
 
     private static function displayRoleTitle(string $userType): string

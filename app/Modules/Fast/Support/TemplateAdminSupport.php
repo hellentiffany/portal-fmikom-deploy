@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class TemplateAdminSupport
 {
+    protected const APPROVAL_ROLE_SLUGS = ['admin', 'dekan', 'kaprodi'];
+
+    protected const CREATOR_ROLE_SLUGS = ['mahasiswa', 'dosen', 'admin'];
+
     protected const DEFAULT_GLOBAL_SETTINGS = [
         [
             'key'   => 'kode_prefix_nomor_surat',
@@ -189,7 +193,7 @@ class TemplateAdminSupport
     public function listApprovalRoles(): EloquentCollection
     {
         return Role::query()
-            ->whereIn('slug', ['admin', 'dekan', 'kaprodi'])
+            ->whereIn('slug', $this->approvalRoleSlugs())
             ->orderBy('nama')
             ->get(['id', 'nama', 'slug']);
     }
@@ -197,7 +201,7 @@ class TemplateAdminSupport
     public function listCreatorRoles(): EloquentCollection
     {
         return Role::query()
-            ->whereIn('slug', ['mahasiswa', 'dosen', 'admin'])
+            ->whereIn('slug', $this->creatorRoleSlugs())
             ->orderBy('nama')
             ->get(['id', 'nama', 'slug']);
     }
@@ -215,7 +219,7 @@ class TemplateAdminSupport
     public function templateApprovalRoleIds(): array
     {
         return Role::query()
-            ->whereIn('slug', ['admin', 'dekan', 'kaprodi'])
+            ->whereIn('slug', $this->approvalRoleSlugs())
             ->orderBy('nama')
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
@@ -229,12 +233,28 @@ class TemplateAdminSupport
     public function templateAllowedCreatorRoleIds(): array
     {
         return Role::query()
-            ->whereIn('slug', ['admin', 'dosen', 'mahasiswa'])
+            ->whereIn('slug', $this->creatorRoleSlugs())
             ->orderBy('nama')
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function approvalRoleSlugs(): array
+    {
+        return self::APPROVAL_ROLE_SLUGS;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function creatorRoleSlugs(): array
+    {
+        return self::CREATOR_ROLE_SLUGS;
     }
 
     /**
@@ -308,6 +328,7 @@ class TemplateAdminSupport
                 'id'   => $jenisSurat->category?->id,
                 'nama' => $jenisSurat->category?->nama,
             ],
+            'approval_role_slug' => $jenisSurat->approvalRole?->slug,
             'approval_role' => [
                 'id'   => $jenisSurat->approvalRole?->id,
                 'nama' => $jenisSurat->approvalRole?->nama,

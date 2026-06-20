@@ -30,7 +30,6 @@ class SubmissionController extends Controller
     {
         $user = $request->user();
         abort_if($user === null, 403);
-        $user->loadMissing('role');
 
         $jenisSurats = $this->visibleSubmissionJenisSuratQuery($user)
             ->orderBy('nama')
@@ -109,10 +108,9 @@ class SubmissionController extends Controller
                     ])->values()->all(),
             ])->values(),
             'selectedJenisId' => $request->integer('jenis') ?: null,
-            'userRole' => [
-                'id'   => $user->role?->id,
-                'name' => $user->role?->nama,
-                'slug' => $user->role?->slug,
+            'userType' => [
+                'value' => $user->userTypeSlug(),
+                'label' => $user->roleDisplayName(),
             ],
             'endpoints' => [
                 'basePath' => $this->basePath(),
@@ -239,25 +237,21 @@ class SubmissionController extends Controller
 
     protected function visibleSubmissionJenisSuratQuery($user): Builder
     {
-        $user->loadMissing('role');
-
-        $roleId = $user->role?->id;
+        $roleSlug = $user->userTypeSlug();
 
         return JenisSurat::query()
             ->where('is_active', true)
             ->where('alur_pengajuan', 'submission')
             ->whereHas('template')
-            ->when($roleId !== null, fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
+            ->when($roleSlug !== '', fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
                 ->whereNull('allowed_role_id')
-                ->orWhere('allowed_role_id', $roleId)
+                ->orWhereHas('allowedRole', fn (Builder $allowedRoleQuery) => $allowedRoleQuery->where('slug', $roleSlug))
             ));
     }
 
     protected function applyVisibleJenisSuratFilter($query, $user): void
     {
-        $user->loadMissing('role');
-
-        $roleId = $user->role?->id;
+        $roleSlug = $user->userTypeSlug();
 
         $query->where('is_active', true)
             ->where('alur_pengajuan', 'submission')
@@ -271,9 +265,14 @@ class SubmissionController extends Controller
                         ->where('surat_templates.is_active', true);
                 })
             )
-            ->when($roleId !== null, fn ($q) => $q->where(function ($roleQuery) use ($roleId) {
+            ->when($roleSlug !== '', fn ($q) => $q->where(function ($roleQuery) use ($roleSlug) {
                 $roleQuery->whereNull('allowed_role_id')
-                    ->orWhere('allowed_role_id', $roleId);
+                    ->orWhereExists(function ($exists) use ($roleSlug): void {
+                        $exists->selectRaw('1')
+                            ->from('roles')
+                            ->whereColumn('roles.id', 'jenis_surats.allowed_role_id')
+                            ->where('roles.slug', $roleSlug);
+                    });
             }));
     }
 

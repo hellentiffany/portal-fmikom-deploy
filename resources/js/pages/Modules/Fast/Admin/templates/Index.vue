@@ -108,6 +108,13 @@ type SuratKomponen =
           margin_left?: number;
       }
     | {
+          type: 'tabel_biasa';
+          headers: string[];
+          rows: Array<{ cells: string[] }>;
+          font_size?: string;
+          margin_left?: number;
+      }
+    | {
           type: 'tabel_indent';
           rows: Array<{ label: string; nilai: string; __auto_nilai?: boolean }>;
           indent?: number;
@@ -163,8 +170,13 @@ type JenisSuratItem = {
     id: number;
     nama: string;
     is_active: boolean;
-    category?: any;
+    category?: { id?: number | null; nama?: string | null } | null;
     template?: { id: number; name: string; version: number } | null;
+};
+type RoleRef = {
+    id?: number | null;
+    nama?: string | null;
+    slug?: string | null;
 };
 type JenisSurat = {
     id: number;
@@ -175,9 +187,9 @@ type JenisSurat = {
     deskripsi?: string | null;
     is_active: boolean;
     perlu_approval: boolean;
-    category?: any;
-    allowed_role?: any;
-    approval_role?: any;
+    category?: { id?: number | null; nama?: string | null } | null;
+    allowed_role?: RoleRef | null;
+    approval_role?: RoleRef | null;
     field_config: FieldConfig[];
     template?: Template | null;
 };
@@ -288,6 +300,33 @@ function cloneKomponen(items?: SuratKomponen[]) {
 function prepareKomponenForUi(items?: SuratKomponen[]) {
     return cloneKomponen(items).map((item) => {
         if (!item || typeof item !== 'object') return item;
+        if (item.type === 'tabel_biasa') {
+            const headers = Array.isArray((item as any).headers)
+                ? (item as any).headers.filter((header: unknown) => String(header ?? '').trim() !== '')
+                : [];
+            const rows = Array.isArray((item as any).rows) ? (item as any).rows : [];
+            const normalizedHeaders = headers.length > 0 ? headers : ['Kolom 1', 'Kolom 2'];
+
+            return {
+                ...item,
+                headers: normalizedHeaders,
+                rows: rows.length > 0
+                    ? rows.map((row: any) => {
+                          const cells = Array.isArray(row?.cells) ? row.cells : [];
+                          return {
+                              ...row,
+                              cells: normalizedHeaders.map((_: string, index: number) =>
+                                  String(cells[index] ?? ''),
+                              ),
+                          };
+                      })
+                    : [
+                          { cells: normalizedHeaders.map(() => '') },
+                          { cells: normalizedHeaders.map(() => '') },
+                      ],
+            } as SuratKomponen;
+        }
+
         if (!('rows' in item) || !Array.isArray((item as any).rows)) return item;
 
         return {
@@ -319,9 +358,9 @@ function createFormState(source: JenisSurat | null) {
         template_footer: source?.template?.template_footer ?? '',
         field_config: prepareFieldConfigForUi(source?.field_config ?? []),
         kode_klasifikasi: source?.kode_klasifikasi ?? '',
-        category_id: (source?.category?.id ?? '') as any,
-        approval_role_id: (source?.approval_role?.id ?? '') as any,
-        allowed_role_id: (source?.allowed_role?.id ?? '') as any,
+        category_id: source?.category?.id ?? '',
+        approval_role_id: source?.approval_role?.id ?? '',
+        allowed_role_id: source?.allowed_role?.id ?? '',
         perlu_approval: source?.perlu_approval ?? false,
         is_active: source?.is_active ?? true,
     };
@@ -461,6 +500,17 @@ function createKomponenDefaults(type: SuratKomponen['type']): SuratKomponen {
             };
         case 'tabel_data':
             return { type, rows: [{ label: 'Label', nilai: 'Nilai' }], margin_left: 0, font_size: '12pt' };
+        case 'tabel_biasa':
+            return {
+                type,
+                headers: ['Kolom 1', 'Kolom 2'],
+                rows: [
+                    { cells: ['Isi 1', 'Isi 2'] },
+                    { cells: ['Isi 3', 'Isi 4'] },
+                ],
+                margin_left: 0,
+                font_size: '12pt',
+            };
         case 'tabel_indent':
             return { type, rows: [{ label: 'Label', nilai: 'Nilai' }], indent: 0, margin_left: 0, font_size: '12pt' };
         case 'tanda_tangan':
@@ -518,6 +568,76 @@ function removePenerima(komp: any, index: number) {
 function addRow(komp: any) {
     komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
     komp.rows.push({ label: '', nilai: '', __auto_nilai: true });
+}
+function addTableRow(komp: any) {
+    komp.headers = Array.isArray(komp.headers) ? komp.headers : [];
+    komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
+    komp.rows.push({
+        cells: Array.from({ length: komp.headers.length }, () => ''),
+    });
+}
+function addTableColumn(komp: any) {
+    komp.headers = Array.isArray(komp.headers) ? komp.headers : [];
+    komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
+    komp.headers.push(`Kolom ${komp.headers.length + 1}`);
+    komp.rows.forEach((row: any) => {
+        row.cells = Array.isArray(row.cells) ? row.cells : [];
+        row.cells.push('');
+    });
+}
+function removeTableColumn(komp: any, index: number) {
+    komp.headers = Array.isArray(komp.headers) ? komp.headers : [];
+    komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
+    komp.headers.splice(index, 1);
+    komp.rows.forEach((row: any) => {
+        row.cells = Array.isArray(row.cells) ? row.cells : [];
+        row.cells.splice(index, 1);
+    });
+}
+function removeTableRow(komp: any, index: number) {
+    komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
+    komp.rows.splice(index, 1);
+}
+function resizeTableHeaders(komp: any, nextCount: number) {
+    const count = Math.max(1, Number.isFinite(nextCount) ? Math.floor(nextCount) : 1);
+    const headers = Array.isArray(komp.headers) ? komp.headers : [];
+    const rows = Array.isArray(komp.rows) ? komp.rows : [];
+
+    while (headers.length < count) {
+        headers.push(`Kolom ${headers.length + 1}`);
+    }
+
+    if (headers.length > count) {
+        headers.splice(count);
+    }
+
+    rows.forEach((row: any) => {
+        row.cells = Array.isArray(row.cells) ? row.cells : [];
+        while (row.cells.length < count) {
+            row.cells.push('');
+        }
+        if (row.cells.length > count) {
+            row.cells.splice(count);
+        }
+    });
+
+    komp.headers = headers;
+    komp.rows = rows;
+}
+function resizeTableRows(komp: any, nextCount: number) {
+    const count = Math.max(1, Number.isFinite(nextCount) ? Math.floor(nextCount) : 1);
+    komp.headers = Array.isArray(komp.headers) ? komp.headers : ['Kolom 1', 'Kolom 2'];
+    komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
+
+    while (komp.rows.length < count) {
+        komp.rows.push({
+            cells: Array.from({ length: komp.headers.length }, () => ''),
+        });
+    }
+
+    if (komp.rows.length > count) {
+        komp.rows.splice(count);
+    }
 }
 function removeRow(komp: any, index: number) {
     komp.rows = Array.isArray(komp.rows) ? komp.rows : [];
@@ -669,6 +789,7 @@ const tipeLabel: Record<string, string> = {
     header_surat: 'Header Surat (No/Lamp/Perihal)',
     kepada_yth: 'Kepada Yth.',
     tabel_data: 'Tabel Data',
+    tabel_biasa: 'Tabel Biasa',
     tabel_indent: 'Tabel Indent',
     tanda_tangan: 'Tanda Tangan',
     tembusan: 'Tembusan',
@@ -683,6 +804,7 @@ const tipeBorder: Record<string, string> = {
     header_surat: 'border-purple-200 bg-purple-50',
     kepada_yth: 'border-cyan-200 bg-cyan-50',
     tabel_data: 'border-blue-200 bg-blue-50',
+    tabel_biasa: 'border-blue-300 bg-white',
     tabel_indent: 'border-blue-100 bg-blue-50/50',
     tanda_tangan: 'border-amber-200 bg-amber-50',
     tembusan: 'border-slate-200 bg-slate-50',
@@ -692,7 +814,7 @@ const tipeBorder: Record<string, string> = {
 const tipeGroups = [
     { label: 'Struktur Surat', items: ['header_surat', 'kepada_yth'] },
     { label: 'Teks', items: ['judul', 'subjudul', 'paragraf'] },
-    { label: 'Tabel', items: ['tabel_data'] },
+    { label: 'Tabel', items: ['tabel_data', 'tabel_biasa'] },
     { label: 'Lainnya', items: ['tanda_tangan', 'tembusan', 'spasi', 'garis'] },
 ];
 // layout: form.layout,         layout: layout,     }, { preserveScroll: true }); }
@@ -722,10 +844,10 @@ const addForm = useForm({
     nama: '',
     kode_surat: '',
     kode_klasifikasi: '',
-    category_id: '' as any,
+    category_id: '' as number | '',
     deskripsi: '',
-    allowed_role_id: '' as any,
-    approval_role_id: '' as any,
+    allowed_role_id: '' as number | '',
+    approval_role_id: '' as number | '',
     perlu_approval: false,
     is_active: true,
 });
@@ -1174,19 +1296,17 @@ function settingLabel(key: string): string {
                                 {{ tipeLabel[tipe] }}
                             </button>
                         </div>
-                        <div class="ml-auto flex items-center gap-2">
-                            <button
-                                type="button"
-                                class="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-100"
-                                @click="addCenteredNomorPreset"
-                            >
-                                Preset Nomor Tengah
-                            </button>
-                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-1">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button
+                            type="button"
+                            class="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                            @click="addCenteredNomorPreset"
+                        >
+                            Preset Nomor Tengah
+                        </button>
                         <span
-                            class="mr-1 self-center text-[10px] text-slate-400"
+                            class="ml-1 text-[10px] text-slate-400"
                             >Placeholder:</span
                         >
                         <code
@@ -1599,6 +1719,96 @@ function settingLabel(key: string): string {
                                     +{{ p.label }}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                    <!-- TABEL BIASA -->
+                    <div
+                        v-else-if="komp.type === 'tabel_biasa'"
+                        class="space-y-3"
+                    >
+                        <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                            <label class="flex items-center gap-2">
+                                <span class="text-[10px] font-medium text-slate-500">Kolom</span>
+                                <input
+                                    :value="(komp as any).headers?.length ?? 2"
+                                    type="number"
+                                    min="1"
+                                    max="8"
+                                    class="h-8 w-18 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-blue-400"
+                                    @input="resizeTableHeaders(komp, Number(($event.target as HTMLInputElement).value))"
+                                />
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <span class="text-[10px] font-medium text-slate-500">Baris</span>
+                                <input
+                                    :value="(komp as any).rows?.length ?? 2"
+                                    type="number"
+                                    min="1"
+                                    max="12"
+                                    class="h-8 w-18 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-blue-400"
+                                    @input="resizeTableRows(komp, Number(($event.target as HTMLInputElement).value))"
+                                />
+                            </label>
+                            <p class="text-[10px] text-slate-400">
+                                Ubah ukuran tabel dari sini, lalu isi sel langsung di bawah.
+                            </p>
+                        </div>
+                        <div
+                            class="overflow-hidden rounded-2xl border border-slate-300 bg-white"
+                        >
+                            <div
+                                class="grid bg-slate-100 text-[10px] font-medium text-slate-600"
+                                :style="{
+                                    gridTemplateColumns: `repeat(${Math.max((komp as any).headers?.length ?? 0, 1)}, minmax(0, 1fr))`,
+                                }"
+                            >
+                                <div
+                                    v-for="(header, hi) in (komp as any).headers"
+                                    :key="hi"
+                                    class="border-r border-slate-300 px-3 py-2 last:border-r-0"
+                                >
+                                    <input
+                                        v-model="(komp as any).headers[hi]"
+                                        type="text"
+                                        class="h-8 w-full border-0 bg-transparent px-0 text-[11px] font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+                                        placeholder="Kolom"
+                                    >
+                                </div>
+                            </div>
+                            <div class="divide-y divide-slate-200">
+                                <div
+                                    v-for="(row, ri) in (komp as any).rows"
+                                    :key="ri"
+                                    class="grid items-stretch"
+                                    :style="{
+                                        gridTemplateColumns: `repeat(${Math.max((komp as any).headers?.length ?? 0, 1)}, minmax(0, 1fr))`,
+                                    }"
+                                >
+                                    <div
+                                        v-for="(cell, ci) in (row.cells ?? [])"
+                                        :key="ci"
+                                        class="border-r border-slate-200 p-2 last:border-r-0"
+                                    >
+                                        <input
+                                            v-model="row.cells[ci]"
+                                            type="text"
+                                            class="h-9 w-full border-0 bg-transparent px-0 text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                                            placeholder="Isi sel"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="shrink-0 text-[10px] text-slate-400">Indent kiri:</span>
+                            <input
+                                v-model.number="(komp as any).margin_left"
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                class="h-6 w-16 rounded-lg border border-slate-200 bg-white px-1.5 text-[10px] text-slate-700 outline-none"
+                            />
+                            <span class="text-[10px] text-slate-400">px</span>
                         </div>
                     </div>
                     <!-- TABEL DATA / TABEL INDENT -->

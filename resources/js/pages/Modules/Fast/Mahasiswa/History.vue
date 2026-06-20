@@ -27,6 +27,7 @@ type Surat = {
         nama?: string | null;
         slug?: string | null;
     } | null;
+    approval_role_slug?: string | null;
     requiresFinalApproval?: boolean;
     status: string;
     keperluan: string;
@@ -56,10 +57,9 @@ const props = defineProps<{
         per_page: number;
     };
     filters: { search?: string; status?: string };
-    userRole?: {
-        id?: number | null;
-        name?: string | null;
-        slug?: string | null;
+    userType?: {
+        value?: string | null;
+        label?: string | null;
     };
     endpoints?: { basePath: string };
 }>();

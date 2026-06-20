@@ -1,8 +1,6 @@
 <?php
 
 use App\Models\JenisSurat;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -31,12 +29,7 @@ function createSubmissionTemplate(JenisSurat $jenisSurat): void
 test('mahasiswa and dosen can view ajukan surat page', function (string $roleName, string $roleSlug, string $identifierLabel) {
     $this->withoutVite();
 
-    $role = Role::create([
-        'nama' => $roleName,
-        'slug' => $roleSlug,
-    ]);
-    $user = User::factory()->create([
-        'role_id' => $role->id,
+    $user = createUserWithType($roleSlug, [
         'nim_nip' => '2109012344',
         'name' => 'Adrian Muhammad',
     ]);
@@ -47,7 +40,7 @@ test('mahasiswa and dosen can view ajukan surat page', function (string $roleNam
         ->assertInertia(fn (Assert $page) => $page
             ->component('fast/user/Dashboard')
             ->where('userProfile.name', 'Adrian Muhammad')
-            ->where('userRole.name', $roleName)
+            ->where('userType.label', $roleName)
             ->where('userProfile.identifierLabel', $identifierLabel)
             ->where('summary.total', 0)
         );
@@ -57,13 +50,7 @@ test('mahasiswa and dosen can view ajukan surat page', function (string $roleNam
 ]);
 
 test('role outside mahasiswa and dosen cannot access ajukan surat page', function () {
-    $role = Role::create([
-        'nama' => 'Administrasi Akademik',
-        'slug' => 'administrasi',
-    ]);
-    $user = User::factory()->create([
-        'role_id' => $role->id,
-    ]);
+    $user = createUserWithType('administrasi');
 
     $this->actingAs($user)
         ->get(route('fast.user.dashboard'), ['Accept' => 'application/json'])
@@ -73,12 +60,7 @@ test('role outside mahasiswa and dosen cannot access ajukan surat page', functio
 test('academic user can submit surat with png attachment', function () {
     Storage::fake('public');
 
-    $userRole = Role::create([
-        'nama' => 'Dosen',
-        'slug' => 'dosen',
-    ]);
-    $user = User::factory()->create([
-        'role_id' => $userRole->id,
+    $user = createUserWithType('dosen', [
         'name' => 'Rina Pratama',
         'nim_nip' => '1987001122',
     ]);
@@ -124,13 +106,7 @@ test('academic user can submit surat with png attachment', function () {
 test('ajukan surat validates invalid attachment format', function () {
     Storage::fake('public');
 
-    $role = Role::create([
-        'nama' => 'Mahasiswa',
-        'slug' => 'mahasiswa',
-    ]);
-    $user = User::factory()->create([
-        'role_id' => $role->id,
-    ]);
+    $user = createUserWithType('mahasiswa');
 
     $jenisSurat = JenisSurat::create([
         'nama' => 'Surat Keterangan Aktif Kuliah',
@@ -155,13 +131,7 @@ test('approved surat can be downloaded by owner', function () {
     Storage::fake('public');
     Storage::disk('public')->put('test.pdf', 'PDF contents');
 
-    $role = Role::create([
-        'nama' => 'Mahasiswa',
-        'slug' => 'mahasiswa',
-    ]);
-    $user = User::factory()->create([
-        'role_id' => $role->id,
-    ]);
+    $user = createUserWithType('mahasiswa');
 
     $suratId = DB::table('surats')->insertGetId([
         'jenis_surat_id' => DB::table('jenis_surats')->insertGetId([

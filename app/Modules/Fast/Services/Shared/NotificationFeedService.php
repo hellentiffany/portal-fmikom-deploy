@@ -16,9 +16,7 @@ class NotificationFeedService
      */
     public function build(User $user): array
     {
-        $user->loadMissing('role');
-
-        $roleSlug = Str::slug((string) ($user->role?->slug ?? ''));
+        $roleSlug = Str::slug((string) $user->userTypeSlug());
         $items = match (true) {
             $roleSlug === 'admin' => $this->adminItems($user),
             in_array($roleSlug, ['kaprodi', 'dekan'], true) => $this->approverItems($user, $roleSlug),

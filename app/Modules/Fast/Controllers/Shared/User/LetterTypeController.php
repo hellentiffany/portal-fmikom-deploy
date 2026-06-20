@@ -31,15 +31,15 @@ class LetterTypeController extends Controller
 
     protected function canAccessJenisSurat($user, JenisSurat $jenisSurat): bool
     {
-        $user->loadMissing('role');
+        $roleSlug = $user->userTypeSlug();
 
-        $roleId = $user->role?->id;
-
-        if ($roleId === null) {
+        if ($roleSlug === '') {
             return false;
         }
 
-        return $jenisSurat->allowed_role_id === null || (int) $jenisSurat->allowed_role_id === (int) $roleId;
+        return $jenisSurat->allowed_role_id === null
+            || $jenisSurat->allowedRole?->slug === $roleSlug
+            || (string) $jenisSurat->allowedRole?->slug === $roleSlug;
     }
 
 }

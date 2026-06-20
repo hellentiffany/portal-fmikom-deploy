@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
+// LEGACY-ONLY: cleanup role slug lama dari fase awal bootstrap aplikasi.
+// Tidak dipakai sebagai skema aktif setelah sumber identitas pindah ke user_type.
 return new class extends Migration
 {
     /**

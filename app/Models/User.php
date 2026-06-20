@@ -26,7 +26,6 @@ class User extends Authenticatable
         'user_type',
         'email',
         'password',
-        'role_id',
         'program_studi_id',
         'nim_nip',
         'nomor_induk',
@@ -84,21 +83,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @return BelongsTo<Role, $this>
-     */
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class)->withDefault(function (Role $role): void {
-            $roleSlug = $this->normalizedUserType((string) ($this->getAttribute('user_type') ?? ''));
-            $fallbackSlug = $roleSlug !== '' ? $roleSlug : 'mahasiswa';
-            $role->forceFill([
-                'slug' => $fallbackSlug,
-                'nama' => $this->role_title ?: $this->displayRoleTitle($fallbackSlug),
-            ]);
-        });
-    }
-
-    /**
      * @return BelongsTo<ProgramStudi, $this>
      */
     public function programStudi(): BelongsTo
@@ -112,23 +96,31 @@ class User extends Authenticatable
             || $this->isDosen();
     }
 
-    public function roleSlug(): string
+    public function userTypeSlug(): string
     {
-        $this->loadMissing('role');
-
-        $slug = $this->normalizedUserType((string) $this->role?->slug);
-
-        if ($slug !== '') {
-            return $slug;
-        }
-
         $userType = $this->normalizedUserType((string) ($this->user_type ?? ''));
 
         if ($userType !== '') {
             return $userType;
         }
 
-        return $this->normalizedUserType((string) $this->role?->nama);
+        return 'mahasiswa';
+    }
+
+    public function roleDisplayName(): string
+    {
+        $roleTitle = trim((string) ($this->role_title ?? ''));
+
+        if ($roleTitle !== '') {
+            return $roleTitle;
+        }
+
+        return $this->displayRoleTitle($this->userTypeSlug());
+    }
+
+    public function roleSlug(): string
+    {
+        return $this->userTypeSlug();
     }
 
     public function hasRole(string ...$roles): bool

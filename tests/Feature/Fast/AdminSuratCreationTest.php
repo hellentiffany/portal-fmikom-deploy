@@ -71,8 +71,7 @@ test('admin can open create surat page and preview outgoing letter with dynamic 
         'slug' => 'dekan',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin FAST',
     ]);
 
@@ -150,8 +149,7 @@ test('admin can store outgoing surat without approval and pdf is generated immed
         'slug' => 'dekan',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin FAST',
     ]);
 
@@ -231,8 +229,7 @@ test('admin outgoing preview and store use the same manual surat data contract f
         'slug' => 'dekan',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin FAST',
     ]);
 
@@ -410,8 +407,7 @@ test('admin rejected surat edit uses the same manual surat contract fields', fun
         'slug' => 'dekan',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin FAST',
     ]);
 
@@ -582,8 +578,7 @@ test('manual surat contract stays consistent across template update create previ
         'slug' => 'dekan',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin FAST',
     ]);
 
@@ -900,13 +895,11 @@ test('admin preview can render distinct signer and student names for surat keter
         'slug' => 'dekan',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin FAST',
     ]);
 
-    $dekan = User::factory()->create([
-        'role_id' => $dekanRole->id,
+    $dekan = createUserWithType($dekanRole->slug, [
         'name' => 'Thomas Alva',
         'nim_nip' => '87654321',
         'nomor_induk' => '87654321',
@@ -1047,3 +1040,5 @@ test('component renderer can place nomor surat under centered title without head
     expect($html)->toContain('text-align: center');
     expect($html)->toContain('text-decoration: underline');
 });
+
+

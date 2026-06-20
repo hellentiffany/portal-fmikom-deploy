@@ -60,12 +60,10 @@ test('approval action writes approval flow and updates current surat status', fu
         'slug' => 'mahasiswa',
     ]);
 
-    $approver = User::factory()->create([
-        'role_id' => $approverRole->id,
+    $approver = createUserWithType($approverRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -120,12 +118,10 @@ test('admin validation prepares draft and nomor surat before final approver revi
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
         'name' => 'Nadia Putri',
     ]);
 
@@ -173,12 +169,10 @@ test('admin approval can finish surat immediately when no final approval role is
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -234,8 +228,7 @@ test('only configured final approval role can approve validated surat', function
         'slug' => 'mahasiswa',
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -270,13 +263,11 @@ test('user dashboard returns rejection reason from latest rejected approval flow
         'slug' => 'administrasi',
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
         'name' => 'Fanny',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -309,7 +300,7 @@ test('user dashboard returns rejection reason from latest rejected approval flow
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('fast/user/Dashboard')
-            ->where('userRole.name', 'Mahasiswa')
+            ->where('userType.label', 'Mahasiswa')
             ->where('userProfile.identifierLabel', 'NIM')
             ->where('latest.0.status', Surat::STATUS_REJECTED_ADMIN)
             ->where('latest.0.rejectionReason', 'Dokumen pendukung belum lengkap.'));
@@ -323,8 +314,7 @@ test('dosen dashboard uses the same page with lecturer specific profile metadata
         'slug' => 'dosen',
     ]);
 
-    $dosen = User::factory()->create([
-        'role_id' => $dosenRole->id,
+    $dosen = createUserWithType($dosenRole->slug, [
         'name' => 'Rina Pratama',
         'nim_nip' => '1987001122',
     ]);
@@ -334,7 +324,7 @@ test('dosen dashboard uses the same page with lecturer specific profile metadata
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('fast/user/Dashboard')
-            ->where('userRole.name', 'Dosen')
+            ->where('userType.label', 'Dosen')
             ->where('userProfile.identifierLabel', 'NIP')
             ->where('userProfile.identifierValue', '1987001122'));
 });
@@ -352,12 +342,10 @@ test('admin dashboard only shows pending user submissions in the widget', functi
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Fanny',
     ]);
 
@@ -408,13 +396,11 @@ test('pengajuan masuk shows pending and approver revision submissions only', fun
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin',
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Hellen Tiffani',
     ]);
 
@@ -501,18 +487,15 @@ test('admin detail surat exposes explicit rejection and revision labels', functi
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
         'name' => 'Admin',
     ]);
 
-    $kaprodi = User::factory()->create([
-        'role_id' => $kaprodiRole->id,
+    $kaprodi = createUserWithType($kaprodiRole->slug, [
         'name' => 'Bill Gates',
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Hellen Tiffani',
     ]);
 
@@ -586,18 +569,15 @@ test('riwayat surat keluar only shows non final admin outgoing letters', functio
         'slug' => 'mahasiswa',
     ]);
 
-    $adminA = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $adminA = createUserWithType($adminRole->slug, [
         'name' => 'Admin A',
     ]);
 
-    $adminB = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $adminB = createUserWithType($adminRole->slug, [
         'name' => 'Admin B',
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Mahasiswa',
     ]);
 
@@ -655,12 +635,10 @@ test('arsip surat only shows finished final documents from submissions and outgo
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Hellen Tiffani',
     ]);
 
@@ -731,12 +709,10 @@ test('approval dashboard shows only validated surat for the signed in approval r
         'slug' => 'mahasiswa',
     ]);
 
-    $kaprodi = User::factory()->create([
-        'role_id' => $kaprodiRole->id,
+    $kaprodi = createUserWithType($kaprodiRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Fanny',
     ]);
 
@@ -804,16 +780,13 @@ test('approver can fetch draft preview metadata for validated surat', function (
         'slug' => 'mahasiswa',
     ]);
 
-    $kaprodi = User::factory()->create([
-        'role_id' => $kaprodiRole->id,
+    $kaprodi = createUserWithType($kaprodiRole->slug, [
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Rizky Mahendra',
     ]);
 
@@ -860,12 +833,10 @@ test('kaprodi can approve validated surat from approval dashboard', function () 
         'slug' => 'mahasiswa',
     ]);
 
-    $kaprodi = User::factory()->create([
-        'role_id' => $kaprodiRole->id,
+    $kaprodi = createUserWithType($kaprodiRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -910,8 +881,7 @@ test('final rendered surat uses approver account as signer placeholder source', 
         'slug' => 'mahasiswa',
     ]);
 
-    $dekan = User::factory()->create([
-        'role_id' => $dekanRole->id,
+    $dekan = createUserWithType($dekanRole->slug, [
         'name' => 'Thomas Alva',
         'nim_nip' => '87654321',
         'nomor_induk' => '87654321',
@@ -919,8 +889,7 @@ test('final rendered surat uses approver account as signer placeholder source', 
         'is_active' => true,
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Hellen Tiffani',
         'nim_nip' => '22EO10001',
         'nomor_induk' => '22EO10001',
@@ -978,12 +947,10 @@ test('approver revision request uses revision_requested status and stores revisi
         'slug' => 'mahasiswa',
     ]);
 
-    $kaprodi = User::factory()->create([
-        'role_id' => $kaprodiRole->id,
+    $kaprodi = createUserWithType($kaprodiRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -1039,12 +1006,10 @@ test('admin rejection remains final rejection without revision metadata', functi
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -1096,12 +1061,10 @@ test('admin can resend approver revision to validated admin while preserving app
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
         'name' => 'Putra Mahesa',
     ]);
 
@@ -1170,12 +1133,10 @@ test('admin can resend legacy approver revision without validated_by_admin colum
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
         'name' => 'Legacy Mahasiswa',
     ]);
 
@@ -1252,12 +1213,10 @@ test('admin update revisi redirects to surat detail after resend', function () {
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -1323,12 +1282,10 @@ test('admin can resend approver revision when text fields contain numeric-lookin
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $pemohonRole->id,
+    $pemohon = createUserWithType($pemohonRole->slug, [
         'name' => 'Hellen Tiffani',
     ]);
 
@@ -1430,12 +1387,10 @@ test('admin can preview rendered template for a surat', function () {
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Rina Pratama',
     ]);
 
@@ -1470,8 +1425,7 @@ test('admin can manage active template per jenis surat', function () {
         'slug' => 'admin',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
     $jenisSurat = JenisSurat::create([
@@ -1504,12 +1458,10 @@ test('admin can update active template and preview generated pdf document', func
         'slug' => 'mahasiswa',
     ]);
 
-    $admin = User::factory()->create([
-        'role_id' => $adminRole->id,
+    $admin = createUserWithType($adminRole->slug, [
     ]);
 
-    $pemohon = User::factory()->create([
-        'role_id' => $mahasiswaRole->id,
+    $pemohon = createUserWithType($mahasiswaRole->slug, [
         'name' => 'Dian Larasati',
     ]);
 
@@ -1559,3 +1511,5 @@ test('admin can update active template and preview generated pdf document', func
         ->assertOk()
         ->assertHeader('content-type', 'application/pdf');
 });
+
+

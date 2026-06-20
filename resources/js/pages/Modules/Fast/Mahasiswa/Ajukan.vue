@@ -60,10 +60,9 @@ const props = defineProps<{
     categories: CategoryOption[];
     jenisSurats: JenisSuratOption[];
     selectedJenisId?: number | null;
-    userRole?: {
-        id?: number | null;
-        name?: string | null;
-        slug?: string | null;
+    userType?: {
+        value?: string | null;
+        label?: string | null;
     };
     endpoints?: { basePath: string };
 }>();

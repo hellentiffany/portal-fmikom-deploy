@@ -24,7 +24,8 @@ type PageProps = {
         user?: {
             name?: string;
             email?: string;
-            role?: { nama?: string; slug?: string };
+            role_title?: string | null;
+            user_type?: string | null;
         };
     };
     flash?: { success?: string; error?: string; warning?: string };
@@ -64,8 +65,8 @@ const profileMenuOpen = ref(false);
 
 const user = computed(() => page.props.auth?.user);
 const userName = computed(() => user.value?.name ?? 'Pengguna');
-const userRole = computed(() => user.value?.role?.nama ?? 'Mahasiswa');
-const userSlug = computed(() => user.value?.role?.slug ?? 'mahasiswa');
+const userRole = computed(() => user.value?.role_title ?? 'Mahasiswa');
+const userSlug = computed(() => user.value?.user_type ?? 'mahasiswa');
 const routePrefix = computed(() => {
     const slug = userSlug.value;
     if (slug.includes('dosen') || slug === 'lecturer') return 'dosen';

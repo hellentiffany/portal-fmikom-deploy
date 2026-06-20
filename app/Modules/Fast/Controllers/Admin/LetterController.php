@@ -121,7 +121,7 @@ class LetterController extends Controller
             $jenisSurat,
             $previewData,
             [
-                'approval_role_slug' => $jenisSurat->approvalRole?->slug,
+                'approval_role_slug' => $this->approvalRoleSlug($jenisSurat),
                 'tanggal_surat' => now(),
                 'kota_surat' => \DB::table('template_global_settings')->where('key', 'kota_surat')->value('value') ?? 'Cilacap',    
                 'pemohon_program_studi_id' => $user?->program_studi_id,
@@ -306,6 +306,7 @@ class LetterController extends Controller
             'nama' => $jenisSurat->nama,
             'slug' => $jenisSurat->slug,
             'deskripsi' => $jenisSurat->deskripsi,
+            'approval_role_slug' => $this->approvalRoleSlug($jenisSurat),
             'approval_role' => [
                 'id' => $jenisSurat->approvalRole?->id,
                 'nama' => $jenisSurat->approvalRole?->nama,
@@ -325,6 +326,11 @@ class LetterController extends Controller
                 ->values()
                 ->all(),
         ];
+    }
+
+    protected function approvalRoleSlug(JenisSurat $jenisSurat): ?string
+    {
+        return $jenisSurat->approvalRole?->slug;
     }
 
     /**

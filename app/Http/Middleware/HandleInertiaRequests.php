@@ -37,9 +37,9 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $user = $request->user()?->loadMissing('role');
+        $user = $request->user();
         $notifications = $user ? app(NotificationFeedService::class)->build($user) : ['count' => 0, 'items' => []];
-        $roleSlug = str((string) ($user?->role?->slug ?? ''))->slug()->toString();
+        $roleSlug = $user?->userTypeSlug() ?? '';
 
         $navCounts = [
             'admin_queue' => 0,
@@ -86,7 +86,7 @@ class HandleInertiaRequests extends Middleware
                     return 0;
                 }
 
-                $roleSlug = str((string) ($user->role?->slug ?? ''))->slug()->toString();
+                $roleSlug = $user->userTypeSlug();
 
                 if (! in_array($roleSlug, ['admin'], true)) {
                     return 0;

@@ -58,6 +58,7 @@ type LatestSubmission = {
         nama?: string | null;
         slug?: string | null;
     } | null;
+    approval_role_slug?: string | null;
     requiresFinalApproval?: boolean;
     status: string;
     keperluan: string;
@@ -117,10 +118,9 @@ const props = defineProps<{
     latest: LatestSubmission[];
     categories: SuratCategoryOption[];
     jenisSurats: JenisSuratOption[];
-    userRole: {
-        id?: number | null;
-        name?: string | null;
-        slug?: string | null;
+    userType: {
+        value?: string | null;
+        label?: string | null;
     };
     userProfile: {
         name?: string | null;
@@ -402,7 +402,7 @@ const firstName = computed(
     () => String(page.props.auth?.user?.name ?? 'Pengguna').split(' ')[0],
 );
 const roleSlug = computed(() =>
-    String(props.userRole.slug ?? '').toLowerCase(),
+    String(props.userType.value ?? '').toLowerCase(),
 );
 const dashboardGreeting = computed(() => {
     return firstName.value;

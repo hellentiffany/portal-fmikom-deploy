@@ -3,6 +3,8 @@ export type User = {
     name: string;
     email: string;
     avatar?: string;
+    role_title?: string | null;
+    user_type?: string | null;
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;

@@ -51,6 +51,17 @@ class UserFactory extends Factory
         ];
     }
 
+    public function configure(): static
+    {
+        return $this->afterMaking(function (User $user): void {
+            $userType = trim((string) ($user->user_type ?? ''));
+            $roleTitle = trim((string) ($user->role_title ?? ''));
+
+            $user->user_type = $userType !== '' ? $userType : 'mahasiswa';
+            $user->role_title = $roleTitle !== '' ? $roleTitle : 'Mahasiswa';
+        });
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */

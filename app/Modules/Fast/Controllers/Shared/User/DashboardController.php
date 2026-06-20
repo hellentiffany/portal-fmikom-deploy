@@ -19,11 +19,9 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         abort_if($user === null, 403);
-        $user->loadMissing('role');
 
-        $roleSlug = str((string) ($user->role?->slug ?? ''))->slug()->toString();
+        $roleSlug = $user->userTypeSlug();
         $isLecturer = str($roleSlug)->contains('dosen');
-        $roleId = $user->role?->id;
 
         $baseQuery = Surat::query()
             ->with([
@@ -111,10 +109,9 @@ class DashboardController extends Controller
                         ],
                     ))->values()->all(),
             ])->values(),
-            'userRole' => [
-                'id'   => $user->role?->id,
-                'name' => $user->role?->nama,
-                'slug' => $user->role?->slug,
+            'userType' => [
+                'value' => $roleSlug,
+                'label' => $user->roleDisplayName(),
             ],
             'userProfile' => [
                 'name'            => $user->name,
@@ -146,17 +143,15 @@ class DashboardController extends Controller
 
     protected function visibleSubmissionJenisSuratQuery($user): Builder
     {
-        $user->loadMissing('role');
-
-        $roleId = $user->role?->id;
+        $roleSlug = $user->userTypeSlug();
 
         return JenisSurat::query()
             ->where('is_active', true)
             ->where('alur_pengajuan', 'submission')
             ->whereHas('template')
-            ->when($roleId !== null, fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
+            ->when($roleSlug !== '', fn (Builder $query) => $query->where(fn (Builder $roleQuery) => $roleQuery
                 ->whereNull('allowed_role_id')
-                ->orWhere('allowed_role_id', $roleId)
+                ->orWhereHas('allowedRole', fn (Builder $allowedRoleQuery) => $allowedRoleQuery->where('slug', $roleSlug))
             ));
     }
 
@@ -180,6 +175,7 @@ class DashboardController extends Controller
                 'nama' => $surat->jenisSurat?->approvalRole?->nama,
                 'slug' => $surat->jenisSurat?->approvalRole?->slug,
             ],
+            'approval_role_slug' => $surat->jenisSurat?->approvalRole?->slug,
             'requiresFinalApproval' => $surat->requiresFinalApproval(),
             'status' => $surat->status,
             'keperluan' => $surat->keperluan,

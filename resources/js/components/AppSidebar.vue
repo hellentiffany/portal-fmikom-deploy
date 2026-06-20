@@ -21,10 +21,8 @@ import type { NavItem } from '@/types';
 type PageProps = {
     auth?: {
         user?: {
-            role?: {
-                slug?: string | null;
-                nama?: string | null;
-            } | null;
+            user_type?: string | null;
+            role_title?: string | null;
         } | null;
     };
 };
@@ -32,13 +30,13 @@ type PageProps = {
 const page = usePage<PageProps>();
 
 const roleSlug = computed(() => {
-    const slug = String(page.props.auth?.user?.role?.slug ?? '').trim().toLowerCase();
+    const slug = String(page.props.auth?.user?.user_type ?? '').trim().toLowerCase();
 
     if (slug !== '') {
         return slug;
     }
 
-    return String(page.props.auth?.user?.role?.nama ?? '').trim().toLowerCase();
+    return String(page.props.auth?.user?.role_title ?? '').trim().toLowerCase();
 });
 
 const mainNavItems = computed<NavItem[]>(() => {

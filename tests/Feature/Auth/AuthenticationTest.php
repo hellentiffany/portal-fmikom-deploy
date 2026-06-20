@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -24,14 +23,7 @@ test('users can authenticate using the login screen', function () {
 });
 
 test('login ignores stale intended admin history when switching accounts', function () {
-    $role = Role::create([
-        'nama' => 'Mahasiswa',
-        'slug' => 'mahasiswa',
-    ]);
-
-    $user = User::factory()->create([
-        'role_id' => $role->id,
-    ]);
+    $user = createUserWithType('mahasiswa');
 
     $response = $this
         ->withSession([
