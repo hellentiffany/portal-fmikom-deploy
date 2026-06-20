@@ -68,7 +68,7 @@ const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const expandedReasonId = ref<number | null>(null);
 const cancelConfirmId = ref<number | null>(null);
-// â”€â”€ [BARU] PDF Viewer state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PDF viewer state
 const viewerOpen = ref(false);
 const viewerUrl = ref<string | null>(null);
 const viewerTitle = ref('');
@@ -78,11 +78,11 @@ const viewerNomor = ref<string | null>(null);
 function openViewer(item: Surat, mode: 'preview' | 'download') {
     if (mode === 'preview') {
         viewerUrl.value = `/documents/surat/${item.id}/generated-document`;
-        viewerTitle.value = `Preview â€” ${item.jenisSurat}`;
+        viewerTitle.value = `Preview - ${item.jenisSurat}`;
         viewerType.value = 'html';
     } else {
         viewerUrl.value = `/documents/surat/${item.id}/pdf`;
-        viewerTitle.value = `${item.jenisSurat} â€” ${item.reference}`;
+        viewerTitle.value = `${item.jenisSurat} - ${item.reference}`;
         viewerType.value = 'pdf';
     }
     viewerStatus.value = item.status;
@@ -95,7 +95,7 @@ function closeViewer() {
         viewerUrl.value = null;
     }, 200);
 }
-// â”€â”€ [END BARU] â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// End PDF viewer state
 function statusLabel(status: string) {
     const map: Record<string, string> = {
         pending: 'Menunggu Validasi',
@@ -254,23 +254,20 @@ function goToPage(page: number) {
             { label: 'Riwayat Surat' },
         ]"
     >
-        <Head title="Riwayat Surat â€” FAST" />
-        <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Head title="Riwayat Surat - FAST" />
+        <section class="mb-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-2xl">
-                    <p class="text-[10px] font-semibold tracking-[0.2em] text-slate-400 uppercase">
-                        Filter surat
-                    </p>
-                    <h3 class="mt-1 text-lg font-semibold text-slate-900">
+                    <h3 class="mt-1 text-[22px] font-semibold leading-7 text-slate-900">
                         Temukan riwayat pengajuan dengan cepat
                     </h3>
-                    <p class="mt-1 text-sm text-slate-500">
+                    <p class="mt-2 text-sm leading-6 text-slate-500">
                         Gunakan pencarian untuk nama surat atau keperluan, lalu pilih status yang paling relevan.
                     </p>
                 </div>
             </div>
 
-            <div class="mt-4 space-y-3">
+            <div class="mt-5 space-y-3">
                 <div class="relative">
                     <Search
                         class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400"
@@ -279,7 +276,7 @@ function goToPage(page: number) {
                         v-model="search"
                         type="text"
                         placeholder="Cari riwayat surat, misalnya observasi atau cuti..."
-                        class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-0 pr-10 pl-10 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 py-0 pr-10 pl-10 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                         @keyup.enter="applyFilter"
                     />
                     <button
@@ -298,11 +295,11 @@ function goToPage(page: number) {
                 <div class="flex flex-wrap gap-2">
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
+                        class="inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold transition duration-200"
                         :class="
                             !status
                                 ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-600'
                         "
                         @click="
                             status = '';
@@ -313,11 +310,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
+                        class="inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'pending'
                                 ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-600'
                         "
                         @click="
                             status = 'pending';
@@ -328,11 +325,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
+                        class="inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'finished'
                                 ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-600'
                         "
                         @click="
                             status = 'finished';
@@ -343,11 +340,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
+                        class="inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'rejected_admin'
                                 ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-600'
                         "
                         @click="
                             status = 'rejected_admin';
@@ -358,11 +355,11 @@ function goToPage(page: number) {
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-200"
+                        class="inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold transition duration-200"
                         :class="
                             status === 'rejected_approver'
                                 ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-600'
                         "
                         @click="
                             status = 'rejected_approver';
@@ -378,11 +375,11 @@ function goToPage(page: number) {
         <!-- Timeline cards -->
         <div class="relative pl-8">
             <div
-                class="absolute top-3 bottom-3 left-[19px] w-px bg-slate-200"
+                class="absolute top-3 bottom-3 left-[19px] w-px bg-blue-100"
             />
             <div
                 v-if="surats.data.length === 0"
-                class="rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm"
+                class="rounded-[28px] border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm"
             >
                 <div class="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-300">
                     <Calendar class="size-8" />
@@ -406,24 +403,28 @@ function goToPage(page: number) {
                 >
                     <component
                         :is="statusIcon(item.status)"
-                        :class="['size-5', statusColor(item.status).text]"
+                        :class="['size-4.5', statusColor(item.status).text]"
                     />
                 </div>
                 <!-- Card -->
                 <div
-                    class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                    class="group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_14px_28px_rgba(59,130,246,0.10)]"
                     :class="[
                         item.status === 'finished'
-                            ? 'hover:border-blue-300'
+                            ? 'border-blue-200 hover:border-blue-300'
                             : item.status === 'rejected_admin' ||
                                 item.status === 'rejected_approver' ||
                                 item.status === 'cancelled'
-                              ? 'hover:border-red-300'
-                              : item.status.startsWith('approved')
-                                ? 'hover:border-sky-300'
-                                : 'hover:border-amber-300',
+                                ? 'border-red-200 hover:border-red-300'
+                                : item.status.startsWith('approved')
+                                ? 'border-emerald-200 hover:border-emerald-300'
+                                : 'border-amber-200 hover:border-amber-300',
                     ]"
                 >
+                    <div
+                        class="absolute top-0 right-0 left-0 h-1.5"
+                        :class="statusColor(item.status).line"
+                    />
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
@@ -491,14 +492,14 @@ function goToPage(page: number) {
                                 </p>
                                 <button
                                     type="button"
-                                    class="rounded bg-red-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-red-700"
+                                    class="fast-btn fast-btn-danger rounded-md px-2 py-1 text-[10px]"
                                     @click="cancelSurat(item.id)"
                                 >
                                     Ya
                                 </button>
                                 <button
                                     type="button"
-                                    class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600 hover:bg-slate-50"
+                                    class="fast-btn fast-btn-outline rounded-md px-2 py-1 text-[10px] font-medium"
                                     @click="cancelConfirmId = null"
                                 >
                                     Tidak
@@ -510,7 +511,7 @@ function goToPage(page: number) {
                             <Link
                                 :href="detailHref(item)"
                                 title="Detail Surat"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                class="fast-btn fast-btn-outline px-3 py-1.5 text-[10px] font-medium text-slate-600"
                             >
                                 <FileText class="size-3" /> Detail Surat
                             </Link>
@@ -518,7 +519,7 @@ function goToPage(page: number) {
                                 v-if="item.status === 'finished'"
                                 type="button"
                                 title="Download PDF"
-                                class="flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700"
+                                class="fast-btn fast-btn-primary px-3 py-1.5 text-[10px] font-medium"
                                 @click="openViewer(item, 'download')"
                             >
                                 <Download class="size-3" /> PDF
@@ -544,7 +545,7 @@ function goToPage(page: number) {
                                 v-if="item.status === 'pending'"
                                 type="button"
                                 title="Batalkan"
-                                class="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                class="fast-btn fast-btn-danger px-2.5 py-1.5 text-xs font-medium"
                                 @click="confirmCancel(item.id)"
                             >
                                 <X class="size-3.5" /> Batal
@@ -561,11 +562,11 @@ function goToPage(page: number) {
         >
             <button
                 type="button"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                class="fast-btn px-3 py-1.5 text-xs font-medium"
                 :class="
                     surats.current_page === 1
                         ? 'pointer-events-none bg-slate-100 text-slate-600 opacity-40'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'fast-btn-outline'
                 "
                 :disabled="surats.current_page === 1"
                 @click="goToPage(surats.current_page - 1)"
@@ -576,11 +577,11 @@ function goToPage(page: number) {
                 v-for="p in surats.last_page"
                 :key="p"
                 type="button"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                class="fast-btn px-3 py-1.5 text-xs font-medium"
                 :class="
                     p === surats.current_page
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'fast-btn-primary'
+                        : 'fast-btn-outline'
                 "
                 @click="goToPage(p)"
             >
@@ -588,11 +589,11 @@ function goToPage(page: number) {
             </button>
             <button
                 type="button"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                class="fast-btn px-3 py-1.5 text-xs font-medium"
                 :class="
                     surats.current_page === surats.last_page
                         ? 'pointer-events-none bg-slate-100 text-slate-600 opacity-40'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'fast-btn-outline'
                 "
                 :disabled="surats.current_page === surats.last_page"
                 @click="goToPage(surats.current_page + 1)"

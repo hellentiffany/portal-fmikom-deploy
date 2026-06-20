@@ -215,7 +215,7 @@ async function openDetail(id: number) {
                 </div>
                 <button
                     type="button"
-                    class="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                    class="fast-btn fast-btn-primary h-11 px-5 text-sm"
                     @click="applyFilters"
                 >
                     Terapkan
@@ -223,7 +223,7 @@ async function openDetail(id: number) {
                 <button
                     v-if="search || status || categoryId"
                     type="button"
-                    class="h-11 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+                    class="fast-btn fast-btn-outline h-11 px-5 text-sm font-medium text-slate-500"
                     @click="resetFilters"
                 >
                     Reset
@@ -399,11 +399,11 @@ async function openDetail(id: number) {
                 v-for="link in surats.links"
                 :key="link.label"
                 :href="link.url ?? '#'"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                    class="fast-btn px-3 py-1.5 text-xs font-medium"
                 :class="[
                     link.active
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                        ? 'fast-btn-primary'
+                        : 'fast-btn-outline',
                     !link.url ? 'pointer-events-none opacity-40' : '',
                 ]"
                 v-html="link.label"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/mahasiswa/Ajukan.vue
+// resources/js/pages/Modules/Fast/Mahasiswa/Ajukan.vue
 import FastLayout from '@/layouts/Modules/Fast/FastLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, nextTick, ref } from 'vue';
@@ -113,6 +113,7 @@ const summaryCards = computed(() => [
         value: props.jenisSurats.length,
         icon: BarChart3,
         tone: 'blue',
+        summary: 'Seluruh template surat yang bisa diajukan',
     },
     {
         key: 'diproses',
@@ -120,6 +121,7 @@ const summaryCards = computed(() => [
         value: props.summary?.diproses ?? 0,
         icon: Clock3,
         tone: 'amber',
+        summary: 'Pengajuan yang sedang berjalan',
     },
 ]);
 
@@ -141,44 +143,59 @@ function categoryTone(id?: number | null): {
     card: string;
     icon: string;
     dot: string;
+    accent: string;
+    glow: string;
+    surface: string;
 } {
     const slug = categorySlug(id);
     if (slug.includes('akademik')) {
         return {
             badge: 'border-blue-100 bg-blue-50 text-blue-700',
-            card: 'border-blue-100 hover:border-blue-300',
-            icon: 'bg-blue-50 text-blue-600',
+            card: 'border-blue-200/80 hover:border-blue-300',
+            icon: 'bg-blue-50 text-blue-600 ring-blue-100',
             dot: 'bg-blue-500',
+            accent: 'from-blue-500 via-blue-400 to-cyan-400',
+            glow: 'shadow-blue-500/15',
+            surface: 'bg-gradient-to-br from-white/95 via-slate-50/95 to-blue-50/55',
         };
     }
     if (slug.includes('penelitian')) {
         return {
             badge: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-            card: 'border-emerald-100 hover:border-blue-300',
-            icon: 'bg-emerald-50 text-emerald-600',
+            card: 'border-emerald-200/80 hover:border-emerald-300',
+            icon: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
             dot: 'bg-emerald-500',
+            accent: 'from-emerald-500 via-green-400 to-teal-400',
+            glow: 'shadow-emerald-500/15',
+            surface: 'bg-gradient-to-br from-white/95 via-slate-50/95 to-blue-50/55',
         };
     }
     if (slug.includes('magang') || slug.includes('pkl')) {
         return {
             badge: 'border-amber-100 bg-amber-50 text-amber-700',
-            card: 'border-amber-100 hover:border-blue-300',
-            icon: 'bg-amber-50 text-amber-600',
+            card: 'border-amber-200/80 hover:border-amber-300',
+            icon: 'bg-amber-50 text-amber-600 ring-amber-100',
             dot: 'bg-amber-500',
+            accent: 'from-amber-500 via-orange-400 to-yellow-400',
+            glow: 'shadow-amber-500/15',
+            surface: 'bg-gradient-to-br from-white/95 via-slate-50/95 to-blue-50/55',
         };
     }
     return {
-        badge: 'border-slate-200 bg-slate-100 text-slate-600',
-        card: 'border-slate-200 hover:border-blue-300',
-        icon: 'bg-slate-100 text-slate-600',
-        dot: 'bg-slate-500',
+        badge: 'border-slate-200 bg-white text-slate-600',
+        card: 'border-slate-200/80 hover:border-blue-300',
+        icon: 'bg-white text-blue-600 ring-blue-100',
+        dot: 'bg-blue-500',
+        accent: 'from-blue-500 via-blue-400 to-cyan-400',
+        glow: 'shadow-blue-500/15',
+        surface: 'bg-gradient-to-br from-white/95 via-slate-50/95 to-blue-50/55',
     };
 }
 
 function cardState(jenis: JenisSuratOption) {
     return String(jenis.id) === form.jenis_surat_id
-        ? 'border-blue-300 shadow-lg shadow-blue-100'
-        : 'border-slate-200 hover:border-blue-300 hover:-translate-y-0.5 hover:shadow-lg';
+        ? 'border-blue-300 shadow-[0_14px_24px_rgba(59,130,246,0.12)] -translate-y-1'
+        : '';
 }
 
 function openForm(jenis: JenisSuratOption) {
@@ -306,7 +323,6 @@ onMounted(() => {
         showFormModal.value = true;
     }
 });
-// â”€â”€ Lampiran â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fileInput = ref<HTMLInputElement | null>(null);
 function triggerFilePick() {
     fileInput.value?.click();
@@ -360,38 +376,54 @@ function fieldError(name: string): string | undefined {
             { label: 'Ajukan Surat' },
         ]"
     >
-        <Head title="Ajukan Surat â€” FAST" />
+        <Head title="Ajukan Surat - FAST" />
         <div class="mx-auto max-w-7xl space-y-6">
             <!-- Summary -->
             <section class="grid gap-3 sm:grid-cols-2">
                 <article
                     v-for="stat in summaryCards"
                     :key="stat.key"
-                    class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                    class="group relative overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white/95 p-4 text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_14px_28px_rgba(59,130,246,0.10)]"
+                    :class="stat.tone === 'blue' ? 'border-blue-200/80' : stat.tone === 'green' ? 'border-emerald-200/80' : stat.tone === 'amber' ? 'border-amber-200/80' : 'border-slate-200/80'"
                 >
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
-                                {{ stat.label }}
-                            </p>
-                            <p class="mt-2 text-2xl font-semibold text-slate-900">
-                                {{ stat.value }}
-                            </p>
+                    <div
+                        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r transition-all duration-300 group-hover:h-1.5"
+                        :class="stat.tone === 'blue' ? 'from-blue-500 via-blue-400 to-cyan-400' : stat.tone === 'green' ? 'from-emerald-500 via-green-400 to-teal-400' : stat.tone === 'amber' ? 'from-amber-500 via-orange-400 to-yellow-400' : 'from-slate-400 via-slate-300 to-slate-200'"
+                    />
+                    <div
+                        class="absolute -right-8 -top-8 size-24 rounded-full opacity-0 blur-2xl transition-all duration-300 group-hover:opacity-100"
+                        :class="stat.tone === 'blue' ? 'shadow-blue-500/15' : stat.tone === 'green' ? 'shadow-emerald-500/15' : stat.tone === 'amber' ? 'shadow-amber-500/15' : 'shadow-slate-500/15'"
+                    />
+
+                    <div class="relative flex h-full min-h-[148px] flex-col justify-between gap-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[11px] font-semibold tracking-[0.22em] text-slate-400 uppercase">
+                                    {{ stat.label }}
+                                </p>
+                                <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2.15rem]">
+                                    {{ stat.value }}
+                                </p>
+                            </div>
+                            <div
+                                class="grid size-11 shrink-0 place-items-center rounded-2xl ring-1 transition-all duration-300 group-hover:scale-[1.03] group-hover:-rotate-1"
+                                :class="
+                                    stat.tone === 'blue'
+                                        ? 'bg-blue-50 text-blue-600 ring-blue-100'
+                                        : stat.tone === 'green'
+                                          ? 'bg-emerald-50 text-emerald-600 ring-emerald-100'
+                                          : stat.tone === 'amber'
+                                            ? 'bg-amber-50 text-amber-600 ring-amber-100'
+                                            : 'bg-slate-100 text-slate-600 ring-slate-200'
+                                "
+                            >
+                                <component :is="stat.icon" class="size-5" />
+                            </div>
                         </div>
-                        <div
-                            class="grid size-10 shrink-0 place-items-center rounded-2xl border"
-                            :class="
-                                stat.tone === 'blue'
-                                    ? 'border-blue-100 bg-blue-50 text-blue-600'
-                                    : stat.tone === 'green'
-                                      ? 'border-emerald-100 bg-emerald-50 text-emerald-600'
-                                      : stat.tone === 'amber'
-                                        ? 'border-amber-100 bg-amber-50 text-amber-600'
-                                        : 'border-slate-200 bg-slate-100 text-slate-600'
-                            "
-                        >
-                            <component :is="stat.icon" class="size-5" />
-                        </div>
+
+                        <p class="text-xs leading-relaxed text-slate-500">
+                            {{ stat.summary }}
+                        </p>
                     </div>
                 </article>
             </section>
@@ -400,9 +432,6 @@ function fieldError(name: string): string | undefined {
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-2xl">
-                        <p class="text-[10px] font-semibold tracking-[0.2em] text-slate-400 uppercase">
-                            Filter surat
-                        </p>
                         <h3 class="mt-1 text-lg font-semibold text-slate-900">
                             Temukan jenis surat dengan cepat
                         </h3>
@@ -456,49 +485,68 @@ function fieldError(name: string): string | undefined {
                     <article
                         v-for="jenis in filteredJenis"
                         :key="jenis.id"
-                        class="group flex h-full flex-col rounded-2xl border bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-                        :class="cardState(jenis)"
+                        class="group relative overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white/95 p-5 text-slate-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transform-gpu transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_16px_30px_rgba(59,130,246,0.14)]"
+                        :class="[categoryTone(jenis.categoryId).card, cardState(jenis)]"
                     >
-                        <div class="mb-4 flex items-start justify-between gap-3">
-                            <div
-                                class="grid size-11 shrink-0 place-items-center rounded-2xl border"
-                                :class="categoryTone(jenis.categoryId).icon"
-                            >
-                                <FileText class="size-5" />
-                            </div>
-                            <span
-                                class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold"
-                                :class="categoryTone(jenis.categoryId).badge"
-                            >
+                        <div
+                            class="absolute inset-0 transition-opacity duration-300 group-hover:opacity-100"
+                            :class="categoryTone(jenis.categoryId).surface"
+                        />
+                        <div class="absolute inset-0 bg-gradient-to-br from-white/30 via-white/12 to-blue-50/20 backdrop-blur-[1px]" />
+                        <div class="absolute inset-x-4 top-3 h-8 rounded-full bg-white/55 blur-2xl opacity-70" />
+                        <div class="absolute inset-x-6 bottom-[-12px] h-6 rounded-full bg-blue-500/18 blur-2xl opacity-0 transition-all duration-300 group-hover:opacity-75" />
+                        <div class="absolute inset-x-2 bottom-0 h-px bg-slate-200/80 opacity-80" />
+                        <div
+                            class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r transition-all duration-300 group-hover:h-1.5"
+                            :class="categoryTone(jenis.categoryId).accent"
+                        />
+                        <div
+                            class="absolute -right-8 -top-8 size-24 rounded-full opacity-0 blur-2xl transition-all duration-300 group-hover:opacity-100"
+                            :class="categoryTone(jenis.categoryId).glow"
+                        />
+
+                        <div class="relative flex h-full min-h-[176px] flex-col justify-between gap-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div
+                                    class="grid size-11 shrink-0 place-items-center rounded-2xl ring-1 transition-all duration-300 group-hover:scale-[1.03] group-hover:-rotate-1"
+                                    :class="categoryTone(jenis.categoryId).icon"
+                                >
+                                    <FileText class="size-5" />
+                                </div>
                                 <span
-                                    class="mr-1.5 size-1.5 rounded-full"
-                                    :class="categoryTone(jenis.categoryId).dot"
-                                />
-                                {{ categoryName(jenis.categoryId) }}
-                            </span>
-                        </div>
+                                    class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold"
+                                    :class="categoryTone(jenis.categoryId).badge"
+                                >
+                                    <span
+                                        class="mr-1.5 size-1.5 rounded-full"
+                                        :class="categoryTone(jenis.categoryId).dot"
+                                    />
+                                    {{ categoryName(jenis.categoryId) }}
+                                </span>
+                            </div>
 
-                        <div class="flex flex-1 flex-col">
-                            <h4 class="text-base font-semibold text-slate-900">
-                                {{ jenis.nama }}
-                            </h4>
-                            <p class="mt-2 text-sm leading-6 text-slate-400">
-                                Klik untuk membuka form pengajuan surat.
-                            </p>
-                        </div>
+                            <div class="flex flex-1 flex-col">
+                                <h4 class="text-base font-semibold text-slate-900">
+                                    {{ jenis.nama }}
+                                </h4>
+                                <p class="mt-2 text-sm leading-6 text-slate-500">
+                                    Klik untuk membuka form pengajuan surat.
+                                </p>
+                            </div>
 
-                        <div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                            <p class="text-xs text-slate-500">
-                                Sesuaikan data pada popup
-                            </p>
-                            <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                                @click="openForm(jenis)"
-                            >
-                                Ajukan Surat
-                                <ArrowRight class="size-3.5" />
-                            </button>
+                            <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                                <p class="text-xs text-slate-500">
+                                    Sesuaikan data pada popup
+                                </p>
+                                <button
+                                    type="button"
+                                    class="fast-btn fast-btn-primary px-4 py-2 text-sm"
+                                    @click="openForm(jenis)"
+                                >
+                                    Ajukan Surat
+                                    <ArrowRight class="size-3.5" />
+                                </button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -534,7 +582,7 @@ function fieldError(name: string): string | undefined {
                         </div>
                         <button
                             type="button"
-                            class="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+                            class="fast-btn fast-btn-ghost fast-btn-icon shrink-0 rounded-full border border-slate-200 text-slate-500"
                             @click="closeForm"
                         >
                             <X class="size-4" />
@@ -739,7 +787,7 @@ function fieldError(name: string): string | undefined {
                                 />
                                 <button
                                     type="button"
-                                    class="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-6 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50/40"
+                                    class="fast-btn fast-btn-soft flex w-full flex-col border-2 border-dashed border-slate-200 py-6 text-slate-500"
                                     @click="triggerFilePick"
                                 >
                                     <UploadCloud class="size-6 text-slate-400" />
@@ -765,7 +813,7 @@ function fieldError(name: string): string | undefined {
                                         </div>
                                         <button
                                             type="button"
-                                            class="grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                            class="fast-btn fast-btn-ghost fast-btn-icon text-slate-400 hover:text-red-500"
                                             @click="removeFile(i)"
                                         >
                                             <X class="size-4" />
@@ -789,7 +837,7 @@ function fieldError(name: string): string | undefined {
                             <div class="flex flex-col gap-2 sm:flex-row">
                                 <button
                                     type="button"
-                                    class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                                    class="fast-btn fast-btn-outline px-4 py-2 text-sm font-medium"
                                     @click="closeForm"
                                 >
                                     Batal
@@ -797,7 +845,7 @@ function fieldError(name: string): string | undefined {
                                 <button
                                     type="submit"
                                     :disabled="form.processing"
-                                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                                    class="fast-btn fast-btn-primary px-5 py-2 text-sm"
                                 >
                                     <Send class="size-3.5" />
                                     {{ form.processing ? 'Mengirim...' : 'Kirim Pengajuan' }}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/admin/templates/Index.vue
+// resources/js/pages/Modules/Fast/Admin/templates/Index.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { computed, reactive, ref, watch } from 'vue';
@@ -16,7 +16,6 @@ import {
     Settings,
     ChevronDown,
     ChevronUp,
-    Sparkles,
     FileText,
 } from 'lucide-vue-next';
 import {
@@ -47,7 +46,6 @@ const defaultLayoutState = () => ({
     paragraph_indent: 0,
     table_indent: 0,
 });
-// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type SuratKomponen =
     | {
           type: 'judul';
@@ -209,7 +207,6 @@ const props = withDefaults(
         globalSettings: () => [],
     },
 );
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const sidebarSearch = ref('');
 const categoryFilter = ref<'all' | string>('all');
 const statusFilter = ref<'all' | 'active' | 'inactive'>('all');
@@ -256,7 +253,6 @@ const filteredJenisSurats = computed(() => {
             normalizeSearchText(j.template?.name).includes(q),
     );
 });
-// â”€â”€ Form builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const categoryFilterOptions = computed(() => [
     { label: 'Semua kategori', value: 'all' },
     ...(props.categories ?? []).map((category) => ({
@@ -657,7 +653,6 @@ function parseKomponen(body?: string | null): SuratKomponen[] {
     } catch {
         return [];
     }
-    // HTML lama: strip tag â†’ 1 paragraf
     const stripped = body
         .replace(/<[^>]*>/g, ' ')
         .replace(/\s+/g, ' ')
@@ -666,7 +661,6 @@ function parseKomponen(body?: string | null): SuratKomponen[] {
         ? [{ type: 'paragraf', teks: stripped, align: 'justify' }]
         : [];
 }
-// â”€â”€ Komponen helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const tipeLabel: Record<string, string> = {
     judul: 'Judul',
     subjudul: 'Sub Judul',
@@ -724,7 +718,6 @@ function deleteTemplate() {
         },
     });
 }
-// â”€â”€ Tambah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const addForm = useForm({
     nama: '',
     kode_surat: '',
@@ -744,7 +737,6 @@ function submitAdd() {
         },
     });
 }
-// â”€â”€ Global settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const settingsData = ref<Record<string, string>>(
     Object.fromEntries(
         (props.globalSettings ?? []).map((s) => [s.key, s.value ?? '']),
@@ -875,9 +867,6 @@ function settingLabel(key: string): string {
         <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0 flex-1">
-                    <p class="flex items-center gap-1.5 text-sm font-medium text-blue-600">
-                        <Sparkles class="size-4" /> Kelola Template
-                    </p>
                     <h2 class="mt-1 text-lg font-bold text-slate-900 sm:text-xl">
                         Template Surat
                     </h2>
@@ -888,14 +877,14 @@ function settingLabel(key: string): string {
                 <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <button
                         type="button"
-                        class="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:w-auto"
+                        class="fast-btn fast-btn-outline inline-flex h-11 w-full items-center justify-center gap-1.5 px-4 text-sm font-medium text-slate-700 sm:w-auto"
                         @click="openGlobalSettings"
                     >
                         <Settings class="size-4 text-slate-500" /> Pengaturan Kop & Footer
                     </button>
                     <button
                         type="button"
-                        class="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
+                        class="fast-btn fast-btn-primary inline-flex h-11 w-full items-center justify-center gap-1.5 px-4 text-sm font-semibold sm:w-auto"
                         @click="openAddDialog"
                     >
                         <Plus class="size-4" /> Tambah Jenis Surat
@@ -957,7 +946,7 @@ function settingLabel(key: string): string {
 
                 <button
                     type="button"
-                    class="h-11 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
+                    class="fast-btn fast-btn-soft h-11 px-4 text-sm font-semibold text-blue-700"
                     @click="resetTemplateFilters"
                 >
                     Reset Filter
@@ -1030,7 +1019,6 @@ function settingLabel(key: string): string {
                                 ? `v${jenis.template.version}`
                                 : 'Belum ada template'
                         }}</span>
-                        <span>Â·</span>
                         <span>{{
                             jenis.template ? 'Siap pakai' : 'Perlu diatur'
                         }}</span>
@@ -1048,13 +1036,12 @@ function settingLabel(key: string): string {
                 </Link>
             </div>
         </div>
-        <!-- â•â• EDITOR VIEW: when selected â•â• -->
         <div v-else class="space-y-4">
             <!-- Back bar -->
             <div class="flex items-center gap-3">
                 <Link
                     href="/admin/templates"
-                    class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                        class="fast-btn fast-btn-outline flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600"
                 >
                     <ChevronDown class="size-3.5 rotate-90" /> Kembali ke
                     Gallery
@@ -1084,18 +1071,18 @@ function settingLabel(key: string): string {
                     <div class="flex shrink-0 flex-wrap justify-end gap-2">
                         <button
                             type="button"
-                            class="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        class="fast-btn fast-btn-outline flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-700"
                             @click="duplicate(selectedJenisSurat.id)"
                         >
                             <Copy class="size-3.5 text-slate-500" /> Duplikat
                         </button>
                         <button
                             type="button"
-                            class="flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors"
+                            class="fast-btn flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-semibold"
                             :class="
                                 selectedJenisSurat.is_active
-                                    ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
-                                    : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                    ? 'fast-btn-danger'
+                                    : 'fast-btn-soft text-blue-700'
                             "
                             @click="
                                 toggleActive(
@@ -1121,7 +1108,7 @@ function settingLabel(key: string): string {
                         </button>
                         <button
                             type="button"
-                            class="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="fast-btn fast-btn-danger flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="deletingTemplate"
                             @click="deleteTemplate"
                         >
@@ -1135,11 +1122,11 @@ function settingLabel(key: string): string {
                         v-for="tab in ['template', 'fields', 'meta'] as const"
                         :key="tab"
                         type="button"
-                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                        class="fast-btn px-3 py-1.5 text-xs font-medium"
                         :class="
                             activeTab === tab
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'fast-btn-primary'
+                                : 'fast-btn-outline'
                         "
                         @click="activeTab = tab"
                     >
@@ -1153,9 +1140,7 @@ function settingLabel(key: string): string {
                     </button>
                 </div>
             </div>
-            <!-- â•â• TAB: ISI SURAT â•â• -->
             <div v-if="activeTab === 'template'" class="space-y-4">
-                <!-- Info kop otomatis â€” tanpa peringatan template lama -->
                 <div
                     class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800"
                 >
@@ -1183,7 +1168,7 @@ function settingLabel(key: string): string {
                                 v-for="tipe in group.items"
                                 :key="tipe"
                                 type="button"
-                                class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                                class="fast-btn fast-btn-outline rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-700"
                                 @click="addKomponen(tipe as any)"
                             >
                                 {{ tipeLabel[tipe] }}
@@ -1444,11 +1429,11 @@ function settingLabel(key: string): string {
                                     ]"
                                     :key="a[0]"
                                     type="button"
-                                    class="rounded-lg px-2.5 py-1 text-xs transition-colors"
+                                    class="fast-btn rounded-lg px-2.5 py-1 text-xs"
                                     :class="
                                         (komp as any).align === a[0]
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'fast-btn-primary'
+                                            : 'fast-btn-outline'
                                     "
                                     @click="(komp as any).align = a[0]"
                                 >
@@ -1458,11 +1443,11 @@ function settingLabel(key: string): string {
                             <div class="flex gap-1">
                                 <button
                                     type="button"
-                                    class="rounded-lg px-2.5 py-1 text-xs font-bold transition-colors"
+                                    class="fast-btn rounded-lg px-2.5 py-1 text-xs font-bold"
                                     :class="
                                         (komp as any).bold
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'fast-btn-primary'
+                                            : 'fast-btn-outline'
                                     "
                                     @click="
                                         (komp as any).bold = !(komp as any).bold
@@ -1472,11 +1457,11 @@ function settingLabel(key: string): string {
                                 </button>
                                 <button
                                     type="button"
-                                    class="rounded-lg px-2.5 py-1 text-xs underline transition-colors"
+                                    class="fast-btn rounded-lg px-2.5 py-1 text-xs underline"
                                     :class="
                                         (komp as any).underline
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'fast-btn-primary'
+                                            : 'fast-btn-outline'
                                     "
                                     @click="
                                         (komp as any).underline = !(komp as any)
@@ -1546,11 +1531,11 @@ function settingLabel(key: string): string {
                                     ]"
                                     :key="a[0]"
                                     type="button"
-                                    class="rounded-lg px-2.5 py-1 text-xs transition-colors"
+                                    class="fast-btn rounded-lg px-2.5 py-1 text-xs"
                                     :class="
                                         (komp as any).align === a[0]
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'fast-btn-primary'
+                                            : 'fast-btn-outline'
                                     "
                                     @click="(komp as any).align = a[0]"
                                 >
@@ -1706,11 +1691,11 @@ function settingLabel(key: string): string {
                                     ]"
                                     :key="p[0]"
                                     type="button"
-                                    class="rounded-lg px-2.5 py-1 text-xs transition-colors"
+                                    class="fast-btn rounded-lg px-2.5 py-1 text-xs"
                                     :class="
                                         (komp as any).posisi === p[0]
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'fast-btn-primary'
+                                            : 'fast-btn-outline'
                                     "
                                     @click="(komp as any).posisi = p[0]"
                                 >
@@ -1941,7 +1926,7 @@ function settingLabel(key: string): string {
                             </label>
                         </div>
                         <p class="mt-1 text-[10px] text-slate-400">
-                            Format: mm, cm, px â€” contoh: 15mm, 2cm, 50px
+                            Format: mm, cm, px - contoh: 15mm, 2cm, 50px
                         </p>
                     </div>
                     <!-- Indent konten -->
@@ -2019,14 +2004,14 @@ function settingLabel(key: string): string {
                         v-if="selectedJenisSurat.template?.preview_url"
                         :href="selectedJenisSurat.template.preview_url"
                         target="_blank"
-                        class="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        class="fast-btn fast-btn-outline flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-slate-700"
                     >
                         <Eye class="size-3.5 text-slate-500" /> Preview PDF
                     </a>
                     <div class="ml-auto">
                     <button
                         type="button"
-                        class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        class="fast-btn fast-btn-primary flex items-center gap-1.5 px-5 py-2 text-xs font-semibold"
                         @click="saveTemplate"
                     >
                             <Save class="size-3.5" /> Simpan Isi Surat
@@ -2034,7 +2019,6 @@ function settingLabel(key: string): string {
                     </div>
                 </div>
             </div>
-            <!-- â•â• TAB: FIELD DINAMIS â•â• -->
             <div
                 v-if="activeTab === 'fields'"
                 class="rounded-2xl border border-slate-200 bg-white p-5"
@@ -2231,14 +2215,13 @@ function settingLabel(key: string): string {
                 >
                     <button
                         type="button"
-                        class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                        class="fast-btn fast-btn-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
                         @click="saveTemplate"
                     >
                         <Save class="size-3.5" /> Simpan Field Dinamis
                     </button>
                 </div>
             </div>
-            <!-- â•â• TAB: META â•â• -->
             <div
                 v-if="activeTab === 'meta'"
                 class="rounded-2xl border border-slate-200 bg-white p-5"
@@ -2347,7 +2330,7 @@ function settingLabel(key: string): string {
                 <div class="mt-4 flex justify-end">
                     <button
                         type="button"
-                        class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                        class="fast-btn fast-btn-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
                         @click="saveTemplate"
                     >
                         <Save class="size-3.5" /> Simpan Info Jenis Surat
@@ -2355,7 +2338,6 @@ function settingLabel(key: string): string {
                 </div>
             </div>
         </div>
-        <!-- â•â• Dialog: Tambah Jenis Surat â•â• -->
         <Dialog
             :open="showAddDialog"
             @update:open="(v) => (v ? null : closeAddDialog())"
@@ -2485,7 +2467,7 @@ function settingLabel(key: string): string {
                     <Button
                         type="submit"
                         form="add-form"
-                        class="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                        class="fast-btn fast-btn-primary rounded-xl"
                         :disabled="addForm.processing"
                         >{{
                             addForm.processing ? 'Menyimpan...' : 'Simpan'
@@ -2494,7 +2476,6 @@ function settingLabel(key: string): string {
                 </div>
             </DialogContent>
         </Dialog>
-        <!-- â•â• Dialog: Pengaturan Global â€” dikelompokkan KOP + FOOTER + TAMPILAN â•â• -->
         <Dialog
             :open="showGlobalSettings"
             @update:open="(v) => (v ? null : closeGlobalSettings())"
@@ -2542,7 +2523,7 @@ function settingLabel(key: string): string {
                         <p class="text-[10px] text-blue-600">
                             "Nama Instansi" tampil di baris pertama kop (misal:
                             UNUGHA CILACAP). "Singkatan" tampil dalam kurung
-                            setelah nama fakultas â€” kosongkan jika tidak perlu.
+                            setelah nama fakultas - kosongkan jika tidak perlu.
                         </p>
                     </div>
                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -2964,7 +2945,7 @@ function settingLabel(key: string): string {
                     >
                     <Button
                         type="button"
-                        class="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                        class="fast-btn fast-btn-primary rounded-xl"
                         @click="saveGlobalSettings"
                         >Simpan Semua Pengaturan</Button
                     >

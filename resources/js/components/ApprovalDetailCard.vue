@@ -204,7 +204,7 @@ function statusPillClass(status: string) {
                 <button
                     v-if="detailData.draft_preview_url && onOpenDraftPreview"
                     type="button"
-                    class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                    class="fast-btn fast-btn-soft mt-4 w-full justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700"
                     @click="onOpenDraftPreview"
                 >
                     <ExternalLink class="size-4" />
@@ -223,7 +223,7 @@ function statusPillClass(status: string) {
                         v-for="file in detailData.lampiran"
                         :key="file.id"
                         type="button"
-                        class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:border-slate-300 hover:bg-slate-100"
+                        class="fast-btn fast-btn-outline flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                         @click="onOpenAttachmentPreview?.(file)"
                     >
                         <div class="min-w-0">

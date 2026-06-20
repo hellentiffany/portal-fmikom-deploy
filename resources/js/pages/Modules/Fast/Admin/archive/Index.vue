@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/admin/archive/Index.vue
+// resources/js/pages/Modules/Fast/Admin/archive/Index.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -9,7 +9,6 @@ import {
     Eye,
     Archive,
     FileText,
-    Sparkles,
     ChevronDown,
 } from 'lucide-vue-next';
 type SuratItem = {
@@ -94,11 +93,6 @@ function sourceLabel(type: string) {
         <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
-                    <p
-                        class="flex items-center gap-1.5 text-sm font-medium text-blue-600"
-                    >
-                        <Sparkles class="size-4" /> Dokumen Final
-                    </p>
                     <h2 class="mt-1 text-xl font-bold text-slate-900">
                         Arsip Surat
                     </h2>
@@ -160,7 +154,7 @@ function sourceLabel(type: string) {
                 <div class="flex flex-col gap-2 sm:flex-row lg:flex-row">
                     <button
                         type="button"
-                        class="h-11 w-full rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
+                        class="fast-btn fast-btn-primary h-11 w-full px-5 text-sm sm:w-auto"
                         @click="applyFilter"
                     >
                         Terapkan
@@ -168,7 +162,7 @@ function sourceLabel(type: string) {
                     <button
                         v-if="isFilterActive"
                         type="button"
-                        class="h-11 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 sm:w-auto"
+                        class="fast-btn fast-btn-soft h-11 w-full px-5 text-sm font-medium text-blue-700 sm:w-auto"
                         @click="resetFilter"
                     >
                         Reset Filter
@@ -294,7 +288,7 @@ function sourceLabel(type: string) {
                     >
                         <Link
                             :href="`/admin/surat/${item.id}`"
-                            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                            class="fast-btn fast-btn-outline flex flex-1 items-center justify-center gap-1.5 py-2 text-[10px] font-medium text-slate-600"
                             title="Lihat Detail"
                         >
                             <Eye class="size-3" /> Detail
@@ -303,7 +297,7 @@ function sourceLabel(type: string) {
                             v-if="item.download_url"
                             :href="item.download_url"
                             target="_blank"
-                            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-[10px] font-medium text-white transition-colors hover:bg-blue-700"
+                            class="fast-btn fast-btn-primary flex flex-1 items-center justify-center gap-1.5 py-2 text-[10px] font-medium"
                             title="Download PDF"
                         >
                             <Download class="size-3" /> Unduh PDF
@@ -328,11 +322,11 @@ function sourceLabel(type: string) {
                 v-for="link in surats.links"
                 :key="link.label"
                 :href="link.url ?? '#'"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                class="fast-btn px-3 py-1.5 text-xs font-medium"
                 :class="[
                     link.active
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                        ? 'fast-btn-primary'
+                        : 'fast-btn-outline',
                     !link.url ? 'pointer-events-none opacity-40' : '',
                 ]"
                 v-html="link.label"

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -17,6 +18,29 @@ test('users can authenticate using the login screen', function () {
         'email' => $user->email,
         'password' => 'password',
     ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('login ignores stale intended admin history when switching accounts', function () {
+    $role = Role::create([
+        'nama' => 'Mahasiswa',
+        'slug' => 'mahasiswa',
+    ]);
+
+    $user = User::factory()->create([
+        'role_id' => $role->id,
+    ]);
+
+    $response = $this
+        ->withSession([
+            'url.intended' => route('admin.history', absolute: false),
+        ])
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));

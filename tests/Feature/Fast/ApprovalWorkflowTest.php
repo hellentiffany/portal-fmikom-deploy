@@ -468,7 +468,7 @@ test('pengajuan masuk shows pending and approver revision submissions only', fun
     ]);
 
     $this->actingAs($admin)
-        ->get(route('admin.surat.index'))
+        ->get(route('admin.surat.index', ['status' => 'all']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/letters/Index')
@@ -779,7 +779,7 @@ test('approval dashboard shows only validated surat for the signed in approval r
         ->get(route('approval.dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('admin/approval/Index')
+            ->component('approval/Index')
             ->where('role.name', 'Kaprodi')
             ->where('filters.status', Surat::STATUS_VALIDATED_ADMIN)
             ->where('summary.waiting', 1)
@@ -1557,5 +1557,5 @@ test('admin can update active template and preview generated pdf document', func
     $this->actingAs($admin)
         ->get(route('admin.surat.generated-document', $surat->id))
         ->assertOk()
-        ->assertHeader('content-type', 'text/html; charset=UTF-8');
+        ->assertHeader('content-type', 'application/pdf');
 });

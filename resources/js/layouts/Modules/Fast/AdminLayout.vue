@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// File: resources/js/layouts/FASt/AdminLayout.vue
+// File: resources/js/layouts/Modules/Fast/AdminLayout.vue
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import NotificationBell from '@/components/Modules/Fast/NotificationBell.vue';

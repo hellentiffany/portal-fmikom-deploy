@@ -7,7 +7,6 @@ import {
     FileText,
     Download,
     FileCheck2,
-    Sparkles,
     RotateCcw,
 } from 'lucide-vue-next';
 type SuratItem = {
@@ -96,11 +95,6 @@ function formatDate(date?: string | null) {
         >
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
-                    <p
-                        class="flex items-center gap-1.5 text-sm font-medium text-blue-600"
-                    >
-                        <Sparkles class="size-4" /> Unduh Surat
-                    </p>
                     <h2 class="mt-1 text-xl font-bold text-slate-900">
                         Surat Final
                     </h2>
@@ -153,7 +147,7 @@ function formatDate(date?: string | null) {
             />
             <button
                 type="button"
-                class="h-9 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                class="fast-btn fast-btn-primary h-9 px-4 text-xs"
                 @click="applySearch"
             >
                 Cari
@@ -255,11 +249,11 @@ function formatDate(date?: string | null) {
                     v-for="link in surats.links"
                     :key="`${link.label}-${link.url}`"
                     :href="link.url || ''"
-                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                    class="fast-btn px-3 py-1.5 text-xs font-medium"
                     :class="[
                         link.active
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                            ? 'fast-btn-primary'
+                            : 'fast-btn-outline',
                         !link.url ? 'pointer-events-none opacity-40' : '',
                     ]"
                     v-html="link.label"

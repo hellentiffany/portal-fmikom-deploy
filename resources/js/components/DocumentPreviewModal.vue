@@ -229,7 +229,7 @@ onUnmounted(() => {
                         <div class="mt-4 flex items-center justify-center gap-2">
                             <button
                                 type="button"
-                                class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-800"
+                                class="fast-btn fast-btn-outline rounded-xl border-slate-700 px-4 py-2 text-xs font-semibold text-slate-200"
                                 @click="resetIframeState"
                             >
                                 Muat ulang
@@ -237,7 +237,7 @@ onUnmounted(() => {
                             <button
                                 v-if="showOpenInNewTab"
                                 type="button"
-                                class="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+                                class="fast-btn fast-btn-primary rounded-xl px-4 py-2 text-xs font-semibold"
                                 @click="openNewTab"
                             >
                                 Buka tab baru

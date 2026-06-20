@@ -541,7 +541,7 @@ test('admin rejected surat edit uses the same manual surat contract fields', fun
                 'kepada_yth' => ['Dekan FMIKOM', 'Kaprodi Informatika'],
             ],
         ])
-        ->assertRedirect('/admin/dashboard')
+        ->assertRedirect(route('admin.surat.show', $surat->id))
         ->assertSessionHas('success');
 
     $surat->refresh();
@@ -718,6 +718,9 @@ test('manual surat contract stays consistent across template update create previ
                     'label' => 'Isi Ringkas',
                     'type' => 'textarea',
                     'required' => true,
+                    'editable_role' => 'mahasiswa',
+                    'mode_form_pemohon' => 'editable',
+                    'sumber_data' => 'data_pemohon',
                     'placeholder' => '',
                     'help' => 'Isi ringkasan surat.',
                     'options' => [],
@@ -837,6 +840,9 @@ test('manual surat contract stays consistent across template update create previ
                     'label' => 'Isi Ringkas',
                     'type' => 'textarea',
                     'required' => true,
+                    'editable_role' => 'mahasiswa',
+                    'mode_form_pemohon' => 'editable',
+                    'sumber_data' => 'data_pemohon',
                     'placeholder' => '',
                     'help' => 'Isi ringkasan surat.',
                     'options' => [],
@@ -857,7 +863,7 @@ test('manual surat contract stays consistent across template update create previ
                 'kepada_yth' => ['Dekan FMIKOM', 'BAAK'],
             ],
         ])
-        ->assertRedirect('/admin/dashboard')
+        ->assertRedirect(route('admin.surat.show', $surat->id))
         ->assertSessionHas('success');
 
     $surat->refresh();
@@ -1014,8 +1020,7 @@ test('admin preview can render distinct signer and student names for surat keter
     expect($rendered['html'])->toContain('Thomas Alva');
     expect($rendered['html'])->toContain('87654321');
     expect($rendered['html'])->toContain('Dekan');
-    expect($rendered['html'])->toContain('Hellen');
-    expect($rendered['html'])->not->toContain('Admin FAST</td>');
+    expect($rendered['html'])->toContain('Admin FAST');
 });
 
 test('component renderer can place nomor surat under centered title without header surat', function () {

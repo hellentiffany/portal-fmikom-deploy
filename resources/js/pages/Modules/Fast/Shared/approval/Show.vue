@@ -389,7 +389,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <button
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    class="fast-btn fast-btn-outline items-center gap-2 px-4 py-2 text-sm font-medium"
                     @click="goBack"
                 >
                     <ArrowLeft class="size-4" />
@@ -578,7 +578,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                         <button
                             v-if="previewTemplateUrl || generatedDocumentUrl"
                             type="button"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline w-full px-4 py-2.5 text-sm"
                             @click="openPreviewDocument"
                         >
                             <Eye class="size-4" />
@@ -588,7 +588,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                         <button
                             v-if="isFinished"
                             type="button"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                            class="fast-btn fast-btn-primary w-full px-4 py-2.5 text-sm"
                             @click="openDownloadPdf"
                         >
                             <Download class="size-4" />
@@ -617,7 +617,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                                 :key="file.id"
                                 :href="attachmentUrl(file.id)"
                                 target="_blank"
-                                class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:border-slate-300 hover:bg-slate-100"
+                                class="fast-btn fast-btn-soft flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                             >
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-medium text-slate-800">
@@ -693,7 +693,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                                 <button
                                     v-if="entry.note"
                                     type="button"
-                                    class="inline-flex shrink-0 items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
+                                class="fast-btn fast-btn-danger shrink-0 px-2 py-1 text-xs"
                                     :aria-expanded="expandedTimelineNoteId === entry.id"
                                     :aria-controls="`timeline-note-${entry.id}`"
                                     @click="toggleTimelineNote(entry.id)"
@@ -777,14 +777,14 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                     <div class="mt-4 flex justify-end gap-2">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline rounded-xl px-4 py-2 text-sm font-medium"
                             @click="closeRevisionModal"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
-                            class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+                            class="fast-btn fast-btn-danger rounded-xl px-4 py-2 text-sm"
                             :disabled="revisionForm.processing || !revisionForm.reason.trim()"
                             @click="submitRevision"
                         >
@@ -841,14 +841,14 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                     <div class="mt-4 flex justify-end gap-2">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline rounded-xl px-4 py-2 text-sm font-medium"
                             @click="closeFinalRejectModal"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
-                            class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                            class="fast-btn fast-btn-danger rounded-xl px-4 py-2 text-sm"
                             :disabled="finalRejectForm.processing || !finalRejectForm.reason.trim()"
                             @click="submitFinalReject"
                         >

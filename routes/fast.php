@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Modules\Fast\Controllers\Shared\Approval\ApprovalController as ApprovalDashboardController;
 use App\Modules\Fast\Controllers\Admin\ArchiveController;
@@ -199,6 +199,8 @@ Route::middleware(['auth', 'verified', 'admin.access'])
         Route::post('/surat/{id}/approve', [DashboardController::class, 'approve'])
             ->whereNumber('id')
             ->name('surat.approve');
+        Route::get('/surat/{id}/reject', [DashboardController::class, 'rejectRedirect'])
+            ->whereNumber('id');
         Route::post('/surat/{id}/reject', [DashboardController::class, 'reject'])
             ->whereNumber('id')
             ->name('surat.reject');
@@ -240,10 +242,9 @@ Route::middleware(['auth', 'verified', 'admin.access'])
             ->name('settings.template');
     });
 
-/*
-|--------------------------------------------------------------------------
-|--------------------------------------------------------------------------
-*/
+
+// Approval routes kept for backward compatibility.
+
 $approvalRoutes = function (string $controller): void {
     Route::get('/dashboard', [$controller, 'index'])
         ->name('dashboard');
@@ -320,3 +321,4 @@ Route::middleware(['auth', 'verified'])
             ->middleware('admin.access')
             ->name('surat.generate-document');
     });
+

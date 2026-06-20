@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/layouts/FASt/FastLayout.vue
+// resources/js/layouts/Modules/Fast/FastLayout.vue
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import NotificationBell from '@/components/Modules/Fast/NotificationBell.vue';
@@ -114,8 +114,7 @@ const navItems = computed<NavItem[]>(() => {
         },
         {
             key: 'submit',
-            label:
-                routePrefix.value === 'dosen' ? 'Ajukan Surat Dosen' : 'Ajukan Surat',
+            label: 'Ajukan Surat',
             href: `${prefix}/ajukan`,
             icon: FilePlus2,
         },

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/mahasiswa/Dashboard.vue
+// resources/js/pages/Modules/Fast/Mahasiswa/Dashboard.vue
 import FastLayout from '@/layouts/Modules/Fast/FastLayout.vue';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.vue';
+import LetterFlowCard from '@/components/Modules/Fast/LetterFlowCard.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref, watch } from 'vue';
 import {
@@ -130,6 +131,24 @@ const props = defineProps<{
 }>();
 
 const page = usePage<PageProps>();
+const safeSummary = computed<Summary>(() => ({
+    total: props.summary?.total ?? 0,
+    diproses: props.summary?.diproses ?? 0,
+    selesai: props.summary?.selesai ?? 0,
+    ditolak: props.summary?.ditolak ?? 0,
+    dibatalkan: props.summary?.dibatalkan ?? 0,
+}));
+const summary = safeSummary;
+const safeLatest = computed<LatestSubmission[]>(() => props.latest ?? []);
+const safeJenisSurats = computed<JenisSuratOption[]>(() => props.jenisSurats ?? []);
+const safeEndpoints = computed(
+    () =>
+        props.endpoints ?? {
+            submission: '',
+            jenisSuratBase: '/jenis-surat',
+            basePath: '/mahasiswa',
+        },
+);
 const showFormModal = ref(false);
 const selectedJenis = ref<JenisSuratOption | null>(null);
 const formStep = ref<'form' | 'preview'>('form');
@@ -139,9 +158,11 @@ const expandedNotesId = ref<number | null>(null);
 let toastTimeoutId: number | null = null;
 const applicantFieldRefs = ref<Record<string, HTMLElement | null>>({});
 
-const visibleJenis = computed(() => props.jenisSurats.slice(0, 5));
-const hasMoreJenis = computed(() => props.jenisSurats.length > visibleJenis.value.length);
-const latestVisible = computed(() => props.latest.slice(0, 5));
+const visibleJenis = computed(() => safeJenisSurats.value.slice(0, 5));
+const hasMoreJenis = computed(
+    () => safeJenisSurats.value.length > visibleJenis.value.length,
+);
+const latestVisible = computed(() => safeLatest.value.slice(0, 5));
 
 type FieldValue = string | boolean | string[] | number | null;
 
@@ -329,7 +350,7 @@ function doSubmit() {
         return;
     }
 
-    submitForm.post(props.endpoints.submission, {
+    submitForm.post(safeEndpoints.value.submission, {
         forceFormData: true,
         onSuccess: () => closeForm(),
         onError: (errors) => {
@@ -387,7 +408,93 @@ const dashboardGreeting = computed(() => {
     return firstName.value;
 });
 const dashboardIntro = computed(() => {
-    return 'Pantau pengajuan surat dan aktivitas akademik Anda dengan mudah dalam satu platform terintegrasi.';
+    return 'Cek dan kelola pengajuan surat Anda di sini.';
+});
+
+type StatCard = {
+    label: string;
+    value: number;
+    icon: unknown;
+    iconWrap: string;
+    accent: string;
+    glow: string;
+    summary: string;
+};
+
+const heroSummaryCards = computed<StatCard[]>(() => {
+    const summary = safeSummary.value;
+
+    return [
+        {
+            label: 'Total Surat',
+            value: summary.total,
+            icon: FileText,
+            iconWrap: 'bg-blue-50 text-blue-600 ring-blue-100',
+            accent: 'from-blue-500 via-blue-400 to-cyan-400',
+            glow: 'shadow-blue-500/15',
+            summary: 'Seluruh pengajuan yang tercatat di sistem',
+        },
+        {
+            label: 'Diproses',
+            value: summary.diproses,
+            icon: RefreshCw,
+            iconWrap: 'bg-sky-50 text-sky-600 ring-sky-100',
+            accent: 'from-sky-500 via-cyan-400 to-blue-400',
+            glow: 'shadow-sky-500/15',
+            summary: 'Masih menunggu validasi atau tindak lanjut',
+        },
+        {
+            label: 'Selesai',
+            value: summary.selesai,
+            icon: CheckCircle2,
+            iconWrap: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
+            accent: 'from-emerald-500 via-green-400 to-teal-400',
+            glow: 'shadow-emerald-500/15',
+            summary: 'Sudah selesai dan siap digunakan',
+        },
+        {
+            label: 'Ditolak',
+            value: summary.ditolak,
+            icon: XCircle,
+            iconWrap: 'bg-rose-50 text-rose-600 ring-rose-100',
+            accent: 'from-rose-500 via-red-400 to-rose-400',
+            glow: 'shadow-rose-500/15',
+            summary: 'Perlu perhatian atau pengajuan ulang',
+        },
+    ];
+});
+
+const heroHighlights = computed(() => {
+    const summary = safeSummary.value;
+    const finishedRatio = summary.total > 0 ? Math.round((summary.selesai / summary.total) * 100) : 0;
+    const runningRatio = summary.total > 0 ? Math.round((summary.diproses / summary.total) * 100) : 0;
+
+    return [
+        {
+            label: 'Status sistem',
+            value: 'Aktif',
+            tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            pulse: true,
+        },
+        {
+            label: 'Diperbarui',
+            value: `${formatDate(todayString())}`,
+            tone: 'bg-white/10 text-white border-white/15',
+            pulse: false,
+        },
+        {
+            label: 'Selesai',
+            value: `${finishedRatio}%`,
+            tone: 'bg-white/10 text-white border-white/15',
+            pulse: false,
+        },
+        {
+            label: 'Diproses',
+            value: `${runningRatio}%`,
+            tone: 'bg-white/10 text-white border-white/15',
+            pulse: false,
+        },
+    ];
 });
 
 function formatDate(date?: string | null) {
@@ -559,7 +666,7 @@ watch(
 
 function openForm(jenis: JenisSuratOption) {
     router.get(
-        `${props.endpoints.basePath}/ajukan`,
+        `${safeEndpoints.value.basePath}/ajukan`,
         { jenis: jenis.id },
         { preserveScroll: true },
     );
@@ -604,92 +711,77 @@ function fieldError(name: string): string | undefined {
         <Head title="Dashboard - FAST" />
 
         <!-- Greeting -->
-        <div
-            class="mb-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
-        >
-            <div
-                class="border-b border-slate-100 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.10),_transparent_45%),linear-gradient(135deg,_rgba(248,250,252,0.96),_#ffffff)] px-5 py-5 sm:px-6 sm:py-6"
-            >
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="max-w-3xl">
-                        <p class="mt-4 text-sm text-slate-500">
-                            Selamat datang,
-                            <span class="font-semibold text-slate-900">{{ dashboardGreeting }}</span>
-                        </p>
-                        <h2
-                            class="mt-1 max-w-3xl text-xl font-semibold leading-tight text-slate-900 sm:text-2xl"
-                        >
-                            {{ dashboardIntro }}
-                        </h2>
+        <section class="relative mb-6 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-[var(--primary)] text-white shadow-[0_18px_50px_rgba(15,23,42,0.14)]">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_34%),radial-gradient(circle_at_80%_20%,_rgba(191,219,254,0.18),_transparent_24%),linear-gradient(135deg,_hsl(221_78%_45%),_hsl(221_78%_58%)_48%,_hsl(203_92%_68%))]" />
+            <div class="absolute inset-0 opacity-[0.10] mix-blend-soft-light bg-[linear-gradient(rgba(255,255,255,0.95)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.95)_1px,transparent_1px)] bg-[size:28px_28px]" />
+            <div class="absolute -left-16 top-0 h-56 w-56 rounded-full bg-white/14 blur-3xl" />
+            <div class="absolute top-8 right-0 h-64 w-64 rounded-full bg-sky-200/14 blur-3xl" />
+            <div class="absolute bottom-0 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+
+            <div class="relative px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                <div class="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_340px] lg:items-stretch">
+                    <div class="flex min-w-0 flex-col justify-between gap-6">
+                        <div class="max-w-3xl">
+                            <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-[0.18em] text-white/90 uppercase shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-white/15">
+                                <span class="relative flex size-2">
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
+                                    <span class="relative inline-flex size-2 rounded-full bg-emerald-300" />
+                                </span>
+                                Dashboard Akademik
+                            </div>
+                            <p class="text-base font-medium tracking-tight text-white/85 sm:text-lg">
+                                Selamat datang,
+                                <span class="font-semibold text-white">{{ dashboardGreeting }}</span>
+                            </p>
+                            <h2 class="mt-2 max-w-3xl text-2xl font-semibold leading-tight text-white sm:text-3xl lg:text-4xl">
+                                {{ dashboardIntro }}
+                            </h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-[15px]">
+                                Semua status penting ditampilkan supaya Anda cepat tahu apa yang sedang berjalan.
+                            </p>
+                        </div>
+
                     </div>
+
                 </div>
             </div>
 
-            <!-- 5 statistik -->
-            <div class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3 sm:p-6 lg:grid-cols-4">
+        </section>
+
+        <div class="-mt-1 mb-6 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div
+                v-for="stat in heroSummaryCards"
+                :key="stat.label"
+                class="group relative overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white/95 p-4 text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_14px_28px_rgba(59,130,246,0.10)]"
+                :class="stat.label === 'Total Surat' ? 'border-blue-200/80' : stat.label === 'Diproses' ? 'border-sky-200/80' : stat.label === 'Selesai' ? 'border-emerald-200/80' : 'border-rose-200/80'"
+            >
                 <div
-                    v-for="stat in [
-                        {
-                            label: 'Total Surat',
-                            value: summary.total,
-                            border: 'border-blue-200',
-                            icon: FileText,
-                            iconColor: 'text-blue-400',
-                        },
-                        {
-                            label: 'Diproses',
-                            value: summary.diproses,
-                            border: 'border-sky-200',
-                            icon: RefreshCw,
-                            iconColor: 'text-sky-400',
-                        },
-                        {
-                            label: 'Selesai',
-                            value: summary.selesai,
-                            border: 'border-green-200',
-                            icon: CheckCircle2,
-                            iconColor: 'text-green-400',
-                        },
-                        {
-                            label: 'Ditolak',
-                            value: summary.ditolak,
-                            border: 'border-red-200',
-                            icon: XCircle,
-                            iconColor: 'text-red-400',
-                        },
-                    ]"
-                    :key="stat.label"
-                    class="flex min-h-[110px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-transform duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_6px_18px_rgba(15,23,42,0.04)]"
-                >
+                    class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r transition-all duration-300 group-hover:h-1.5"
+                    :class="stat.accent"
+                />
+                <div class="absolute -right-8 -top-8 size-24 rounded-full opacity-0 blur-2xl transition-all duration-300 group-hover:opacity-100" :class="stat.glow" />
+
+                <div class="relative flex h-full min-h-[148px] flex-col justify-between gap-4">
                     <div class="flex items-start justify-between gap-3">
-                        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                            {{ stat.label }}
-                        </p>
-                        <component
-                            :is="stat.icon"
-                            class="size-4 shrink-0"
-                            :class="stat.iconColor"
-                        />
-                    </div>
-                    <div class="mt-3">
-                        <p class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                            {{ String(stat.value).padStart(2, '0') }}
-                        </p>
-                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                            <div
-                                class="h-full rounded-full"
-                                :class="[
-                                    stat.label === 'Total Surat'
-                                        ? 'bg-blue-500'
-                                        : stat.label === 'Diproses'
-                                          ? 'bg-sky-500'
-                                          : stat.label === 'Selesai'
-                                            ? 'bg-emerald-500'
-                                        : 'bg-red-500',
-                                ]"
-                            />
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[11px] font-semibold tracking-[0.22em] text-slate-400 uppercase">
+                                {{ stat.label }}
+                            </p>
+                            <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2.15rem]">
+                                {{ String(stat.value).padStart(2, '0') }}
+                            </p>
+                        </div>
+                        <div
+                            class="grid size-11 shrink-0 place-items-center rounded-2xl ring-1 transition-all duration-300 group-hover:scale-[1.03] group-hover:-rotate-1"
+                            :class="stat.iconWrap"
+                        >
+                            <component :is="stat.icon" class="size-5" />
                         </div>
                     </div>
+
+                    <p class="text-xs leading-relaxed text-slate-500">
+                        {{ stat.summary }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -700,13 +792,10 @@ function fieldError(name: string): string | undefined {
             <div class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
                 <!-- Toolbar -->
                 <div
-                    class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    class="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/40 px-5 py-4"
                 >
-                    <div>
-                        <p class="text-[11px] font-semibold tracking-[0.18em] text-blue-600 uppercase">
-                            Aktivitas Terbaru
-                        </p>
-                        <h2 class="mt-1 text-base font-semibold text-slate-900">
+                    <div class="min-w-0">
+                        <h2 class="text-base font-semibold text-slate-900">
                             Pengajuan Terbaru
                         </h2>
                         <p class="mt-1 text-xs text-slate-500">
@@ -714,8 +803,8 @@ function fieldError(name: string): string | undefined {
                         </p>
                     </div>
                     <Link
-                        :href="`${props.endpoints.basePath}/history`"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                        :href="`${safeEndpoints.basePath}/history`"
+                        class="fast-btn fast-btn-primary w-fit shrink-0 px-4 py-2 text-xs"
                     >
                         <History class="size-3.5" />
                         Lihat Semua
@@ -967,9 +1056,9 @@ function fieldError(name: string): string | undefined {
                             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <Link
-                                        :href="`${props.endpoints.basePath}/history/${item.id}`"
+                                        :href="`${safeEndpoints.basePath}/history/${item.id}`"
                                         title="Detail Surat"
-                                        class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                        class="fast-btn fast-btn-outline px-3 py-1.5 text-[11px] font-medium text-slate-600"
                                     >
                                         <FileText class="size-3.5" /> Detail Surat
                                     </Link>
@@ -977,16 +1066,16 @@ function fieldError(name: string): string | undefined {
                                         v-if="item.hasPdf"
                                         type="button"
                                         title="Download PDF"
-                                        class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                                        class="fast-btn fast-btn-primary px-3 py-1.5 text-[10px] font-medium"
                                         @click="openViewer(item, 'pdf')"
                                     >
-                                        <Download class="size-3.5" /> PDF
+                                        <Download class="size-3" /> PDF
                                     </button>
                                     <button
                                         v-if="item.notes && item.notes.length"
                                         type="button"
                                         title="Catatan Dekan"
-                                        class="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 transition-colors hover:bg-sky-100"
+                                        class="fast-btn fast-btn-soft px-3 py-1.5 text-[11px] font-medium text-sky-700"
                                         @click="toggleNotes(item.id)"
                                     >
                                         <Info class="size-3.5" /> Catatan
@@ -995,7 +1084,7 @@ function fieldError(name: string): string | undefined {
                                         v-if="item.rejectionReason || item.revisionReason"
                                         type="button"
                                         title="Catatan"
-                                        class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-100"
+                                        class="fast-btn fast-btn-soft px-3 py-1.5 text-[11px] font-medium text-red-600"
                                         @click="toggleReason(item.id)"
                                     >
                                         <AlertCircle class="size-3.5" /> Detail
@@ -1009,6 +1098,8 @@ function fieldError(name: string): string | undefined {
 
             <!-- Kanan: Ajukan -->
             <div class="space-y-4">
+                <LetterFlowCard />
+
                 <!-- Ajukan Surat Baru -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h3
@@ -1066,7 +1157,6 @@ function fieldError(name: string): string | undefined {
                         <ExternalLink class="size-3.5" />
                     </Link>
                 </div>
-
             </div>
         </div>
 
@@ -1509,7 +1599,7 @@ function fieldError(name: string): string | undefined {
                         <button
                             v-else
                             type="button"
-                            class="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline flex-1 rounded-xl py-2.5 text-sm font-medium text-slate-600"
                             @click="closeForm"
                         >
                             Batal
@@ -1518,7 +1608,7 @@ function fieldError(name: string): string | undefined {
                         <button
                             v-if="formStep === 'form'"
                             type="button"
-                            class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                            class="fast-btn fast-btn-primary flex-1 rounded-xl py-2.5 text-sm font-semibold"
                             @click="goToPreview"
                         >
                             Tinjau Pengajuan ?
@@ -1526,7 +1616,7 @@ function fieldError(name: string): string | undefined {
                         <button
                             v-else
                             type="submit"
-                            class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                            class="fast-btn fast-btn-primary flex-1 rounded-xl py-2.5 text-sm font-semibold"
                             :disabled="submitForm.processing"
                         >
                             {{

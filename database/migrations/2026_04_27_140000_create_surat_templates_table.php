@@ -22,6 +22,7 @@ return new class extends Migration
             $table->unsignedInteger('version')->default(1);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

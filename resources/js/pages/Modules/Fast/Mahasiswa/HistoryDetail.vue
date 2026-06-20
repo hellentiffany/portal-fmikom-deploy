@@ -436,7 +436,7 @@ async function copyNomor() {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <Link
                     :href="backHref"
-                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    class="fast-btn fast-btn-outline items-center gap-2 px-4 py-2 text-sm font-medium"
                 >
                     <ArrowLeft class="size-4" />
                     Kembali
@@ -635,23 +635,23 @@ async function copyNomor() {
                         </div>
 
                         <div class="mt-4 space-y-3">
-                            <button
-                                type="button"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                                @click="openPreview"
-                            >
-                                <Eye class="size-4" />
-                                Preview Dokumen
+                        <button
+                            type="button"
+                            class="fast-btn fast-btn-outline w-full px-4 py-2.5 text-sm"
+                            @click="openPreview"
+                        >
+                            <Eye class="size-4" />
+                            Preview Dokumen
                             </button>
 
-                            <button
-                                v-if="surat.canDownloadPdf"
-                                type="button"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-                                @click="openPdf"
-                            >
-                                <Download class="size-4" />
-                                Download PDF
+                        <button
+                            v-if="surat.canDownloadPdf"
+                            type="button"
+                            class="fast-btn fast-btn-primary w-full px-4 py-2.5 text-sm"
+                            @click="openPdf"
+                        >
+                            <Download class="size-4" />
+                            Download PDF
                             </button>
 
                             <div
@@ -764,13 +764,13 @@ async function copyNomor() {
                                     </p>
                                 </div>
                                 <button
-                                    v-if="step.note"
-                                    type="button"
-                                    class="inline-flex shrink-0 items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
-                                    :aria-expanded="expandedTimelineNoteId === step.id"
-                                    :aria-controls="`timeline-note-${step.id}`"
-                                    @click="toggleTimelineNote(step.id)"
-                                >
+                                v-if="step.note"
+                                type="button"
+                                class="fast-btn fast-btn-danger shrink-0 px-2.5 py-1 text-xs"
+                                :aria-expanded="expandedTimelineNoteId === step.id"
+                                :aria-controls="`timeline-note-${step.id}`"
+                                @click="toggleTimelineNote(step.id)"
+                            >
                                     <ShieldAlert class="size-3.5" />
                                     Catatan
                                 </button>

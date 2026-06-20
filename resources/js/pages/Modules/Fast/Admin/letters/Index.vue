@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/admin/letters/Index.vue
+// resources/js/pages/Modules/Fast/Admin/letters/Index.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -168,7 +168,7 @@ function approveSurat(id: number) {
     );
 }
 function formatDate(d?: string | null) {
-    if (!d) return '-';
+    if (!d) return '';
     return new Intl.DateTimeFormat('id-ID', {
         day: '2-digit',
         month: 'short',
@@ -348,7 +348,7 @@ function initials(name?: string | null) {
                                     <p
                                         class="truncate text-sm font-semibold text-slate-900"
                                     >
-                                        {{ item.pemohon?.name ?? '-' }}
+                                        {{ item.pemohon?.name ?? '' }}
                                     </p>
                                     <span
                                         class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -359,13 +359,12 @@ function initials(name?: string | null) {
                                 </div>
                                 <div class="mt-0.5 flex items-center gap-2">
                                     <p class="text-xs text-slate-500">
-                                        {{ item.jenisSurat?.nama ?? '-' }}
+                                        {{ item.jenisSurat?.nama ?? '' }}
                                     </p>
-                                    <span class="text-slate-300">Â·</span>
                                     <p
                                         class="font-mono text-[10px] text-slate-400"
                                     >
-                                        {{ item.nomor_surat ?? '-' }}
+                                        {{ item.nomor_surat ?? '' }}
                                     </p>
                                 </div>
                             </div>
@@ -385,7 +384,7 @@ function initials(name?: string | null) {
                         <div class="flex shrink-0 items-center gap-2">
                             <Link
                                 :href="`/admin/surat/${item.id}`"
-                                class="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                class="fast-btn fast-btn-outline flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium text-slate-600"
                                 title="Lihat Detail"
                             >
                                 <Eye class="size-3" /> Detail
@@ -394,7 +393,7 @@ function initials(name?: string | null) {
                                 v-if="item.can_approve"
                                 type="button"
                                 :disabled="approvingId === item.id"
-                                class="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                                class="fast-btn fast-btn-primary flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium"
                                 title="Validasi & Teruskan"
                                 @click="approveSurat(item.id)"
                             >
@@ -403,7 +402,7 @@ function initials(name?: string | null) {
                             <Link
                                 v-if="item.can_edit"
                                 :href="`/admin/surat/${item.id}/edit?return_to=/admin/surat`"
-                                class="flex items-center gap-1 rounded-lg bg-amber-600 px-2.5 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-amber-700"
+                                class="fast-btn fast-btn-danger flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium"
                                 :title="
                                     item.status === 'pending'
                                         ? 'Lengkapi Data & Validasi'
@@ -420,7 +419,7 @@ function initials(name?: string | null) {
                             <button
                                 v-if="item.status === 'pending'"
                                 type="button"
-                                class="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-50"
+                                class="fast-btn fast-btn-danger flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium"
                                 title="Tolak"
                                 @click="openRejectModal(item.id)"
                             >
@@ -436,19 +435,19 @@ function initials(name?: string | null) {
             v-if="surats.links.length > 3"
             class="mt-5 flex flex-wrap items-center gap-1.5"
         >
-            <Link
-                v-for="link in surats.links"
-                :key="link.label"
-                :href="link.url ?? '#'"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="[
+                <Link
+                    v-for="link in surats.links"
+                    :key="link.label"
+                    :href="link.url ?? '#'"
+                    class="fast-btn px-3 py-1.5 text-xs font-medium"
+                    :class="[
                     link.active
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                        ? 'fast-btn-primary'
+                        : 'fast-btn-outline',
                     !link.url ? 'pointer-events-none opacity-40' : '',
                 ]"
-                v-html="link.label"
-            />
+                    v-html="link.label"
+                />
         </div>
         <Transition name="fade">
             <div
@@ -497,14 +496,14 @@ function initials(name?: string | null) {
                     <div class="mt-4 flex justify-end gap-2">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline rounded-xl px-4 py-2 text-sm font-medium text-slate-600"
                             @click="closeRejectModal"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
-                            class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                            class="fast-btn fast-btn-danger rounded-xl px-4 py-2 text-sm"
                             :disabled="
                                 rejectForm.processing ||
                                 !rejectForm.reason.trim()

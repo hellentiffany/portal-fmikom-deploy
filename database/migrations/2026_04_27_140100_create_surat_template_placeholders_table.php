@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('default_value')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['surat_template_id', 'placeholder_key'], 'surat_template_placeholder_unique');
         });

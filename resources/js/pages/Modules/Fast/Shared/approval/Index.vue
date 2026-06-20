@@ -325,7 +325,7 @@ function isPdfAttachment(f?: DetailLampiran | null) {
                                 Daftar Surat Approval
                             </h2>
                             <p class="mt-0.5 text-xs text-slate-400">
-                                {{ surats.from ?? 0 }}â€“{{ surats.to ?? 0 }} dari
+                                {{ surats.from ?? 0 }}-{{ surats.to ?? 0 }} dari
                                 {{ surats.total }} data
                             </p>
                         </div>
@@ -468,19 +468,19 @@ function isPdfAttachment(f?: DetailLampiran | null) {
                     v-if="surats.links.length > 3"
                     class="flex flex-wrap items-center gap-1.5 border-t border-slate-100 px-5 py-3"
                 >
-                    <Link
-                        v-for="link in surats.links"
-                        :key="`${link.label}-${link.url}`"
-                        :href="link.url || ''"
-                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                        :class="[
-                            link.active
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                            !link.url ? 'pointer-events-none opacity-40' : '',
-                        ]"
-                        v-html="link.label"
-                    />
+                <Link
+                    v-for="link in surats.links"
+                    :key="`${link.label}-${link.url}`"
+                    :href="link.url || ''"
+                    class="fast-btn px-3 py-1.5 text-xs font-medium"
+                    :class="[
+                        link.active
+                            ? 'fast-btn-primary'
+                            : 'fast-btn-outline',
+                        !link.url ? 'pointer-events-none opacity-40' : '',
+                    ]"
+                    v-html="link.label"
+                />
                 </div>
             </div>
             <!-- Sidebar -->
@@ -643,13 +643,12 @@ function isPdfAttachment(f?: DetailLampiran | null) {
                             <Button
                                 type="button"
                                 variant="outline"
-                                class="rounded-xl"
                                 @click="closeRejectModal"
                                 >Batal</Button
                             >
                             <Button
                                 type="submit"
-                                class="rounded-xl bg-red-600 text-white hover:bg-red-700"
+                                variant="destructive"
                                 :disabled="rejectForm.processing"
                                 >Kembalikan ke Admin</Button
                             >
@@ -701,13 +700,12 @@ function isPdfAttachment(f?: DetailLampiran | null) {
                             <Button
                                 type="button"
                                 variant="outline"
-                                class="rounded-xl"
                                 @click="closeFinalRejectModal"
                                 >Batal</Button
                             >
                             <Button
                                 type="submit"
-                                class="rounded-xl bg-slate-800 text-white hover:bg-slate-900"
+                                variant="destructive"
                                 :disabled="finalRejectForm.processing"
                                 >Tolak Final</Button
                             >

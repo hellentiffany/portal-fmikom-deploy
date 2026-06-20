@@ -28,7 +28,7 @@ test('authenticated users can visit the laravel dashboard page', function () {
 
     $this->actingAs($user)
         ->get(route('dashboard'))
-        ->assertRedirect(route('fast.user.dashboard'));
+        ->assertRedirect(route('mahasiswa.dashboard'));
 });
 
 test('admin users are redirected to the admin dashboard after login redirect route', function () {
@@ -44,7 +44,7 @@ test('mahasiswa users are redirected to the fast user dashboard after login redi
 
     $this->actingAs($user)
         ->get(route('redirect.dashboard'))
-        ->assertRedirect(route('fast.user.dashboard'));
+        ->assertRedirect(route('mahasiswa.dashboard'));
 });
 
 test('dosen users are redirected to the dosen dashboard after login redirect route', function () {

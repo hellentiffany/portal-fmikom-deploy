@@ -297,7 +297,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <button
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    class="fast-btn fast-btn-outline items-center gap-2 px-4 py-2 text-sm font-medium"
                     @click="goBack"
                 >
                     <ArrowLeft class="size-4" />
@@ -450,7 +450,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                     <div v-if="can_edit" class="mt-4">
                         <Link
                             :href="`/admin/surat/${id}/edit?return_to=/admin/dashboard`"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                            class="fast-btn fast-btn-soft w-full px-4 py-2.5 text-sm font-semibold text-sky-700"
                         >
                             <FileEdit class="size-4" />
                             {{ status === 'pending' ? 'Lengkapi Data' : 'Edit & Teruskan' }}
@@ -461,7 +461,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                         <button
                             v-if="previewTemplateUrl || generatedDocumentUrl"
                             type="button"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline w-full px-4 py-2.5 text-sm font-semibold"
                             @click="openPreviewDocument"
                         >
                             <Eye class="size-4" />
@@ -471,7 +471,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                         <button
                             v-if="isFinished"
                             type="button"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                            class="fast-btn fast-btn-primary w-full px-4 py-2.5 text-sm font-semibold"
                             @click="openDownloadPdf"
                         >
                             <Download class="size-4" />
@@ -545,7 +545,7 @@ function timelineCardClasses(state: 'done' | 'current' | 'pending'): string {
                                 <button
                                     v-if="entry.note"
                                     type="button"
-                                    class="inline-flex shrink-0 items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
+                                    class="fast-btn fast-btn-danger shrink-0 px-2 py-1 text-xs"
                                     :aria-expanded="expandedTimelineNoteId === entry.id"
                                     :aria-controls="`timeline-note-${entry.id}`"
                                     @click="toggleTimelineNote(entry.id)"

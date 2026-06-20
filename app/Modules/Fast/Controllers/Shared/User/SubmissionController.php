@@ -24,7 +24,7 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Halaman "Ajukan Surat": pilih jenis surat ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ isi form ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ upload ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ submit.
+     * Halaman "Ajukan Surat": pilih jenis surat, isi form, upload, lalu submit.
      */
     public function create(Request $request): Response
     {
@@ -148,7 +148,7 @@ class SubmissionController extends Controller
             'tanggal_kebutuhan.after_or_equal' => 'Tanggal kebutuhan tidak boleh di masa lalu.',
         ])->validate();
 
-        /** @var JenisSurat $jenisSurat */
+    /** @var JenisSurat $jenisSurat */
         $jenisSurat = $this->visibleSubmissionJenisSuratQuery($user)
             ->findOrFail($validated['jenis_surat_id']);
 
@@ -290,5 +290,6 @@ class SubmissionController extends Controller
     }
 
 }
+
 
 

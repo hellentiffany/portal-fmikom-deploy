@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// File: resources/js/pages/FASt/admin/letters/Create.vue
+// File: resources/js/pages/Modules/Fast/Admin/letters/Create.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
@@ -9,7 +9,6 @@ import {
     X,
     FileText,
     AlertCircle,
-    Sparkles,
     ArrowRight,
 } from 'lucide-vue-next';
 type JenisSurat = {
@@ -99,11 +98,6 @@ function submit() {
         >
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
-                    <p
-                        class="flex items-center gap-1.5 text-sm font-medium text-blue-600"
-                    >
-                        <Sparkles class="size-4" /> Langkah 1 dari 3
-                    </p>
                     <h2 class="mt-1 text-xl font-bold text-slate-900">
                         Pilih Jenis Surat
                     </h2>
@@ -133,7 +127,7 @@ function submit() {
                     <button
                         v-if="searchQuery"
                         type="button"
-                        class="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        class="fast-btn fast-btn-ghost fast-btn-icon absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                         @click="searchQuery = ''"
                     >
                         <X class="size-4" />
@@ -152,11 +146,11 @@ function submit() {
                         <!-- Set 1 -->
                         <button
                             type="button"
-                            class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                            class="fast-btn shrink-0 px-3 py-1.5 text-xs font-medium"
                             :class="
                                 activeCategory === null
-                                    ? 'bg-blue-500 text-white shadow-sm'
-                                    : 'border border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                    ? 'fast-btn-primary'
+                                    : 'fast-btn-outline text-slate-500'
                             "
                             @click="activeCategory = null"
                         >
@@ -166,11 +160,11 @@ function submit() {
                             v-for="cat in categories"
                             :key="'a-' + cat.id"
                             type="button"
-                            class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                            class="fast-btn shrink-0 px-3 py-1.5 text-xs font-medium"
                             :class="
                                 activeCategory === cat.id
-                                    ? 'bg-blue-500 text-white shadow-sm'
-                                    : 'border border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                    ? 'fast-btn-primary'
+                                    : 'fast-btn-outline text-slate-500'
                             "
                             @click="
                                 activeCategory =
@@ -182,11 +176,11 @@ function submit() {
                         <!-- Set 2 (duplicate untuk seamless loop) -->
                         <button
                             type="button"
-                            class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                            class="fast-btn shrink-0 px-3 py-1.5 text-xs font-medium"
                             :class="
                                 activeCategory === null
-                                    ? 'bg-blue-500 text-white shadow-sm'
-                                    : 'border border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                    ? 'fast-btn-primary'
+                                    : 'fast-btn-outline text-slate-500'
                             "
                             @click="activeCategory = null"
                         >
@@ -196,11 +190,11 @@ function submit() {
                             v-for="cat in categories"
                             :key="'b-' + cat.id"
                             type="button"
-                            class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                            class="fast-btn shrink-0 px-3 py-1.5 text-xs font-medium"
                             :class="
                                 activeCategory === cat.id
-                                    ? 'bg-blue-500 text-white shadow-sm'
-                                    : 'border border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                    ? 'fast-btn-primary'
+                                    : 'fast-btn-outline text-slate-500'
                             "
                             @click="
                                 activeCategory =
@@ -268,7 +262,7 @@ function submit() {
                     </div>
                     <button
                         type="button"
-                        class="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition-colors hover:bg-blue-700 disabled:opacity-50"
+                        class="fast-btn fast-btn-primary flex shrink-0 items-center justify-center gap-2 px-6 py-2.5 text-sm"
                         :disabled="form.processing"
                         @click="submit"
                     >

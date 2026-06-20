@@ -152,7 +152,7 @@ function isPdfAttachment(f?: DetailLampiran | null) {
     );
 }
 function formatDate(date?: string | null) {
-    if (!date) return '-';
+    if (!date) return '';
     return new Intl.DateTimeFormat('id-ID', {
         day: '2-digit',
         month: 'short',
@@ -160,7 +160,7 @@ function formatDate(date?: string | null) {
     }).format(new Date(date));
 }
 function initials(name?: string | null) {
-    if (!name) return '--';
+    if (!name) return '?';
     return name
         .split(' ')
         .filter(Boolean)
@@ -293,7 +293,7 @@ function submitFinalReject() {
                 <div class="flex flex-col gap-2 sm:flex-row lg:flex-row">
                     <button
                         type="button"
-                        class="h-11 w-full rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
+                        class="fast-btn fast-btn-primary h-11 w-full px-5 text-sm sm:w-auto"
                         @click="applyFilter"
                     >
                         Terapkan
@@ -301,7 +301,7 @@ function submitFinalReject() {
                     <button
                         v-if="search || categoryId"
                         type="button"
-                        class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 sm:w-auto"
+                        class="fast-btn fast-btn-outline h-11 w-full px-5 text-sm font-medium text-slate-500 sm:w-auto"
                         @click="resetFilter"
                     >
                         Reset
@@ -350,7 +350,7 @@ function submitFinalReject() {
                                     <p
                                         class="truncate text-sm font-semibold text-slate-900"
                                     >
-                                        {{ item.pemohon?.name || '-' }}
+                                        {{ item.pemohon?.name || '' }}
                                     </p>
                                     <span
                                         class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -361,11 +361,10 @@ function submitFinalReject() {
                                 </div>
                                 <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <p class="text-xs text-slate-500">
-                                        {{ item.jenisSurat?.nama || '-' }}
+                                        {{ item.jenisSurat?.nama || '' }}
                                     </p>
-                                    <span class="text-slate-300">Â·</span>
                                     <p class="font-mono text-[10px] text-slate-400">
-                                        {{ item.pemohon?.nim || '-' }}
+                                        {{ item.pemohon?.nim || '' }}
                                     </p>
                                 </div>
                             </div>
@@ -393,7 +392,7 @@ function submitFinalReject() {
                             </button>
                             <button
                                 type="button"
-                                class="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                                class="fast-btn fast-btn-primary flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium"
                                 title="Setujui"
                                 @click="submitApprove(item)"
                             >
@@ -401,7 +400,7 @@ function submitFinalReject() {
                             </button>
                             <button
                                 type="button"
-                                class="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-50"
+                                class="fast-btn fast-btn-danger flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium"
                                 title="Kembalikan untuk revisi"
                                 @click="openRejectModal(item)"
                             >
@@ -409,7 +408,7 @@ function submitFinalReject() {
                             </button>
                             <button
                                 type="button"
-                                class="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-50"
+                                class="fast-btn fast-btn-danger flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium"
                                 title="Tolak final"
                                 @click="openFinalRejectModal(item)"
                             >
@@ -427,11 +426,11 @@ function submitFinalReject() {
                     v-for="link in surats.links"
                     :key="`${link.label}-${link.url}`"
                     :href="link.url || ''"
-                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                    class="fast-btn px-3 py-1.5 text-xs font-medium"
                     :class="[
                         link.active
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                            ? 'fast-btn-primary'
+                            : 'fast-btn-outline',
                         !link.url ? 'pointer-events-none opacity-40' : '',
                     ]"
                     v-html="link.label"

@@ -172,7 +172,7 @@ test('approved surat can be downloaded by owner', function () {
         'pemohon_id' => $user->id,
         'nomor_surat' => 'ASRT-20260001',
         'keperluan' => 'Keperluan administrasi akademik semester ini.',
-        'status' => 'approved',
+        'status' => \App\Models\Surat::STATUS_FINISHED,
         'generated_file_path' => 'test.pdf',
         'tanggal_pengajuan' => now(),
         'tanggal_kebutuhan' => now()->addDay()->toDateString(),

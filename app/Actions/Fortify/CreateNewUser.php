@@ -36,6 +36,8 @@ class CreateNewUser implements CreatesNewUsers
             'name' => $input['name'],
             'email' => $input['email'],
             'role_id' => $mahasiswaRoleId,
+            'role_title' => 'Mahasiswa',
+            'user_type' => 'mahasiswa',
             'is_active' => true,
             'email_verified_at' => now(),
             'password' => $input['password'],

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/admin/qr/Index.vue
+// resources/js/pages/Modules/Fast/Admin/qr/Index.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -9,7 +9,6 @@ import {
     ShieldOff,
     Eye,
     XCircle,
-    Sparkles,
     ChevronDown,
     Download,
 } from 'lucide-vue-next';
@@ -121,11 +120,6 @@ function qrStatusLabel(s?: string) {
         <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
-                    <p
-                        class="flex items-center gap-1.5 text-sm font-medium text-blue-600"
-                    >
-                        <Sparkles class="size-4" /> Kelola QR Code
-                    </p>
                     <h2 class="mt-1 text-xl font-bold text-slate-900">
                         Verifikasi & Keamanan
                     </h2>
@@ -173,7 +167,7 @@ function qrStatusLabel(s?: string) {
                 </div>
                 <button
                     type="button"
-                    class="h-11 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 sm:w-auto"
+                    class="fast-btn fast-btn-soft h-11 w-full px-5 text-sm font-medium text-blue-700 sm:w-auto"
                     @click="
                         search = '';
                         status = '';
@@ -355,7 +349,7 @@ function qrStatusLabel(s?: string) {
                             v-if="selectedQrToken"
                             :href="`/qr-image/${selectedQrToken}`"
                             download="qr-code.svg"
-                            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        class="fast-btn fast-btn-outline items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700"
                         >
                             <Download class="size-4" /> Unduh SVG
                         </a>
@@ -363,7 +357,7 @@ function qrStatusLabel(s?: string) {
                             v-if="selectedQrToken"
                             :href="`/verifikasi-qr/${selectedQrToken}`"
                             target="_blank"
-                            class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                        class="fast-btn fast-btn-primary items-center gap-1.5 px-4 py-2 text-sm font-semibold"
                         >
                             <Eye class="size-4" /> Verifikasi
                         </a>
@@ -414,14 +408,14 @@ function qrStatusLabel(s?: string) {
                     <div class="mt-5 flex justify-end gap-2">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                            class="fast-btn fast-btn-outline rounded-xl px-4 py-2 text-sm font-medium text-slate-600"
                             @click="showRevokeModal = false"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
-                            class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                            class="fast-btn fast-btn-danger rounded-xl px-4 py-2 text-sm"
                             :disabled="revokeForm.processing"
                             @click="submitRevoke"
                         >

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// File: resources/js/pages/FASt/admin/history/Index.vue
+// File: resources/js/pages/Modules/Fast/Admin/history/Index.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -221,7 +221,7 @@ function statusClass(s: string) {
                 </div>
                 <button
                     type="button"
-                    class="h-11 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 sm:w-auto"
+                    class="fast-btn fast-btn-soft h-11 w-full px-5 text-sm font-medium text-blue-700 sm:w-auto"
                     @click="resetFilter"
                 >
                     Reset Filter
@@ -344,7 +344,7 @@ function statusClass(s: string) {
                         <div class="flex shrink-0 items-start gap-2">
                             <Link
                                 :href="`/admin/surat/${item.id}`"
-                                class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                class="fast-btn fast-btn-outline flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-slate-600"
                                 title="Lihat detail"
                             >
                                 <Eye class="size-3" /> Detail
@@ -353,7 +353,7 @@ function statusClass(s: string) {
                                 v-if="item.status === 'finished'"
                                 :href="`/admin/surat/${item.id}/pdf`"
                                 target="_blank"
-                                class="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-blue-700"
+                                class="fast-btn fast-btn-primary flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium"
                                 title="Unduh PDF"
                             >
                                 <Download class="size-3" /> PDF
@@ -372,11 +372,11 @@ function statusClass(s: string) {
                 v-for="link in surats.links"
                 :key="link.label"
                 :href="link.url ?? '#'"
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                class="fast-btn px-3 py-1.5 text-xs font-medium"
                 :class="[
                     link.active
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                        ? 'fast-btn-primary'
+                        : 'fast-btn-outline',
                     !link.url ? 'pointer-events-none opacity-40' : '',
                 ]"
                 v-html="link.label"

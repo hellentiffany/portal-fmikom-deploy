@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/admin/categories/Index.vue
+// resources/js/pages/Modules/Fast/Admin/categories/Index.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import {
@@ -124,7 +124,7 @@ function destroy(cat: Category) {
         <template #actions>
             <button
                 type="button"
-                class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                class="fast-btn fast-btn-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
                 @click="openAdd"
             >
                 <Plus class="size-3.5" /> Tambah Kategori
@@ -213,14 +213,17 @@ function destroy(cat: Category) {
                         <span class="text-[10px] text-slate-400"
                             >Urutan: {{ cat.urutan }}</span
                         >
-                        <span v-if="cat.icon" class="text-[10px] text-slate-400"
-                            >Â· Icon: {{ cat.icon }}</span
+                        <span
+                            v-if="cat.icon"
+                            class="text-[10px] text-slate-400"
                         >
+                            Icon: {{ cat.icon }}
+                        </span>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <button
                             type="button"
-                            class="grid size-7 place-items-center rounded-lg bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200"
+                            class="fast-btn fast-btn-outline grid size-7 place-items-center rounded-lg text-slate-500"
                             title="Edit"
                             @click="openEdit(cat)"
                         >
@@ -228,11 +231,11 @@ function destroy(cat: Category) {
                         </button>
                         <button
                             type="button"
-                            class="grid size-7 place-items-center rounded-lg transition-colors"
+                            class="fast-btn grid size-7 place-items-center rounded-lg"
                             :class="
                                 cat.is_active
-                                    ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
-                                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                    ? 'fast-btn-soft text-amber-600'
+                                    : 'fast-btn-soft text-blue-600'
                             "
                             :title="cat.is_active ? 'Nonaktifkan' : 'Aktifkan'"
                             @click="toggleActive(cat)"
@@ -244,7 +247,7 @@ function destroy(cat: Category) {
                         </button>
                         <button
                             type="button"
-                            class="grid size-7 place-items-center rounded-lg bg-red-50 text-red-500 transition-colors hover:bg-red-100"
+                            class="fast-btn fast-btn-soft grid size-7 place-items-center rounded-lg border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 hover:text-red-700"
                             title="Hapus"
                             @click="destroy(cat)"
                         >
@@ -391,18 +394,18 @@ function destroy(cat: Category) {
                         <div
                             class="flex justify-end gap-2 border-t border-slate-100 pt-4"
                         >
-                            <button
-                                type="button"
-                                class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-                                @click="closeModal"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="submit"
-                                class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-                                :disabled="form.processing"
-                            >
+                        <button
+                            type="button"
+                            class="fast-btn fast-btn-outline rounded-xl px-4 py-2 text-sm font-medium text-slate-600"
+                            @click="closeModal"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            class="fast-btn fast-btn-primary rounded-xl px-4 py-2 text-sm"
+                            :disabled="form.processing"
+                        >
                                 {{
                                     form.processing
                                         ? 'Menyimpan...'

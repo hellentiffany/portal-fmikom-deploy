@@ -228,6 +228,29 @@ class SuratDataContract
     }
 
     /**
+     * @return array<int, string>
+     */
+    public static function signerBoundFieldKeys(): array
+    {
+        return [
+            'nama_penanda_tangan',
+            'email_penanda_tangan',
+            'nik_penanda_tangan',
+            'nomor_induk_penanda_tangan',
+            'jabatan_penanda_tangan',
+            'program_studi_penanda_tangan',
+            'nama_kaprodi',
+            'nip_kaprodi',
+            'nomor_induk_kaprodi',
+            'program_studi_kaprodi',
+            'nama_dekan',
+            'nip_dekan',
+            'nomor_induk_dekan',
+            'program_studi_dekan',
+        ];
+    }
+
+    /**
      * @return array<string, string>
      */
     public static function adminManualFieldDefaults(): array
@@ -328,7 +351,8 @@ class SuratDataContract
         $type = strtolower(trim((string) ($field['type'] ?? '')));
 
         return $type === 'recipient'
-            || in_array($name, static::adminManualDataKeys(), true);
+            || in_array($name, static::adminManualDataKeys(), true)
+            || in_array($name, static::signerBoundFieldKeys(), true);
     }
 
     /**

@@ -85,7 +85,7 @@ class SuratHistoryService
     public static function generated(int $suratId, string $nomorSurat): SuratHistory
     {
         return static::record($suratId, SuratHistory::ACTION_GENERATED,
-            "Dokumen PDF digenerate â€” No: {$nomorSurat}");
+            "Dokumen PDF digenerate - No: {$nomorSurat}");
     }
 
     public static function printed(int $suratId): SuratHistory

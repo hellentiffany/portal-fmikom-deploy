@@ -14,6 +14,7 @@ return new class extends Migration
             $table->text('deskripsi')->nullable();
             $table->string('template_file_path')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

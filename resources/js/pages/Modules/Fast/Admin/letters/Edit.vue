@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/pages/FASt/admin/letters/Edit.vue
+// resources/js/pages/Modules/Fast/Admin/letters/Edit.vue
 import AdminLayout from '@/layouts/Modules/Fast/AdminLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
@@ -191,14 +191,14 @@ const submitLabel = computed(() =>
 <template>
     <AdminLayout
         title="Edit Surat"
-        :subtitle="`${jenisSurat.category?.nama ?? 'Surat'} â€” ${jenisSurat.nama}`"
+        :subtitle="`${jenisSurat.category?.nama ?? 'Surat'} - ${jenisSurat.nama}`"
         active-menu="letters"
         :breadcrumbs="[
             { label: 'Dashboard', href: '/admin/dashboard' },
             { label: 'Edit Surat' },
         ]"
     >
-        <Head :title="`Edit â€” ${jenisSurat.nama}`" />
+        <Head :title="`Edit - ${jenisSurat.nama}`" />
         <!-- Header alert -->
         <div
             class="mb-6 flex items-start gap-3 rounded-2xl px-5 py-4"
@@ -330,7 +330,7 @@ const submitLabel = computed(() =>
                             >
                             <button
                                 type="button"
-                                class="text-blue-500 hover:text-blue-700"
+                                class="fast-btn fast-btn-ghost fast-btn-icon text-blue-500 hover:text-blue-700"
                                 @click="removeKepada(idx)"
                             >
                                 <X class="size-3" />
@@ -363,7 +363,7 @@ const submitLabel = computed(() =>
                                     v-for="p in filteredPresets"
                                     :key="p"
                                     type="button"
-                                    class="flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-700 transition-colors hover:bg-blue-50"
+                                    class="fast-btn fast-btn-outline flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-700"
                                     @mousedown.prevent="
                                         cancelBlur();
                                         addKepada(p);
@@ -387,7 +387,7 @@ const submitLabel = computed(() =>
                         />
                         <button
                             type="button"
-                            class="flex h-9 items-center gap-1 rounded-xl bg-slate-100 px-3 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200"
+                            class="fast-btn fast-btn-outline flex h-9 items-center gap-1 px-3 text-xs font-medium text-slate-700"
                             @click="kepadaManual && addKepada(kepadaManual)"
                         >
                             <Plus class="size-3.5" /> Tambah
@@ -483,7 +483,7 @@ const submitLabel = computed(() =>
                                             : ''
                                     "
                                 >
-                                    <option value="">â€” Pilih â€”</option>
+                                    <option value="">- Pilih -</option>
                                     <option
                                         v-for="opt in field.options"
                                         :key="opt.value"
@@ -709,13 +709,13 @@ const submitLabel = computed(() =>
                 >
                     <a
                         :href="returnTo"
-                        class="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        class="fast-btn fast-btn-outline items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700"
                     >
                         <ChevronLeft class="size-4" /> Kembali
                     </a>
                     <button
                         type="submit"
-                        class="flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                        class="fast-btn fast-btn-primary flex items-center gap-1.5 px-5 py-2 text-sm font-semibold"
                         :disabled="form.processing"
                     >
                         {{

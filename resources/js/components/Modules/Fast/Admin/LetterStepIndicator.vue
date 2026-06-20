@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// resources/js/components/FASt/admin/LetterStepIndicator.vue
+// resources/js/components/Modules/Fast/Admin/LetterStepIndicator.vue
 const props = defineProps<{
     currentStep: number;
 }>();

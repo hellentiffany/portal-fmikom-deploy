@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
 use App\Models\SuratQrCode;
+use App\Models\SuratData;
 use App\Modules\Fast\DTOs\SuratDataContract;
 
 class Surat extends Model
@@ -154,7 +155,7 @@ class Surat extends Model
      */
     public function dataEntries(): HasMany
     {
-        return $this->hasMany(SuratDataContract::class);
+        return $this->hasMany(SuratData::class);
     }
 
     /**

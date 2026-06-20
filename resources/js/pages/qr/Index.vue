@@ -143,10 +143,10 @@ const showQrWarning = computed(() =>
                     <option value="revoked">Dicabut</option>
                 </select>
                 <button type="button"
-                    class="h-9 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
+                    class="fast-btn fast-btn-primary h-9 px-4 text-xs"
                     @click="applyFilter">Terapkan</button>
                 <button type="button"
-                    class="h-9 rounded-xl border border-slate-200 px-4 text-xs text-slate-500 hover:bg-slate-50 transition-colors"
+                    class="fast-btn fast-btn-outline h-9 px-4 text-xs text-slate-500"
                     @click="search = ''; status = ''; applyFilter()">Reset</button>
                 <p class="ml-auto flex items-center text-xs text-slate-400">
                     {{ surats.from ?? 0 }}–{{ surats.to ?? 0 }} dari {{ surats.total }} surat
@@ -234,7 +234,7 @@ const showQrWarning = computed(() =>
                     :prefetch="false"
                     class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                     :class="[
-                        link.active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                        link.active ? 'fast-btn-primary' : 'fast-btn-outline',
                         !link.url ? 'pointer-events-none opacity-40' : '',
                     ]"
                     v-html="link.label" />
@@ -262,10 +262,10 @@ const showQrWarning = computed(() =>
                     </div>
                     <div class="mt-5 flex justify-end gap-2">
                         <button type="button"
-                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                            class="fast-btn fast-btn-outline rounded-xl px-4 py-2 text-sm font-medium text-slate-600"
                             @click="showRevokeModal = false">Batal</button>
                         <button type="button"
-                            class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                            class="fast-btn fast-btn-danger rounded-xl px-4 py-2 text-sm"
                             :disabled="revokeForm.processing"
                             @click="submitRevoke">
                             {{ revokeForm.processing ? 'Memproses...' : 'Ya, Cabut QR' }}

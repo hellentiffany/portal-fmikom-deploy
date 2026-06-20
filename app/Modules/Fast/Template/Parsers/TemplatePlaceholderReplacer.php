@@ -26,7 +26,7 @@ class TemplatePlaceholderReplacer
             $isYth = Str::contains(Str::lower($key), 'yth');
 
             if ($isYth) {
-                // Untuk yth: e() akan escape <br> jadi &lt;br&gt; â€” restore kembali
+                // Untuk yth: e() akan escape <br> jadi &lt;br&gt; - restore kembali
                 $escapedValue = str_replace(['&lt;br&gt;', '&lt;br /&gt;'], '<br>', e($rawValue));
             } else {
                 $escapedValue = e($rawValue);
@@ -114,3 +114,4 @@ class TemplatePlaceholderReplacer
         return preg_replace('/<p\b[^>]*>\s*(?:<br\s*\/?>|\&nbsp;|\s)*<\/p>/i', '', $content) ?? $content;
     }
 }
+

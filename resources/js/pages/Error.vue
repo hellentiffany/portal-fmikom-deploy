@@ -25,13 +25,13 @@ const title = computed(() => `Error ${props.status}`);
             <div class="mt-8 flex flex-wrap gap-3">
                 <Link
                     href="/dashboard"
-                    class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    class="fast-btn fast-btn-primary items-center justify-center px-5 py-3 text-sm"
                 >
                     Kembali ke Dashboard
                 </Link>
                 <Link
                     href="/"
-                    class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    class="fast-btn fast-btn-outline items-center justify-center px-5 py-3 text-sm"
                 >
                     Halaman Awal
                 </Link>

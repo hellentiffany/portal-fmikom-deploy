@@ -19,7 +19,7 @@ function submit(): void {
         <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/40">
             <!-- Logo area -->
             <div class="mb-6 flex flex-col items-center gap-3 text-center">
-                <div class="grid size-14 place-items-center rounded-2xl bg-blue-600 shadow-md shadow-blue-200">
+                <div class="grid size-14 place-items-center rounded-2xl bg-primary shadow-md shadow-blue-200">
                     <ShieldCheck class="size-7 text-white" stroke-width="2.5" />
                 </div>
                 <div>
@@ -40,13 +40,13 @@ function submit(): void {
                         inputmode="text"
                         autocomplete="off"
                         placeholder="Contoh: 550e8400-e29b-41d4-a716-446655440000"
-                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                    class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-blue-100"
                     />
                 </label>
 
                 <button
                     type="submit"
-                    class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    class="fast-btn fast-btn-primary h-12 w-full px-4 text-sm"
                     :disabled="token.trim().length === 0"
                 >
                     Verifikasi Dokumen

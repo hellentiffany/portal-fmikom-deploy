@@ -22,14 +22,29 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'role_title',
+        'user_type',
         'email',
         'password',
         'role_id',
         'program_studi_id',
         'nim_nip',
         'nomor_induk',
+        'tanggal_lahir',
+        'tahun_lulus',
+        'otp_code',
+        'otp_expires_at',
+        'password_changed_at',
         'no_telepon',
         'foto_path',
+        'banner_path',
+        'bio',
+        'location',
+        'metadata',
+        'website',
+        'twitter',
+        'linkedin',
+        'github',
         'is_active',
         'status_approval',
     ];
@@ -41,6 +56,8 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'otp_code',
+        'otp_expires_at',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
@@ -57,6 +74,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'tanggal_lahir' => 'date',
+            'tahun_lulus' => 'integer',
+            'otp_expires_at' => 'datetime',
+            'password_changed_at' => 'datetime',
+            'metadata' => 'array',
             'is_active' => 'boolean',
         ];
     }
@@ -66,7 +88,14 @@ class User extends Authenticatable
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class)->withDefault(function (Role $role): void {
+            $roleSlug = $this->normalizedUserType((string) ($this->getAttribute('user_type') ?? ''));
+            $fallbackSlug = $roleSlug !== '' ? $roleSlug : 'mahasiswa';
+            $role->forceFill([
+                'slug' => $fallbackSlug,
+                'nama' => $this->role_title ?: $this->displayRoleTitle($fallbackSlug),
+            ]);
+        });
     }
 
     /**
@@ -87,13 +116,19 @@ class User extends Authenticatable
     {
         $this->loadMissing('role');
 
-        $slug = str((string) $this->role?->slug)->slug()->toString();
+        $slug = $this->normalizedUserType((string) $this->role?->slug);
 
         if ($slug !== '') {
             return $slug;
         }
 
-        return str((string) $this->role?->nama)->slug()->toString();
+        $userType = $this->normalizedUserType((string) ($this->user_type ?? ''));
+
+        if ($userType !== '') {
+            return $userType;
+        }
+
+        return $this->normalizedUserType((string) $this->role?->nama);
     }
 
     public function hasRole(string ...$roles): bool
@@ -170,6 +205,25 @@ class User extends Authenticatable
             $this->isDosen() => 'dosen.dashboard',
             $this->isMahasiswa() => 'mahasiswa.dashboard',
             default => abort(403),
+        };
+    }
+
+    private function normalizedUserType(string $value): string
+    {
+        $slug = str($value)->trim()->slug()->toString();
+
+        return match ($slug) {
+            'super_admin', 'super-admin' => 'admin',
+            default => $slug,
+        };
+    }
+
+    private function displayRoleTitle(string $userType): string
+    {
+        return match ($userType) {
+            'admin' => 'Admin',
+            'super_admin' => 'Super Admin',
+            default => ucwords(str_replace(['-', '_'], ' ', $userType)),
         };
     }
 }
